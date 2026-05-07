@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Huella Dactilar</title>
+
+<style>
+body{
+    background:#111827;
+    color:white;
+    font-family:Arial;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+
+.card{
+    background:#1f2937;
+    padding:30px;
+    border-radius:20px;
+    text-align:center;
+    width:350px;
+}
+
+button{
+    background:#2563eb;
+    border:none;
+    padding:12px 20px;
+    border-radius:10px;
+    color:white;
+    cursor:pointer;
+    font-size:16px;
+}
+
+button:hover{
+    background:#1d4ed8;
+}
+
+#status{
+    margin-top:20px;
+}
+</style>
+</head>
+<body>
+
+<div class="card">
+    <h1>Registro Biométrico</h1>
+
+    <p style="font-size:80px;">🖐️</p>
+
+    <button onclick="registrarHuella()">
+        Registrar Huella
+    </button>
+
+    <div id="status"></div>
+</div>
+
+<script>
+async function registrarHuella(){
+
+    const status = document.getElementById("status");
+
+    if (!window.PublicKeyCredential) {
+        status.innerHTML = "❌ WebAuthn no es compatible.";
+        return;
+    }
+
+    try {
+
+        const publicKey = {
+            challenge: new Uint8Array(32),
+            rp: {
+                name: "Mi Sistema"
+            },
+            user: {
+                id: new Uint8Array(16),
+                name: "usuario@test.com",
+                displayName: "Usuario"
+            },
+            pubKeyCredParams: [
+                {
+                    type: "public-key",
+                    alg: -7
+                }
+            ],
+            authenticatorSelection: {
+                authenticatorAttachment: "platform",
+                userVerification: "required"
+            },
+            timeout: 60000,
+            attestation: "direct"
+        };
+
+        status.innerHTML = "🔍 Esperando huella...";
+
+        const credential = await navigator.credentials.create({
+            publicKey
+        });
+
+        console.log(credential);
+
+        status.innerHTML = "✅ Huella registrada correctamente.";
+
+    } catch (error) {
+
+        console.error(error);
+
+        status.innerHTML = "❌ Error o cancelaste la huella.";
+    }
+}
+</script>
+
+</body>
+</html>
