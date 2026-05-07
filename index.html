@@ -3,35 +3,57 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Huella Dactilar</title>
+<title>Login Biométrico</title>
 
 <style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
 body{
-    background:#111827;
-    color:white;
-    font-family:Arial;
+    background:#0f172a;
+    font-family:Arial, sans-serif;
+    height:100vh;
     display:flex;
     justify-content:center;
     align-items:center;
-    height:100vh;
+    color:white;
 }
 
 .card{
-    background:#1f2937;
-    padding:30px;
-    border-radius:20px;
-    text-align:center;
+    background:#111827;
     width:350px;
+    padding:35px;
+    border-radius:25px;
+    text-align:center;
+    box-shadow:0 0 25px rgba(0,0,0,0.5);
+}
+
+.icon{
+    font-size:90px;
+    margin-bottom:20px;
+}
+
+h1{
+    margin-bottom:10px;
+}
+
+p{
+    color:#94a3b8;
+    margin-bottom:25px;
 }
 
 button{
     background:#2563eb;
-    border:none;
-    padding:12px 20px;
-    border-radius:10px;
     color:white;
-    cursor:pointer;
+    border:none;
+    padding:14px 22px;
+    border-radius:12px;
     font-size:16px;
+    cursor:pointer;
+    transition:0.3s;
 }
 
 button:hover{
@@ -40,76 +62,93 @@ button:hover{
 
 #status{
     margin-top:20px;
+    color:#cbd5e1;
 }
 </style>
 </head>
 <body>
 
 <div class="card">
-    <h1>Registro Biométrico</h1>
 
-    <p style="font-size:80px;">🖐️</p>
+    <div class="icon">🖐️</div>
 
-    <button onclick="registrarHuella()">
-        Registrar Huella
+    <h1>Acceso Biométrico</h1>
+
+    <p>
+        Usa tu huella o reconocimiento facial
+    </p>
+
+    <button onclick="usarBiometria()">
+        Continuar
     </button>
 
     <div id="status"></div>
+
 </div>
 
 <script>
-async function registrarHuella(){
+
+async function usarBiometria(){
 
     const status = document.getElementById("status");
 
     if (!window.PublicKeyCredential) {
-        status.innerHTML = "❌ WebAuthn no es compatible.";
+        status.innerHTML = "❌ Tu navegador no soporta biometría.";
         return;
     }
 
-    try {
+    try{
 
-        const publicKey = {
-            challenge: new Uint8Array(32),
-            rp: {
-                name: "Mi Sistema"
-            },
-            user: {
-                id: new Uint8Array(16),
-                name: "usuario@test.com",
-                displayName: "Usuario"
-            },
-            pubKeyCredParams: [
-                {
-                    type: "public-key",
-                    alg: -7
-                }
-            ],
-            authenticatorSelection: {
-                authenticatorAttachment: "platform",
-                userVerification: "required"
-            },
-            timeout: 60000,
-            attestation: "direct"
-        };
+        status.innerHTML = "🔍 Esperando huella o rostro...";
 
-        status.innerHTML = "🔍 Esperando huella...";
+        // Primero registramos una credencial
+        const cred = await navigator.credentials.create({
+            publicKey: {
 
-        const credential = await navigator.credentials.create({
-            publicKey
+                challenge: crypto.getRandomValues(new Uint8Array(32)),
+
+                rp: {
+                    name: "Sistema Biométrico"
+                },
+
+                user: {
+                    id: crypto.getRandomValues(new Uint8Array(16)),
+                    name: "usuario@test.com",
+                    displayName: "Usuario"
+                },
+
+                pubKeyCredParams: [
+                    {
+                        type: "public-key",
+                        alg: -7
+                    }
+                ],
+
+                authenticatorSelection: {
+                    authenticatorAttachment: "platform",
+                    residentKey: "required",
+                    requireResidentKey: true,
+                    userVerification: "required"
+                },
+
+                timeout: 60000,
+                attestation: "none"
+            }
         });
 
-        console.log(credential);
+        console.log("Credencial creada:", cred);
 
-        status.innerHTML = "✅ Huella registrada correctamente.";
+        status.innerHTML = "✅ Verificación biométrica completada.";
 
-    } catch (error) {
+    }catch(error){
 
         console.error(error);
 
-        status.innerHTML = "❌ Error o cancelaste la huella.";
+        status.innerHTML =
+        "❌ Cancelaste o Windows pidió PIN.";
     }
 }
+
 </script>
 
 </body>
