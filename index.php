@@ -1,6 +1,13 @@
 ﻿<?php
 ob_start();
-session_start();
+
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
+if (session_status() === PHP_SESSION_NONE) {
+    @session_start();
+}
+
 require_once __DIR__ . '/src/config/database.php';
 
 function h(string $value): string {
@@ -235,7 +242,7 @@ if (!is_string($flash['msg'])) { $flash['msg'] = null; }
 // ---------------------------
 // Clientes (CRUD)
 // ---------------------------
-$cliente_table = 'cliente', 'CLIENTE);
+$cliente_table = 'cliente', 'CLIENTE']);
 $cliente_cols = $cliente_table ? table_columns($conn, $cliente_table) : [];
 $clientes_action = $_GET['action'] ?? '';
 $clientes_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
