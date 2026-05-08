@@ -89,10 +89,11 @@ $nav_items = [
     ['label' => 'Órdenes de reparación', 'desc' => 'Crear y gestionar órdenes', 'icono' => 'ti-clipboard-list', 'activo' => false, 'badge' => null],
     ['label' => 'Diagnósticos', 'desc' => 'Registrar diagnósticos técnicos', 'icono' => 'ti-stethoscope', 'activo' => false, 'badge' => null],
     ['label' => 'Inventario / Piezas', 'desc' => 'Gestión de piezas y stock', 'icono' => 'ti-package', 'activo' => false, 'badge' => null],
-    ['label' => 'Garantías', 'desc' => 'Ver y controlar garantías activas', 'icono' => 'ti-shield-check', 'activo' => false, 'badge' => null],
+    ['label' => 'Garantías', 'desc' => 'Ver y controlar garantías activas', 'icono' => 'ti-shield-check', 'activo' => false, 'badge' => ['valor'=>11, 'bg'=>'#7B4EC4','color'=>'#fff']],
 
     ['seccion' => true, 'label' => 'Comunicación'],
     ['label' => 'Notificaciones', 'desc' => 'Historial de WhatsApp y correos enviados', 'icono' => 'ti-bell', 'activo' => false, 'badge' => null],
+    ['label' => 'WhatsApp', 'desc' => 'Historial de WhatsApp y correos enviados', 'icono' => 'ti-brand-whatsapp', 'activo' => false, 'badge' => ['dot' => true, 'bg'=>'#25D366']],
 
     ['seccion' => true, 'label' => 'Analítica'],
     ['label' => 'Reportes', 'desc' => 'Ingresos, productividad y estadísticas', 'icono' => 'ti-chart-bar', 'activo' => false, 'badge' => null],
