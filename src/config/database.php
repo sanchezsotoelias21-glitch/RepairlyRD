@@ -2,10 +2,11 @@
 
 mysqli_report(MYSQLI_REPORT_OFF);
 
-$databaseUrl = getenv('MYSQL_URL') ?: getenv('DATABASE_URL') ?: '';
+$databaseUrl = getenv('MYSQL_URL') ?: getenv('MYSQL_PUBLIC_URL') ?: getenv('DATABASE_URL') ?: '';
 
 $host = getenv('DB_HOST') ?: getenv('MYSQLHOST') ?: getenv('MYSQL_HOST') ?: 'turntable.proxy.rlwy.net';
-$port = (int)(getenv('DB_PORT') ?: getenv('MYSQLPORT') ?: getenv('MYSQL_PORT') ?: 0);
+$rawPort = getenv('DB_PORT') ?: getenv('MYSQLPORT') ?: getenv('MYSQL_PORT') ?: '';
+$port = (int)$rawPort;
 $user = getenv('DB_USER') ?: getenv('MYSQLUSER') ?: getenv('MYSQL_USER') ?: 'root';
 $password = getenv('DB_PASSWORD') ?: getenv('MYSQLPASSWORD') ?: getenv('MYSQL_PASSWORD') ?: 'wUeNcKAWLZqGgJwmXcKJwPgiQdeyTIgA';
 $database = getenv('DB_NAME') ?: getenv('MYSQLDATABASE') ?: getenv('MYSQL_DATABASE') ?: 'taller_reparaciones';
@@ -21,6 +22,11 @@ if ($databaseUrl !== '') {
     }
 }
 
+if ($port <= 0 && str_contains($host, 'proxy.rlwy.net')) {
+    http_response_code(500);
+    die('Error de conexión a MySQL: falta DB_PORT/MYSQLPORT. El host público de Railway (*.proxy.rlwy.net) necesita el puerto TCP público de MySQL.');
+}
+
 $conn = mysqli_init();
 if ($conn === false) {
     http_response_code(500);
@@ -34,6 +40,7 @@ if (!$connected) {
     http_response_code(500);
     die(
         'Error de conexión a MySQL. Revisa las variables DB_HOST, DB_PORT, DB_USER, DB_PASSWORD y DB_NAME en Railway. ' .
+        'Intentando conectar a ' . $host . ':' . ($port ?: 3306) . '. ' .
         'Detalle: ' . $conn->connect_error
     );
 }
