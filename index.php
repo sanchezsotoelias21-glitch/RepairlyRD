@@ -181,11 +181,18 @@ $dispositivos = [
 $fallas_urgentes = array_filter($ordenes_recientes, fn($o) => $o['estado'] === 'Con falla');
 $total_fallas    = count($fallas_urgentes);
 
-$fecha_es = (new IntlDateFormatter(
-    'es_DO',
-    IntlDateFormatter::FULL,
-    IntlDateFormatter::NONE
-))->format(new DateTime());
+$fecha_es = null;
+if (class_exists('IntlDateFormatter')) {
+    try {
+        $fecha_es = (new IntlDateFormatter(
+            'es_DO',
+            IntlDateFormatter::FULL,
+            IntlDateFormatter::NONE
+        ))->format(new DateTime());
+    } catch (Throwable $e) {
+        $fecha_es = null;
+    }
+}
 // Fallback si no hay extensión intl
 if (!$fecha_es) {
     $dias   = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
