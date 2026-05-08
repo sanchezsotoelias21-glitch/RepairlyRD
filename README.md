@@ -15,8 +15,7 @@ Este repo está preparado para Railway con `Dockerfile`.
 
 ```bash
 docker build -t repairlyrd .
-docker run --rm -p 8080:8080 -e PORT=8080 repairlyrd
+docker run --rm -p 8000:8000 -e PORT=8000 repairlyrd
 ```
 
-Luego abre `http://localhost:8080`.
-
+Luego abre `http://localhost:8000`.
