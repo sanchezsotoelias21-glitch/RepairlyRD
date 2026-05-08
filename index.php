@@ -148,18 +148,18 @@ if (!in_array($current_page, $allowed_pages, true)) {
 
 $page_meta = [
     'dashboard' => ['label' => 'Dashboard', 'desc' => 'Mostrar resumen general del sistema', 'icono' => 'ti-layout-dashboard'],
-    'clientes' => ['label' => 'Clientes', 'desc' => 'GestiÃ³n de clientes registrados', 'icono' => 'ti-users'],
-    'equipos' => ['label' => 'Equipos', 'desc' => 'Registro y administraciÃ³n de equipos', 'icono' => 'ti-device-laptop'],
-    'ordenes' => ['label' => 'Ã“rdenes de reparaciÃ³n', 'desc' => 'Crear y gestionar Ã³rdenes', 'icono' => 'ti-clipboard-list'],
-    'diagnosticos' => ['label' => 'DiagnÃ³sticos', 'desc' => 'Registrar diagnÃ³sticos tÃ©cnicos', 'icono' => 'ti-stethoscope'],
-    'inventario' => ['label' => 'Inventario / Piezas', 'desc' => 'GestiÃ³n de piezas y stock', 'icono' => 'ti-package'],
-    'tecnicos' => ['label' => 'TÃ©cnicos', 'desc' => 'AdministraciÃ³n de tÃ©cnicos', 'icono' => 'ti-user-check'],
-    'garantias' => ['label' => 'GarantÃ­as', 'desc' => 'Ver y controlar garantÃ­as activas', 'icono' => 'ti-shield-check'],
+    'clientes' => ['label' => 'Clientes', 'desc' => 'Gestión de clientes registrados', 'icono' => 'ti-users'],
+    'equipos' => ['label' => 'Equipos', 'desc' => 'Registro y administración de equipos', 'icono' => 'ti-device-laptop'],
+    'ordenes' => ['label' => 'Órdenes de reparación', 'desc' => 'Crear y gestionar órdenes', 'icono' => 'ti-clipboard-list'],
+    'diagnosticos' => ['label' => 'Diagnósticos', 'desc' => 'Registrar diagnósticos técnicos', 'icono' => 'ti-stethoscope'],
+    'inventario' => ['label' => 'Inventario / Piezas', 'desc' => 'Gestión de piezas y stock', 'icono' => 'ti-package'],
+    'tecnicos' => ['label' => 'Técnicos', 'desc' => 'Administración de técnicos', 'icono' => 'ti-user-check'],
+    'garantias' => ['label' => 'Garantías', 'desc' => 'Ver y controlar garantías activas', 'icono' => 'ti-shield-check'],
     'notificaciones' => ['label' => 'Notificaciones', 'desc' => 'Historial de WhatsApp y correos enviados', 'icono' => 'ti-bell'],
     'whatsapp' => ['label' => 'WhatsApp', 'desc' => 'Historial de WhatsApp y correos enviados', 'icono' => 'ti-brand-whatsapp'],
-    'reportes' => ['label' => 'Reportes', 'desc' => 'Ingresos, productividad y estadÃ­sticas', 'icono' => 'ti-chart-bar'],
-    'usuarios' => ['label' => 'Usuarios', 'desc' => 'GestiÃ³n de accesos y roles', 'icono' => 'ti-user-shield'],
-    'configuracion' => ['label' => 'ConfiguraciÃ³n', 'desc' => 'Ajustes generales del sistema', 'icono' => 'ti-settings'],
+    'reportes' => ['label' => 'Reportes', 'desc' => 'Ingresos, productividad y estadísticas', 'icono' => 'ti-chart-bar'],
+    'usuarios' => ['label' => 'Usuarios', 'desc' => 'Gestión de accesos y roles', 'icono' => 'ti-user-shield'],
+    'configuracion' => ['label' => 'Configuración', 'desc' => 'Ajustes generales del sistema', 'icono' => 'ti-settings'],
 ];
 $page = $page_meta[$current_page] ?? $page_meta['dashboard'];
 
@@ -357,7 +357,7 @@ $nav_items = [
     ['seccion' => true, 'label' => 'Principal'],
     ['key' => 'dashboard', 'label' => $page_meta['dashboard']['label'], 'desc' => $page_meta['dashboard']['desc'], 'href' => '?page=dashboard', 'icono' => $page_meta['dashboard']['icono'], 'activo' => $current_page === 'dashboard', 'badge' => null],
 
-    ['seccion' => true, 'label' => 'GestiÃ³n'],
+    ['seccion' => true, 'label' => 'Gestión'],
     ['key' => 'clientes', 'label' => $page_meta['clientes']['label'], 'desc' => $page_meta['clientes']['desc'], 'href' => '?page=clientes', 'icono' => $page_meta['clientes']['icono'], 'activo' => $current_page === 'clientes', 'badge' => null],
     ['key' => 'equipos', 'label' => $page_meta['equipos']['label'], 'desc' => $page_meta['equipos']['desc'], 'href' => '?page=equipos', 'icono' => $page_meta['equipos']['icono'], 'activo' => $current_page === 'equipos', 'badge' => null],
     ['key' => 'tecnicos', 'label' => $page_meta['tecnicos']['label'], 'desc' => $page_meta['tecnicos']['desc'], 'href' => '?page=tecnicos', 'icono' => $page_meta['tecnicos']['icono'], 'activo' => $current_page === 'tecnicos', 'badge' => null],
@@ -369,11 +369,11 @@ $nav_items = [
     ['key' => 'inventario', 'label' => $page_meta['inventario']['label'], 'desc' => $page_meta['inventario']['desc'], 'href' => '?page=inventario', 'icono' => $page_meta['inventario']['icono'], 'activo' => $current_page === 'inventario', 'badge' => null],
     ['key' => 'garantias', 'label' => $page_meta['garantias']['label'], 'desc' => $page_meta['garantias']['desc'], 'href' => '?page=garantias', 'icono' => $page_meta['garantias']['icono'], 'activo' => $current_page === 'garantias', 'badge' => ['valor'=>0, 'bg'=>'#7B4EC4','color'=>'#fff']],
 
-    ['seccion' => true, 'label' => 'ComunicaciÃ³n'],
+    ['seccion' => true, 'label' => 'Comunicación'],
     ['key' => 'notificaciones', 'label' => $page_meta['notificaciones']['label'], 'desc' => $page_meta['notificaciones']['desc'], 'href' => '?page=notificaciones', 'icono' => $page_meta['notificaciones']['icono'], 'activo' => $current_page === 'notificaciones', 'badge' => null],
     ['key' => 'whatsapp', 'label' => $page_meta['whatsapp']['label'], 'desc' => $page_meta['whatsapp']['desc'], 'href' => '?page=whatsapp', 'icono' => $page_meta['whatsapp']['icono'], 'activo' => $current_page === 'whatsapp', 'badge' => ['dot' => true, 'bg'=>'#25D366']],
 
-    ['seccion' => true, 'label' => 'AnalÃ­tica'],
+    ['seccion' => true, 'label' => 'Analítica'],
     ['key' => 'reportes', 'label' => $page_meta['reportes']['label'], 'desc' => $page_meta['reportes']['desc'], 'href' => '?page=reportes', 'icono' => $page_meta['reportes']['icono'], 'activo' => $current_page === 'reportes', 'badge' => null],
 
     ['seccion' => true, 'label' => 'Sistema'],
@@ -833,7 +833,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
         <div class="alert-falla" role="alert" style="background:#FFF3E0;border-color:#FF9500;">
             <i class="ti ti-database-alert" aria-hidden="true" style="color:#FF9500;"></i>
             <span class="alert-falla-txt" style="color:#5C3E00;">
-                El dashboard estÃ¡ conectado, pero no encontrÃ³ las tablas base: orden_reparacion, estado_servicio y equipo.
+                El dashboard está conectado, pero no encontró las tablas base: orden_reparacion, estado_servicio y equipo.
             </span>
         </div>
         <?php endif; ?>
@@ -1200,11 +1200,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
             <div class="charts-card">
                 <div class="card-header" style="margin-bottom:2px;">
                     <span class="card-title"><?= htmlspecialchars($page['label']) ?></span>
-                    <span class="card-pill">MÃ³dulo</span>
+                    <span class="card-pill">Módulo</span>
                 </div>
                 <div class="card-sub"><?= htmlspecialchars($page['desc']) ?></div>
                 <div style="margin-top:12px;font-size:11.5px;color:#6B6560;line-height:1.55;">
-                    Esta pantalla estÃ¡ lista para conectarse a la base de datos y agregar formularios (crear, editar, listar).
+                    Esta pantalla está lista para conectarse a la base de datos y agregar formularios (crear, editar, listar).
                 </div>
             </div>
         </div>
