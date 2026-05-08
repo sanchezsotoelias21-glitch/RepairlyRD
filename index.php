@@ -59,7 +59,7 @@ $kpis = [
     [
         'clave'     => 'en_proceso',
         'label'     => 'En proceso',
-        'valor'     => 24,
+        'valor'     => 0,
         'sub'       => 'órdenes activas',
         'icono'     => 'ti-loader',
         'color'     => '#0052CC',
@@ -69,8 +69,8 @@ $kpis = [
     [
         'clave'     => 'pendientes',
         'label'     => 'Pendientes',
-        'valor'     => 8,
-        'sub'       => 'sin asignar',
+        'valor'     => 0,
+        'sub'       => 'sin completar',
         'icono'     => 'ti-clock',
         'color'     => '#FF9500',
         'bg'        => '#FFF3E0',
@@ -79,8 +79,8 @@ $kpis = [
     [
         'clave'     => 'ingresos',
         'label'     => 'Ingresos hoy',
-        'valor'     => '$4,820',
-        'sub'       => '<span style="color:#00AA44;display:flex;align-items:center;gap:3px;"><i class="ti ti-trending-up" style="font-size:11px;"></i>+12% vs ayer</span>',
+        'valor'     => '$0.00',
+        'sub'       => '<span style="color:#00AA44;display:flex;align-items:center;gap:3px;"><i class="ti ti-trending-up" style="font-size:11px;"></i>0% vs ayer</span>',
         'icono'     => 'ti-cash',
         'color'     => '#00AA44',
         'bg'        => '#E8F5E9',
@@ -89,8 +89,8 @@ $kpis = [
     [
         'clave'     => 'garantias',
         'label'     => 'Garantías',
-        'valor'     => 11,
-        'sub'       => 'activas este mes',
+        'valor'     => 0,
+        'sub'       => 'activas ahora',
         'icono'     => 'ti-shield',
         'color'     => '#7B4EC4',
         'bg'        => '#F3E5F5',
@@ -99,7 +99,7 @@ $kpis = [
     [
         'clave'     => 'completadas',
         'label'     => 'Completadas',
-        'valor'     => 137,
+        'valor'     => 0,
         'sub'       => 'servicios este mes',
         'icono'     => 'ti-checks',
         'color'     => '#424242',
@@ -109,7 +109,7 @@ $kpis = [
     [
         'clave'     => 'con_falla',
         'label'     => 'Con falla',
-        'valor'     => 3,
+        'valor'     => 0,
         'sub'       => 'requieren atención',
         'icono'     => 'ti-alert-triangle',
         'color'     => '#FF4444',
@@ -359,7 +359,7 @@ $nav_items = [
     ['key' => 'ordenes', 'label' => $page_meta['ordenes']['label'], 'desc' => $page_meta['ordenes']['desc'], 'href' => '?page=ordenes', 'icono' => $page_meta['ordenes']['icono'], 'activo' => $current_page === 'ordenes', 'badge' => null],
     ['key' => 'diagnosticos', 'label' => $page_meta['diagnosticos']['label'], 'desc' => $page_meta['diagnosticos']['desc'], 'href' => '?page=diagnosticos', 'icono' => $page_meta['diagnosticos']['icono'], 'activo' => $current_page === 'diagnosticos', 'badge' => null],
     ['key' => 'inventario', 'label' => $page_meta['inventario']['label'], 'desc' => $page_meta['inventario']['desc'], 'href' => '?page=inventario', 'icono' => $page_meta['inventario']['icono'], 'activo' => $current_page === 'inventario', 'badge' => null],
-    ['key' => 'garantias', 'label' => $page_meta['garantias']['label'], 'desc' => $page_meta['garantias']['desc'], 'href' => '?page=garantias', 'icono' => $page_meta['garantias']['icono'], 'activo' => $current_page === 'garantias', 'badge' => ['valor'=>11, 'bg'=>'#7B4EC4','color'=>'#fff']],
+    ['key' => 'garantias', 'label' => $page_meta['garantias']['label'], 'desc' => $page_meta['garantias']['desc'], 'href' => '?page=garantias', 'icono' => $page_meta['garantias']['icono'], 'activo' => $current_page === 'garantias', 'badge' => ['valor'=>0, 'bg'=>'#7B4EC4','color'=>'#fff']],
 
     ['seccion' => true, 'label' => 'ComunicaciÃ³n'],
     ['key' => 'notificaciones', 'label' => $page_meta['notificaciones']['label'], 'desc' => $page_meta['notificaciones']['desc'], 'href' => '?page=notificaciones', 'icono' => $page_meta['notificaciones']['icono'], 'activo' => $current_page === 'notificaciones', 'badge' => null],
@@ -459,6 +459,9 @@ $dispositivos = [
     ['tipo'=>'Tablets',    'icono'=>'ti-device-tablet',  'pct'=>15, 'color'=>'#FF9500', 'bg'=>'#FFF3E0',  'tc'=>'#FF9500'],
     ['tipo'=>'PC Torre',   'icono'=>'ti-device-desktop', 'pct'=>12, 'color'=>'#7B4EC4', 'bg'=>'#F3E5F5',  'tc'=>'#7B4EC4'],
 ];
+
+$ordenes_recientes = [];
+$dispositivos = [];
 
 $dashboard_tables = [
     'cliente' => pick_table($conn, ['cliente', 'CLIENTE']),
@@ -808,6 +811,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
     <div class="content">
         <?php if ($current_page === 'dashboard'): ?>
 
+        <?php if (!$has_dashboard_core): ?>
+        <div class="alert-falla" role="alert" style="background:#FFF3E0;border-color:#FF9500;">
+            <i class="ti ti-database-alert" aria-hidden="true" style="color:#FF9500;"></i>
+            <span class="alert-falla-txt" style="color:#5C3E00;">
+                El dashboard estÃ¡ conectado, pero no encontrÃ³ las tablas base: orden_reparacion, estado_servicio y equipo.
+            </span>
+        </div>
+        <?php endif; ?>
+
         <!-- Alerta de fallas urgentes -->
         <?php if ($total_fallas > 0): ?>
         <div class="alert-falla" role="alert">
@@ -903,12 +915,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
                     </span>
                     <?php endforeach; ?>
                     <?php if (empty($chart_estado_labels)): ?>
-                    <span class="donut-legend-item"><span class="donut-dot" style="background:#FF9500;"></span>Recibido 7%</span>
-                    <span class="donut-legend-item"><span class="donut-dot" style="background:#0052CC;"></span>Diagnóstico 15%</span>
-                    <span class="donut-legend-item"><span class="donut-dot" style="background:#00AA44;"></span>Reparación 20%</span>
-                    <span class="donut-legend-item"><span class="donut-dot" style="background:#7B4EC4;"></span>Listo 10%</span>
-                    <span class="donut-legend-item"><span class="donut-dot" style="background:#424242;"></span>Entregado 45%</span>
-                    <span class="donut-legend-item"><span class="donut-dot" style="background:#FF4444;"></span>Con falla 3%</span>
+                    <span class="donut-legend-item"><span class="donut-dot" style="background:#D0CCC6;"></span>Sin datos 0%</span>
                     <?php endif; ?>
                 </div>
             </div>
@@ -921,6 +928,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
             <!-- Dispositivos -->
             <div class="dispositivos-card">
                 <div class="card-title" style="margin-bottom:14px;">Por tipo de dispositivo</div>
+                <?php if (empty($dispositivos)): ?>
+                <div style="font-size:11.5px;color:#6B6560;line-height:1.5;">No hay equipos registrados en la base de datos.</div>
+                <?php endif; ?>
                 <?php foreach ($dispositivos as $d): ?>
                 <div class="dispositivo-item">
                     <div class="dispositivo-header">
@@ -956,6 +966,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
                     <div style="text-align:right;">Valor</div>
                 </div>
                 <div role="list" aria-label="Órdenes recientes">
+                <?php if (empty($ordenes_recientes)): ?>
+                <div style="padding:14px 15px;color:#6B6560;font-size:12px;">No hay órdenes registradas en la base de datos.</div>
+                <?php endif; ?>
                 <?php foreach ($ordenes_recientes as $orden): ?>
                 <div class="table-row" role="listitem">
                     <div class="order-id"><?= htmlspecialchars($orden['id']) ?></div>
