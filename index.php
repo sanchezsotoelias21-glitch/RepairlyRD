@@ -170,6 +170,60 @@ function table_columns(mysqli $conn, string $table): array {
     return $cols;
 }
 
+function db_scalar(mysqli $conn, string $sql, int|float|string $default = 0): int|float|string {
+    $res = $conn->query($sql);
+    if (!$res) {
+        return $default;
+    }
+    $row = $res->fetch_row();
+    $res->free();
+    return $row[0] ?? $default;
+}
+
+function db_rows(mysqli $conn, string $sql): array {
+    $res = $conn->query($sql);
+    if (!$res) {
+        return [];
+    }
+    $rows = $res->fetch_all(MYSQLI_ASSOC);
+    $res->free();
+    return $rows;
+}
+
+function status_palette(string $status): array {
+    $name = strtolower($status);
+    if (str_contains($name, 'falla')) {
+        return ['bg' => '#FFEBEE', 'color' => '#FF4444', 'border' => '#FF4444', 'dot' => '#FF4444'];
+    }
+    if (str_contains($name, 'garant')) {
+        return ['bg' => '#F3E5F5', 'color' => '#7B4EC4', 'border' => '#7B4EC4', 'dot' => '#7B4EC4'];
+    }
+    if (str_contains($name, 'listo') || str_contains($name, 'entreg') || str_contains($name, 'complet')) {
+        return ['bg' => '#E8F5E9', 'color' => '#00AA44', 'border' => '#00AA44', 'dot' => '#00AA44'];
+    }
+    if (str_contains($name, 'pend') || str_contains($name, 'recib')) {
+        return ['bg' => '#FFF3E0', 'color' => '#FF9500', 'border' => '#FF9500', 'dot' => '#FF9500'];
+    }
+    if (str_contains($name, 'diagn')) {
+        return ['bg' => '#F5F5F5', 'color' => '#424242', 'border' => '#424242', 'dot' => '#424242'];
+    }
+    return ['bg' => '#E3F2FD', 'color' => '#0052CC', 'border' => '#0052CC', 'dot' => '#0052CC'];
+}
+
+function device_icon(string $type): string {
+    $name = strtolower($type);
+    if (str_contains($name, 'phone') || str_contains($name, 'tel')) {
+        return 'ti-device-mobile';
+    }
+    if (str_contains($name, 'tablet') || str_contains($name, 'ipad')) {
+        return 'ti-device-tablet';
+    }
+    if (str_contains($name, 'pc') || str_contains($name, 'torre') || str_contains($name, 'desktop')) {
+        return 'ti-device-desktop';
+    }
+    return 'ti-device-laptop';
+}
+
 $flash = [
     'type' => $_GET['t'] ?? null,
     'msg' => $_GET['m'] ?? null,
@@ -406,8 +460,105 @@ $dispositivos = [
     ['tipo'=>'PC Torre',   'icono'=>'ti-device-desktop', 'pct'=>12, 'color'=>'#7B4EC4', 'bg'=>'#F3E5F5',  'tc'=>'#7B4EC4'],
 ];
 
-$fallas_urgentes = array_filter($ordenes_recientes, fn($o) => $o['estado'] === 'Con falla');
+$dashboard_tables = [
+    'cliente' => pick_table($conn, ['cliente', 'CLIENTE']),
+    'equipo' => pick_table($conn, ['equipo', 'EQUIPO']),
+    'tecnico' => pick_table($conn, ['tecnico', 'TECNICO']),
+    'orden' => pick_table($conn, ['orden_reparacion', 'ORDEN_REPARACION']),
+    'estado' => pick_table($conn, ['estado_servicio', 'ESTADO_SERVICIO']),
+    'garantia' => pick_table($conn, ['garantia', 'GARANTIA']),
+];
+
+$has_dashboard_core = table_exists($conn, $dashboard_tables['orden'])
+    && table_exists($conn, $dashboard_tables['estado'])
+    && table_exists($conn, $dashboard_tables['equipo']);
+
+$chart_tecnico_labels = [];
+$chart_tecnico_reparaciones = [];
+$chart_tecnico_ingresos = [];
+$chart_estado_labels = [];
+$chart_estado_values = [];
+$chart_estado_colors = [];
+
+if ($has_dashboard_core) {
+    $orden_table = $dashboard_tables['orden'];
+    $estado_table = $dashboard_tables['estado'];
+    $equipo_table = $dashboard_tables['equipo'];
+    $cliente_table_dashboard = $dashboard_tables['cliente'];
+    $tecnico_table = $dashboard_tables['tecnico'];
+    $garantia_table = $dashboard_tables['garantia'];
+
+    $estado_join = "FROM `{$orden_table}` o LEFT JOIN `{$estado_table}` s ON s.id_estado = o.id_estado_actual";
+    $estado_expr = "LOWER(COALESCE(s.nombre_estado, ''))";
+
+    $en_proceso = (int)db_scalar($conn, "SELECT COUNT(*) {$estado_join} WHERE {$estado_expr} LIKE '%proceso%' OR {$estado_expr} LIKE '%repar%'");
+    $pendientes = (int)db_scalar($conn, "SELECT COUNT(*) {$estado_join} WHERE {$estado_expr} LIKE '%pend%' OR {$estado_expr} LIKE '%recib%'");
+    $con_falla = (int)db_scalar($conn, "SELECT COUNT(*) {$estado_join} WHERE {$estado_expr} LIKE '%falla%'");
+    $completadas = (int)db_scalar($conn, "SELECT COUNT(*) {$estado_join} WHERE ({$estado_expr} LIKE '%entreg%' OR {$estado_expr} LIKE '%complet%' OR {$estado_expr} LIKE '%listo%') AND MONTH(COALESCE(o.fecha_entrega_real, o.fecha_actualizacion, o.fecha_ingreso)) = MONTH(CURDATE()) AND YEAR(COALESCE(o.fecha_entrega_real, o.fecha_actualizacion, o.fecha_ingreso)) = YEAR(CURDATE())");
+    $ingresos_hoy = (float)db_scalar($conn, "SELECT COALESCE(SUM(o.costo_total), 0) FROM `{$orden_table}` o WHERE DATE(COALESCE(o.fecha_entrega_real, o.fecha_actualizacion, o.fecha_ingreso)) = CURDATE()", 0);
+    $ingresos_ayer = (float)db_scalar($conn, "SELECT COALESCE(SUM(o.costo_total), 0) FROM `{$orden_table}` o WHERE DATE(COALESCE(o.fecha_entrega_real, o.fecha_actualizacion, o.fecha_ingreso)) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)", 0);
+    $garantias_activas = table_exists($conn, $garantia_table)
+        ? (int)db_scalar($conn, "SELECT COUNT(*) FROM `{$garantia_table}` WHERE (LOWER(COALESCE(estado, '')) LIKE '%activ%' OR (CURDATE() BETWEEN fecha_inicio AND fecha_fin))")
+        : 0;
+
+    $trend = $ingresos_ayer > 0 ? (($ingresos_hoy - $ingresos_ayer) / $ingresos_ayer) * 100 : ($ingresos_hoy > 0 ? 100 : 0);
+    $trend_color = $trend >= 0 ? '#00AA44' : '#B83232';
+    $trend_icon = $trend >= 0 ? 'ti-trending-up' : 'ti-trending-down';
+
+    $kpis = [
+        ['clave' => 'en_proceso', 'label' => 'En proceso', 'valor' => $en_proceso, 'sub' => 'órdenes activas', 'icono' => 'ti-loader', 'color' => '#0052CC', 'bg' => '#E3F2FD', 'texto' => '#0052CC'],
+        ['clave' => 'pendientes', 'label' => 'Pendientes', 'valor' => $pendientes, 'sub' => 'sin completar', 'icono' => 'ti-clock', 'color' => '#FF9500', 'bg' => '#FFF3E0', 'texto' => '#FF9500'],
+        ['clave' => 'ingresos', 'label' => 'Ingresos hoy', 'valor' => '$' . number_format($ingresos_hoy, 2), 'sub' => '<span style="color:' . $trend_color . ';display:flex;align-items:center;gap:3px;"><i class="ti ' . $trend_icon . '" style="font-size:11px;"></i>' . number_format(abs($trend), 0) . '% vs ayer</span>', 'icono' => 'ti-cash', 'color' => '#00AA44', 'bg' => '#E8F5E9', 'texto' => '#00AA44'],
+        ['clave' => 'garantias', 'label' => 'Garantías', 'valor' => $garantias_activas, 'sub' => 'activas ahora', 'icono' => 'ti-shield', 'color' => '#7B4EC4', 'bg' => '#F3E5F5', 'texto' => '#7B4EC4'],
+        ['clave' => 'completadas', 'label' => 'Completadas', 'valor' => $completadas, 'sub' => 'servicios este mes', 'icono' => 'ti-checks', 'color' => '#424242', 'bg' => '#F5F5F5', 'texto' => '#424242'],
+        ['clave' => 'con_falla', 'label' => 'Con falla', 'valor' => $con_falla, 'sub' => 'requieren atención', 'icono' => 'ti-alert-triangle', 'color' => '#FF4444', 'bg' => '#FFEBEE', 'texto' => '#FF4444'],
+    ];
+
+    $ordenes_recientes = [];
+    $ordenes_sql = "SELECT o.id_orden, COALESCE(c.nombre, 'Cliente no asignado') AS cliente, COALESCE(e.tipo, '') AS tipo, COALESCE(e.marca, '') AS marca, COALESCE(e.modelo, '') AS modelo, COALESCE(t.nombre, 'Sin técnico') AS tecnico, COALESCE(s.nombre_estado, 'Sin estado') AS estado, COALESCE(o.costo_total, 0) AS costo_total FROM `{$orden_table}` o LEFT JOIN `{$equipo_table}` e ON e.id_equipo = o.id_equipo LEFT JOIN `{$cliente_table_dashboard}` c ON c.id_cliente = e.id_cliente LEFT JOIN `{$tecnico_table}` t ON t.id_tecnico = o.id_tecnico LEFT JOIN `{$estado_table}` s ON s.id_estado = o.id_estado_actual ORDER BY COALESCE(o.fecha_actualizacion, o.fecha_creacion, o.fecha_ingreso) DESC, o.id_orden DESC LIMIT 6";
+    foreach (db_rows($conn, $ordenes_sql) as $row) {
+        $status = (string)$row['estado'];
+        $palette = status_palette($status);
+        $tipo = trim((string)$row['tipo']);
+        $equipo_label = trim($tipo . ' ' . (string)$row['marca'] . ' ' . (string)$row['modelo']);
+        $ordenes_recientes[] = ['id' => (string)$row['id_orden'], 'cliente' => (string)$row['cliente'], 'equipo' => $equipo_label !== '' ? $equipo_label : 'Equipo sin detalle', 'icono_eq' => device_icon($tipo), 'tecnico' => (string)$row['tecnico'], 'estado' => $status, 'est_bg' => $palette['bg'], 'est_color'=> $palette['color'], 'est_borde'=> $palette['border'], 'est_dot' => $palette['dot'], 'valor' => '$' . number_format((float)$row['costo_total'], 2)];
+    }
+
+    $device_rows = db_rows($conn, "SELECT COALESCE(NULLIF(TRIM(tipo), ''), 'Sin tipo') AS tipo, COUNT(*) AS total FROM `{$equipo_table}` GROUP BY COALESCE(NULLIF(TRIM(tipo), ''), 'Sin tipo') ORDER BY total DESC LIMIT 5");
+    $device_total = array_sum(array_map(fn($row) => (int)$row['total'], $device_rows));
+    $device_colors = ['#0052CC', '#00AA44', '#FF9500', '#7B4EC4', '#424242'];
+    $device_bgs = ['#E3F2FD', '#E8F5E9', '#FFF3E0', '#F3E5F5', '#F5F5F5'];
+    $dispositivos = [];
+    foreach ($device_rows as $idx => $row) {
+        $color = $device_colors[$idx % count($device_colors)];
+        $dispositivos[] = ['tipo' => (string)$row['tipo'], 'icono' => device_icon((string)$row['tipo']), 'pct' => $device_total > 0 ? (int)round(((int)$row['total'] / $device_total) * 100) : 0, 'color' => $color, 'bg' => $device_bgs[$idx % count($device_bgs)], 'tc' => $color];
+    }
+
+    foreach (db_rows($conn, "SELECT COALESCE(t.nombre, 'Sin técnico') AS tecnico, COUNT(o.id_orden) AS reparaciones, COALESCE(SUM(o.costo_total), 0) AS ingresos FROM `{$orden_table}` o LEFT JOIN `{$tecnico_table}` t ON t.id_tecnico = o.id_tecnico WHERE MONTH(COALESCE(o.fecha_entrega_real, o.fecha_actualizacion, o.fecha_ingreso)) = MONTH(CURDATE()) AND YEAR(COALESCE(o.fecha_entrega_real, o.fecha_actualizacion, o.fecha_ingreso)) = YEAR(CURDATE()) GROUP BY COALESCE(t.nombre, 'Sin técnico') ORDER BY reparaciones DESC LIMIT 6") as $row) {
+        $chart_tecnico_labels[] = (string)$row['tecnico'];
+        $chart_tecnico_reparaciones[] = (int)$row['reparaciones'];
+        $chart_tecnico_ingresos[] = round(((float)$row['ingresos']) / 100, 2);
+    }
+
+    $estado_rows = db_rows($conn, "SELECT COALESCE(s.nombre_estado, 'Sin estado') AS estado, COUNT(o.id_orden) AS total {$estado_join} GROUP BY COALESCE(s.nombre_estado, 'Sin estado') ORDER BY total DESC");
+    $estado_total = array_sum(array_map(fn($row) => (int)$row['total'], $estado_rows));
+    foreach ($estado_rows as $row) {
+        $palette = status_palette((string)$row['estado']);
+        $chart_estado_labels[] = (string)$row['estado'];
+        $chart_estado_values[] = $estado_total > 0 ? (int)round(((int)$row['total'] / $estado_total) * 100) : 0;
+        $chart_estado_colors[] = $palette['color'];
+    }
+}
+
+$fallas_urgentes = array_filter($ordenes_recientes, fn($o) => strtolower($o['estado']) === 'con falla' || str_contains(strtolower($o['estado']), 'falla'));
 $total_fallas    = count($fallas_urgentes);
+
+foreach ($nav_items as &$nav_item) {
+    if (($nav_item['key'] ?? '') === 'garantias' && !empty($nav_item['badge'])) {
+        $nav_item['badge']['valor'] = (int)($kpis[3]['valor'] ?? 0);
+    }
+}
+unset($nav_item);
 
 $fecha_es = null;
 if (class_exists('IntlDateFormatter')) {
@@ -726,8 +877,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
                 <div class="chart-wrap" style="height:180px;">
                     <canvas id="barChart"
                             role="img"
-                            aria-label="Productividad por técnico: Juan 23 reparaciones, María 19, Carlos 21, Ana 20, Pedro 18">
-                        Juan 23 rep / $2,300 · María 19 / $2,100 · Carlos 21 / $2,200 · Ana 20 / $2,000 · Pedro 18 / $2,050
+                            aria-label="Productividad por técnico desde la base de datos">
+                        Productividad por técnico desde la base de datos
                     </canvas>
                 </div>
             </div>
@@ -740,17 +891,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
                 <div class="chart-wrap" style="height:145px;">
                     <canvas id="donutChart"
                             role="img"
-                            aria-label="Distribución de estados de órdenes: Entregado 45%, En reparación 20%, Diagnóstico 15%, Listo 10%, Recibido 7%, Con falla 3%">
-                        Entregado 45%, En reparación 20%, Diagnóstico 15%, Listo 10%, Recibido 7%, Con falla 3%
+                            aria-label="Distribución de estados desde la base de datos">
+                        Distribución de estados desde la base de datos
                     </canvas>
                 </div>
                 <div class="donut-legend">
+                    <?php foreach ($chart_estado_labels as $idx => $label): ?>
+                    <span class="donut-legend-item">
+                        <span class="donut-dot" style="background:<?= h($chart_estado_colors[$idx] ?? '#424242') ?>;"></span>
+                        <?= h((string)$label) ?> <?= (int)($chart_estado_values[$idx] ?? 0) ?>%
+                    </span>
+                    <?php endforeach; ?>
+                    <?php if (empty($chart_estado_labels)): ?>
                     <span class="donut-legend-item"><span class="donut-dot" style="background:#FF9500;"></span>Recibido 7%</span>
                     <span class="donut-legend-item"><span class="donut-dot" style="background:#0052CC;"></span>Diagnóstico 15%</span>
                     <span class="donut-legend-item"><span class="donut-dot" style="background:#00AA44;"></span>Reparación 20%</span>
                     <span class="donut-legend-item"><span class="donut-dot" style="background:#7B4EC4;"></span>Listo 10%</span>
                     <span class="donut-legend-item"><span class="donut-dot" style="background:#424242;"></span>Entregado 45%</span>
                     <span class="donut-legend-item"><span class="donut-dot" style="background:#FF4444;"></span>Con falla 3%</span>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -1035,16 +1194,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 <script>
 (function () {
     'use strict';
+    const tecnicoLabels = <?= json_encode($chart_tecnico_labels ?: ['Sin datos'], JSON_UNESCAPED_UNICODE) ?>;
+    const tecnicoReparaciones = <?= json_encode($chart_tecnico_reparaciones ?: [0], JSON_UNESCAPED_UNICODE) ?>;
+    const tecnicoIngresos = <?= json_encode($chart_tecnico_ingresos ?: [0], JSON_UNESCAPED_UNICODE) ?>;
+    const estadoLabels = <?= json_encode($chart_estado_labels ?: ['Sin datos'], JSON_UNESCAPED_UNICODE) ?>;
+    const estadoValues = <?= json_encode($chart_estado_values ?: [0], JSON_UNESCAPED_UNICODE) ?>;
+    const estadoColors = <?= json_encode($chart_estado_colors ?: ['#D0CCC6'], JSON_UNESCAPED_UNICODE) ?>;
+    const barChart = document.getElementById('barChart');
+    const donutChart = document.getElementById('donutChart');
 
     // ── Bar chart ──────────────────────────────────────
-    new Chart(document.getElementById('barChart'), {
+    if (barChart) new Chart(barChart, {
         type: 'bar',
         data: {
-            labels: ['Juan', 'María', 'Carlos', 'Ana', 'Pedro'],
+            labels: tecnicoLabels,
             datasets: [
                 {
                     label: 'Reparaciones',
-                    data: [23, 19, 21, 20, 18],
+                    data: tecnicoReparaciones,
                     backgroundColor: '#0052CC',
                     borderRadius: 4,
                     barPercentage: 0.55,
@@ -1052,7 +1219,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
                 },
                 {
                     label: 'Ingresos ($100s)',
-                    data: [23, 21, 22, 20, 21],
+                    data: tecnicoIngresos,
                     backgroundColor: '#5BA3FF',
                     borderRadius: 4,
                     barPercentage: 0.55,
@@ -1088,13 +1255,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
     });
 
     // ── Donut chart ────────────────────────────────────
-    new Chart(document.getElementById('donutChart'), {
+    if (donutChart) new Chart(donutChart, {
         type: 'doughnut',
         data: {
-            labels: ['Recibido', 'Diagnóstico', 'En reparación', 'Listo', 'Entregado', 'Con falla'],
+            labels: estadoLabels,
             datasets: [{
-                data: [7, 15, 20, 10, 45, 3],
-                backgroundColor: ['#FF9500', '#0052CC', '#00AA44', '#7B4EC4', '#424242', '#FF4444'],
+                data: estadoValues,
+                backgroundColor: estadoColors,
                 borderWidth: 3,
                 borderColor: '#FFFFFF',
             }],
