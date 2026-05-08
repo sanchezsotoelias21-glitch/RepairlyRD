@@ -601,7 +601,7 @@ if (!$fecha_es) {
 /* ── Reset ── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{font-size:14px}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#F8F7F5;color:#1C1A17;min-height:100vh;display:flex;overflow-x:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#F8F7F5;color:#1C1A17;height:100vh;display:flex;overflow:hidden;}
 
 /* ── Sidebar ── */
 .sidebar{width:190px;min-height:100vh;background:#0A2540;display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto}
@@ -638,8 +638,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
     max-width:1400px;
     margin:auto;
     width:100%;
+    overflow-y:auto;
+    height:100vh;
 }
-.topbar{background:#fff;border-bottom:0.5px solid #D0CCC6;padding:11px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.topbar{background:#fff;border-bottom:0.5px solid #D0CCC6;padding:11px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;flex-shrink:0;}
 .topbar-title{font-size:19px;font-weight:500;color:#1C1A17;line-height:1.2}
 .topbar-sub{font-size:11.5px;color:#6B6560;margin-top:1px}
 .topbar-actions{display:flex;align-items:center;gap:9px}
