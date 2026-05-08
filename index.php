@@ -469,12 +469,12 @@ $ordenes_recientes = [];
 $dispositivos = [];
 
 $dashboard_tables = [
-    'cliente' => pick_table($conn, ['cliente', 'CLIENTE']),
-    'equipo' => pick_table($conn, ['equipo', 'EQUIPO']),
-    'tecnico' => pick_table($conn, ['tecnico', 'TECNICO']),
-    'orden' => pick_table($conn, ['orden_reparacion', 'ORDEN_REPARACION']),
-    'estado' => pick_table($conn, ['estado_servicio', 'ESTADO_SERVICIO']),
-    'garantia' => pick_table($conn, ['garantia', 'GARANTIA']),
+    'cliente' => pick_table($conn, ['Cliente', 'CLIENTE']),
+    'equipo' => pick_table($conn, ['Equipo', 'EQUIPO']),
+    'tecnico' => pick_table($conn, ['Tecnico', 'TECNICO']),
+    'orden' => pick_table($conn, ['Orden_Reparacion', 'ORDEN_REPARACION']),
+    'estado' => pick_table($conn, ['Estado_Servicio', 'ESTADO_SERVICIO']),
+    'garantia' => pick_table($conn, ['Garantia', 'GARANTIA']),
 ];
 
 $has_dashboard_core = table_exists($conn, $dashboard_tables['orden'])
@@ -592,7 +592,7 @@ if (!$fecha_es) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FixMaster ERP — Dashboard</title>
+<title>ReparlyRD — Dashboard</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
 <style>
 /* ── Reset ── */

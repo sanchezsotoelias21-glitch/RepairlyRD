@@ -47,4 +47,3 @@ if (!$connected) {
 
 $conn->set_charset('utf8mb4');
 
-?>
