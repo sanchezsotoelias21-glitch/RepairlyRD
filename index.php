@@ -1,6 +1,49 @@
 <?php
+session_start();
+require_once __DIR__ . '/src/config/database.php';
+
+function h(string $value): string {
+    return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
+if (empty($_SESSION['csrf'])) {
+    $_SESSION['csrf'] = bin2hex(random_bytes(16));
+}
+
+function require_csrf(): void {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        return;
+    }
+    $token = $_POST['csrf'] ?? '';
+    if (!is_string($token) || !hash_equals($_SESSION['csrf'] ?? '', $token)) {
+        http_response_code(400);
+        die('Solicitud inválida (CSRF).');
+    }
+}
+
+function table_exists(mysqli $conn, string $name): bool {
+    $stmt = $conn->prepare('SHOW TABLES LIKE ?');
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('s', $name);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $exists = $res && $res->num_rows > 0;
+    $stmt->close();
+    return $exists;
+}
+
+function pick_table(mysqli $conn, array $candidates): string {
+    foreach ($candidates as $name) {
+        if (table_exists($conn, $name)) {
+            return $name;
+        }
+    }
+    return $candidates[0] ?? '';
+}
 // ============================================================
-//  FixMaster ERP — Dashboard Principal
+//  RepairlyRD — Dashboard Principal
 //  Paleta oficial según guía de identidad visual v1.0
 // ============================================================
 
@@ -111,6 +154,142 @@ $page_meta = [
     'configuracion' => ['label' => 'ConfiguraciÃ³n', 'desc' => 'Ajustes generales del sistema', 'icono' => 'ti-settings'],
 ];
 $page = $page_meta[$current_page] ?? $page_meta['dashboard'];
+
+function table_columns(mysqli $conn, string $table): array {
+    $cols = [];
+    $res = $conn->query("SHOW COLUMNS FROM `{$table}`");
+    if (!$res) {
+        return $cols;
+    }
+    while ($row = $res->fetch_assoc()) {
+        if (!empty($row['Field'])) {
+            $cols[$row['Field']] = true;
+        }
+    }
+    $res->free();
+    return $cols;
+}
+
+$flash = [
+    'type' => $_GET['t'] ?? null,
+    'msg' => $_GET['m'] ?? null,
+];
+if (!is_string($flash['type'])) { $flash['type'] = null; }
+if (!is_string($flash['msg'])) { $flash['msg'] = null; }
+
+// ---------------------------
+// Clientes (CRUD)
+// ---------------------------
+$cliente_table = pick_table($conn, ['cliente', 'CLIENTE']);
+$cliente_cols = $cliente_table ? table_columns($conn, $cliente_table) : [];
+$clientes_action = $_GET['action'] ?? '';
+$clientes_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$clientes_search = isset($_GET['q']) && is_string($_GET['q']) ? trim($_GET['q']) : '';
+
+if ($current_page === 'clientes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+    $post_action = $_POST['clientes_action'] ?? '';
+    if (!is_string($post_action)) {
+        $post_action = '';
+    }
+
+    if (!$cliente_table) {
+        header('Location: ?page=clientes&t=err&m=No+se+encontr%C3%B3+la+tabla+de+clientes');
+        exit;
+    }
+
+    $id_field = isset($cliente_cols['id_cliente']) ? 'id_cliente' : (isset($cliente_cols['ID_CLIENTE']) ? 'ID_CLIENTE' : 'id_cliente');
+    $nombre = isset($_POST['nombre']) && is_string($_POST['nombre']) ? trim($_POST['nombre']) : '';
+    $telefono = isset($_POST['telefono']) && is_string($_POST['telefono']) ? trim($_POST['telefono']) : '';
+    $email = isset($_POST['email']) && is_string($_POST['email']) ? trim($_POST['email']) : '';
+    $direccion = isset($_POST['direccion']) && is_string($_POST['direccion']) ? trim($_POST['direccion']) : '';
+
+    if ($post_action === 'create') {
+        if ($nombre === '') {
+            header('Location: ?page=clientes&action=new&t=err&m=El+nombre+es+obligatorio');
+            exit;
+        }
+
+        $fields = [];
+        $placeholders = [];
+        $types = '';
+        $values = [];
+
+        if (isset($cliente_cols['nombre'])) { $fields[] = 'nombre'; $placeholders[] = '?'; $types .= 's'; $values[] = $nombre; }
+        if (isset($cliente_cols['telefono'])) { $fields[] = 'telefono'; $placeholders[] = '?'; $types .= 's'; $values[] = $telefono; }
+        if (isset($cliente_cols['email'])) { $fields[] = 'email'; $placeholders[] = '?'; $types .= 's'; $values[] = $email; }
+        if (isset($cliente_cols['direccion'])) { $fields[] = 'direccion'; $placeholders[] = '?'; $types .= 's'; $values[] = $direccion; }
+        if (isset($cliente_cols['fecha_registro'])) { $fields[] = 'fecha_registro'; $placeholders[] = 'CURDATE()'; }
+
+        $sql = "INSERT INTO `{$cliente_table}` (" . implode(',', array_map(fn($f) => "`{$f}`", $fields)) . ") VALUES (" . implode(',', $placeholders) . ")";
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            header('Location: ?page=clientes&t=err&m=No+se+pudo+crear+el+cliente');
+            exit;
+        }
+        if ($types !== '') {
+            $stmt->bind_param($types, ...$values);
+        }
+        $ok = $stmt->execute();
+        $stmt->close();
+        header('Location: ?page=clientes&t=' . ($ok ? 'ok' : 'err') . '&m=' . ($ok ? 'Cliente+creado' : 'Error+al+crear'));
+        exit;
+    }
+
+    if ($post_action === 'update') {
+        $id = isset($_POST['id_cliente']) ? (int)$_POST['id_cliente'] : 0;
+        if ($id <= 0) {
+            header('Location: ?page=clientes&t=err&m=ID+inv%C3%A1lido');
+            exit;
+        }
+        if ($nombre === '') {
+            header('Location: ?page=clientes&action=edit&id=' . $id . '&t=err&m=El+nombre+es+obligatorio');
+            exit;
+        }
+
+        $sets = [];
+        $types = '';
+        $values = [];
+
+        if (isset($cliente_cols['nombre'])) { $sets[] = "`nombre`=?"; $types .= 's'; $values[] = $nombre; }
+        if (isset($cliente_cols['telefono'])) { $sets[] = "`telefono`=?"; $types .= 's'; $values[] = $telefono; }
+        if (isset($cliente_cols['email'])) { $sets[] = "`email`=?"; $types .= 's'; $values[] = $email; }
+        if (isset($cliente_cols['direccion'])) { $sets[] = "`direccion`=?"; $types .= 's'; $values[] = $direccion; }
+
+        $sql = "UPDATE `{$cliente_table}` SET " . implode(',', $sets) . " WHERE `{$id_field}`=? LIMIT 1";
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            header('Location: ?page=clientes&t=err&m=No+se+pudo+actualizar');
+            exit;
+        }
+        $types2 = $types . 'i';
+        $values[] = $id;
+        $stmt->bind_param($types2, ...$values);
+        $ok = $stmt->execute();
+        $stmt->close();
+        header('Location: ?page=clientes&t=' . ($ok ? 'ok' : 'err') . '&m=' . ($ok ? 'Cliente+actualizado' : 'Error+al+actualizar'));
+        exit;
+    }
+
+    if ($post_action === 'delete') {
+        $id = isset($_POST['id_cliente']) ? (int)$_POST['id_cliente'] : 0;
+        if ($id <= 0) {
+            header('Location: ?page=clientes&t=err&m=ID+inv%C3%A1lido');
+            exit;
+        }
+        $sql = "DELETE FROM `{$cliente_table}` WHERE `{$id_field}`=? LIMIT 1";
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            header('Location: ?page=clientes&t=err&m=No+se+pudo+eliminar');
+            exit;
+        }
+        $stmt->bind_param('i', $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        header('Location: ?page=clientes&t=' . ($ok ? 'ok' : 'err') . '&m=' . ($ok ? 'Cliente+eliminado' : 'Error+al+eliminar'));
+        exit;
+    }
+}
 
 $nav_items = [
     ['seccion' => true, 'label' => 'Principal'],
@@ -453,7 +632,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
     <header class="topbar">
         <div>
             <div class="topbar-title"><?= htmlspecialchars($page['label']) ?></div>
-            <div class="topbar-sub">Bienvenido al sistema de gestión de reparaciones</div>
+            <div class="topbar-sub"><?= h($page['desc']) ?></div>
         </div>
         <div class="topbar-actions">
             <div class="topbar-search" role="search">
@@ -645,6 +824,191 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
         </div><!-- /bottom-row -->
         <?php else: ?>
 
+        <?php if ($flash['msg']): ?>
+            <div class="alert-falla" role="status" style="background:#fff;border-color:#D0CCC6;">
+                <i class="ti <?= $flash['type'] === 'ok' ? 'ti-circle-check' : 'ti-alert-triangle' ?>" aria-hidden="true" style="color:<?= $flash['type'] === 'ok' ? '#1A7A4A' : '#B83232' ?>;"></i>
+                <span class="alert-falla-txt" style="color:#322F2A;"><?= h($flash['msg']) ?></span>
+                <a href="<?= h('?page=' . $current_page) ?>" class="alert-falla-btn" style="background:#F8F7F5;border-color:#D0CCC6;color:#4D4841;">OK</a>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($current_page === 'clientes'): ?>
+
+            <?php
+            $clientes = [];
+            $clientes_error = null;
+            $cliente_id_field = isset($cliente_cols['id_cliente']) ? 'id_cliente' : (isset($cliente_cols['ID_CLIENTE']) ? 'ID_CLIENTE' : 'id_cliente');
+            $can_fecha_registro = isset($cliente_cols['fecha_registro']);
+
+            if (!$cliente_table) {
+                $clientes_error = 'No se encontró la tabla de clientes en la base de datos.';
+            } else {
+                $sql = "SELECT `{$cliente_id_field}` AS id, `nombre`, `telefono`, `email`, `direccion`" . ($can_fecha_registro ? ", `fecha_registro`" : "") . " FROM `{$cliente_table}`";
+                $types = '';
+                $params = [];
+                if ($clientes_search !== '') {
+                    $sql .= " WHERE `nombre` LIKE ? OR `telefono` LIKE ? OR `email` LIKE ?";
+                    $q = '%' . $clientes_search . '%';
+                    $types = 'sss';
+                    $params = [$q, $q, $q];
+                }
+                $sql .= " ORDER BY `{$cliente_id_field}` DESC LIMIT 200";
+                $stmt = $conn->prepare($sql);
+                if ($stmt) {
+                    if ($types !== '') {
+                        $stmt->bind_param($types, ...$params);
+                    }
+                    $stmt->execute();
+                    $res = $stmt->get_result();
+                    if ($res) {
+                        $clientes = $res->fetch_all(MYSQLI_ASSOC);
+                        $res->free();
+                    }
+                    $stmt->close();
+                } else {
+                    $clientes_error = 'No se pudo leer la lista de clientes.';
+                }
+            }
+
+            $cliente_edit = null;
+            if ($clientes_action === 'edit' && $clientes_id > 0 && $cliente_table) {
+                $stmt = $conn->prepare("SELECT `{$cliente_id_field}` AS id, `nombre`, `telefono`, `email`, `direccion`" . ($can_fecha_registro ? ", `fecha_registro`" : "") . " FROM `{$cliente_table}` WHERE `{$cliente_id_field}`=? LIMIT 1");
+                if ($stmt) {
+                    $stmt->bind_param('i', $clientes_id);
+                    $stmt->execute();
+                    $res = $stmt->get_result();
+                    if ($res) {
+                        $cliente_edit = $res->fetch_assoc() ?: null;
+                        $res->free();
+                    }
+                    $stmt->close();
+                }
+            }
+            ?>
+
+            <div class="charts-row">
+                <div class="charts-card">
+                    <div class="card-header">
+                        <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+                            <div class="kpi-ico" style="width:28px;height:28px;border-radius:8px;background:#F0F6FC;color:#1F5C8B;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                <i class="ti ti-users" aria-hidden="true"></i>
+                            </div>
+                            <div style="min-width:0;">
+                                <div class="card-title">Clientes</div>
+                                <div class="card-sub">Gestión de clientes registrados</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <a class="ordenes-ver-btn" href="?page=clientes&action=new">Nuevo cliente</a>
+                        </div>
+                    </div>
+
+                    <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;">
+                        <form method="get" style="display:flex;gap:8px;align-items:center;flex:1;min-width:240px;">
+                            <input type="hidden" name="page" value="clientes">
+                            <div class="topbar-search" style="flex:1;min-width:220px;">
+                                <i class="ti ti-search" aria-hidden="true"></i>
+                                <input name="q" value="<?= h($clientes_search) ?>" placeholder="Buscar por nombre, teléfono o email" style="border:0;background:transparent;outline:none;font:inherit;color:#4D4841;width:100%;">
+                            </div>
+                            <button class="ordenes-ver-btn" type="submit">Buscar</button>
+                            <?php if ($clientes_search !== ''): ?>
+                                <a class="ordenes-ver-btn" href="?page=clientes">Limpiar</a>
+                            <?php endif; ?>
+                        </form>
+                    </div>
+
+                    <?php if ($clientes_error): ?>
+                        <div style="margin-top:12px;color:#B83232;font-size:12px;"><?= h($clientes_error) ?></div>
+                    <?php endif; ?>
+
+                    <?php if ($clientes_action === 'new' || $clientes_action === 'edit'): ?>
+                        <div style="margin-top:14px;border-top:0.5px solid #EDECEA;padding-top:14px;display:grid;grid-template-columns:1fr;gap:10px;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                                <div style="font-size:12.5px;font-weight:600;color:#1C1A17;">
+                                    <?= $clientes_action === 'edit' ? 'Editar cliente' : 'Nuevo cliente' ?>
+                                </div>
+                                <a class="ordenes-ver-btn" href="?page=clientes">Cerrar</a>
+                            </div>
+
+                            <form method="post" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                                <input type="hidden" name="csrf" value="<?= h($_SESSION['csrf']) ?>">
+                                <input type="hidden" name="clientes_action" value="<?= $clientes_action === 'edit' ? 'update' : 'create' ?>">
+                                <?php if ($clientes_action === 'edit'): ?>
+                                    <input type="hidden" name="id_cliente" value="<?= (int)($cliente_edit['id'] ?? 0) ?>">
+                                <?php endif; ?>
+
+                                <div style="grid-column:span 2;">
+                                    <label style="display:block;font-size:10px;color:#6B6560;margin-bottom:4px;">Nombre *</label>
+                                    <input name="nombre" required value="<?= h((string)($cliente_edit['nombre'] ?? '')) ?>" style="width:100%;padding:10px 11px;border-radius:8px;border:0.5px solid #D0CCC6;background:#fff;outline:none;">
+                                </div>
+
+                                <div>
+                                    <label style="display:block;font-size:10px;color:#6B6560;margin-bottom:4px;">Teléfono</label>
+                                    <input name="telefono" value="<?= h((string)($cliente_edit['telefono'] ?? '')) ?>" style="width:100%;padding:10px 11px;border-radius:8px;border:0.5px solid #D0CCC6;background:#fff;outline:none;">
+                                </div>
+                                <div>
+                                    <label style="display:block;font-size:10px;color:#6B6560;margin-bottom:4px;">Email</label>
+                                    <input name="email" type="email" value="<?= h((string)($cliente_edit['email'] ?? '')) ?>" style="width:100%;padding:10px 11px;border-radius:8px;border:0.5px solid #D0CCC6;background:#fff;outline:none;">
+                                </div>
+
+                                <div style="grid-column:span 2;">
+                                    <label style="display:block;font-size:10px;color:#6B6560;margin-bottom:4px;">Dirección</label>
+                                    <input name="direccion" value="<?= h((string)($cliente_edit['direccion'] ?? '')) ?>" style="width:100%;padding:10px 11px;border-radius:8px;border:0.5px solid #D0CCC6;background:#fff;outline:none;">
+                                </div>
+
+                                <div style="grid-column:span 2;display:flex;gap:8px;justify-content:flex-end;">
+                                    <button class="ordenes-ver-btn" type="submit" style="background:#1F5C8B;border-color:#1F5C8B;color:#fff;">Guardar</button>
+                                </div>
+                            </form>
+                        </div>
+                    <?php endif; ?>
+
+                    <div style="margin-top:14px;border-top:0.5px solid #EDECEA;padding-top:12px;">
+                        <div class="table-head" style="grid-template-columns:50px 1.2fr 0.9fr 1.2fr 1.3fr 120px;">
+                            <div>ID</div>
+                            <div>Nombre</div>
+                            <div>Teléfono</div>
+                            <div>Email</div>
+                            <div>Dirección</div>
+                            <div style="text-align:right;">Acciones</div>
+                        </div>
+                        <?php if (empty($clientes)): ?>
+                            <div style="padding:14px 10px;color:#6B6560;font-size:12px;">No hay clientes registrados.</div>
+                        <?php else: ?>
+                            <?php foreach ($clientes as $c): ?>
+                            <div class="table-row" style="grid-template-columns:50px 1.2fr 0.9fr 1.2fr 1.3fr 120px;">
+                                <div class="order-id"><?= (int)$c['id'] ?></div>
+                                <div style="min-width:0;">
+                                    <div class="order-cliente" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?= h((string)($c['nombre'] ?? '')) ?></div>
+                                    <?php if ($can_fecha_registro && !empty($c['fecha_registro'])): ?>
+                                        <div class="order-equipo" style="gap:6px;">
+                                            <i class="ti ti-calendar" aria-hidden="true"></i>
+                                            Registrado: <?= h((string)$c['fecha_registro']) ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="order-tecnico"><?= h((string)($c['telefono'] ?? '')) ?></div>
+                                <div class="order-tecnico" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?= h((string)($c['email'] ?? '')) ?></div>
+                                <div class="order-tecnico" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?= h((string)($c['direccion'] ?? '')) ?></div>
+                                <div style="display:flex;gap:6px;justify-content:flex-end;align-items:center;">
+                                    <a class="ordenes-ver-btn" href="<?= h('?page=clientes&action=edit&id=' . (int)$c['id']) ?>">Editar</a>
+                                    <form method="post" onsubmit="return confirm('¿Eliminar este cliente?');" style="display:inline;">
+                                        <input type="hidden" name="csrf" value="<?= h($_SESSION['csrf']) ?>">
+                                        <input type="hidden" name="clientes_action" value="delete">
+                                        <input type="hidden" name="id_cliente" value="<?= (int)$c['id'] ?>">
+                                        <button class="ordenes-ver-btn" type="submit" style="background:#FDF0F0;border-color:#F5C2C2;color:#B83232;">Eliminar</button>
+                                    </form>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+
+                </div>
+            </div>
+
+        <?php else: ?>
+
         <div class="charts-row">
             <div class="charts-card">
                 <div class="card-header" style="margin-bottom:2px;">
@@ -658,6 +1022,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
             </div>
         </div>
 
+        <?php endif; ?>
         <?php endif; ?>
     </div><!-- /content -->
 </main><!-- /main -->
