@@ -1,11 +1,11 @@
 ﻿<?php
 ob_start();
 
+require_once __DIR__ . '/src/config/database.php';
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-
-require_once __DIR__ . '/src/config/database.php';
 
 function h(string $value): string {
     return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
