@@ -1,5 +1,13 @@
 ﻿<?php
-session_start();
+ob_start();
+
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
+if (session_status() === PHP_SESSION_NONE) {
+    @session_start();
+}
+
 require_once __DIR__ . '/src/config/database.php';
 
 function h(string $value): string {
@@ -234,7 +242,7 @@ if (!is_string($flash['msg'])) { $flash['msg'] = null; }
 // ---------------------------
 // Clientes (CRUD)
 // ---------------------------
-$cliente_table = pick_table($conn, ['cliente', 'CLIENTE']);
+$cliente_table = 'Cliente';
 $cliente_cols = $cliente_table ? table_columns($conn, $cliente_table) : [];
 $clientes_action = $_GET['action'] ?? '';
 $clientes_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -464,12 +472,12 @@ $ordenes_recientes = [];
 $dispositivos = [];
 
 $dashboard_tables = [
-    'cliente' => pick_table($conn, ['cliente', 'CLIENTE']),
-    'equipo' => pick_table($conn, ['equipo', 'EQUIPO']),
-    'tecnico' => pick_table($conn, ['tecnico', 'TECNICO']),
-    'orden' => pick_table($conn, ['orden_reparacion', 'ORDEN_REPARACION']),
-    'estado' => pick_table($conn, ['estado_servicio', 'ESTADO_SERVICIO']),
-    'garantia' => pick_table($conn, ['garantia', 'GARANTIA']),
+    'cliente' => pick_table($conn, ['Cliente', 'CLIENTE']),
+    'equipo' => pick_table($conn, ['Equipo', 'EQUIPO']),
+    'tecnico' => pick_table($conn, ['Tecnico', 'TECNICO']),
+    'orden' => pick_table($conn, ['Orden_Reparacion', 'ORDEN_REPARACION']),
+    'estado' => pick_table($conn, ['Estado_Servicio', 'ESTADO_SERVICIO']),
+    'garantia' => pick_table($conn, ['Garantia', 'GARANTIA']),
 ];
 
 $has_dashboard_core = table_exists($conn, $dashboard_tables['orden'])
@@ -587,7 +595,7 @@ if (!$fecha_es) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FixMaster ERP — Dashboard</title>
+<title>ReparlyRD — Dashboard</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
 <style>
 /* ── Reset ── */
@@ -622,7 +630,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 .user-logout:hover{color:rgba(255,255,255,0.7)}
 
 /* ── Main ── */
-.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.main{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+    max-width:1400px;
+    margin:auto;
+    width:100%;
+}
 .topbar{background:#fff;border-bottom:0.5px solid #D0CCC6;padding:11px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
 .topbar-title{font-size:19px;font-weight:500;color:#1C1A17;line-height:1.2}
 .topbar-sub{font-size:11.5px;color:#6B6560;margin-top:1px}
@@ -966,9 +982,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
                     <div style="text-align:right;">Valor</div>
                 </div>
                 <div role="list" aria-label="Órdenes recientes">
-                <?php if (empty($ordenes_recientes)): ?>
-                <div style="padding:14px 15px;color:#6B6560;font-size:12px;">No hay órdenes registradas en la base de datos.</div>
-                <?php endif; ?>
                 <?php foreach ($ordenes_recientes as $orden): ?>
                 <div class="table-row" role="listitem">
                     <div class="order-id"><?= htmlspecialchars($orden['id']) ?></div>
