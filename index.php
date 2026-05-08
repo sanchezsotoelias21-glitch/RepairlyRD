@@ -1,5 +1,4 @@
 ﻿<?php
-header('Content-Type: text/html; charset=utf-8');
 session_start();
 require_once __DIR__ . '/src/config/database.php';
 
@@ -465,12 +464,12 @@ $ordenes_recientes = [];
 $dispositivos = [];
 
 $dashboard_tables = [
-    'cliente' => pick_table($conn, ['cliente', 'CLIENTE', 'Cliente']),
-    'equipo' => pick_table($conn, ['equipo', 'EQUIPO', 'Equipo']),
-    'tecnico' => pick_table($conn, ['tecnico', 'TECNICO', 'Tecnico']),
-    'orden' => pick_table($conn, ['orden_reparacion', 'ORDEN_REPARACION', 'Order_Reparacion', 'ORDER_REPARACION']),
-    'estado' => pick_table($conn, ['estado_servicio', 'ESTADO_SERVICIO', 'Estado_Servicio', 'STATE_SERVICE']),
-    'garantia' => pick_table($conn, ['garantia', 'GARANTIA', 'Garantia']),
+    'cliente' => pick_table($conn, ['cliente', 'CLIENTE']),
+    'equipo' => pick_table($conn, ['equipo', 'EQUIPO']),
+    'tecnico' => pick_table($conn, ['tecnico', 'TECNICO']),
+    'orden' => pick_table($conn, ['orden_reparacion', 'ORDEN_REPARACION']),
+    'estado' => pick_table($conn, ['estado_servicio', 'ESTADO_SERVICIO']),
+    'garantia' => pick_table($conn, ['garantia', 'GARANTIA']),
 ];
 
 $has_dashboard_core = table_exists($conn, $dashboard_tables['orden'])
@@ -967,9 +966,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
                     <div style="text-align:right;">Valor</div>
                 </div>
                 <div role="list" aria-label="Órdenes recientes">
-                <?php if (empty($ordenes_recientes)): ?>
-                <div style="padding:14px 15px;color:#6B6560;font-size:12px;">No hay órdenes registradas en la base de datos.</div>
-                <?php endif; ?>
                 <?php foreach ($ordenes_recientes as $orden): ?>
                 <div class="table-row" role="listitem">
                     <div class="order-id"><?= htmlspecialchars($orden['id']) ?></div>
