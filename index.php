@@ -77,17 +77,28 @@ $kpis = [
 
 $nav_items = [
     ['seccion' => true, 'label' => 'Principal'],
-    ['label' => 'Dashboard',    'icono' => 'ti-layout-dashboard', 'activo' => true,  'badge' => null],
-    ['label' => 'Clientes',     'icono' => 'ti-users',            'activo' => false, 'badge' => null],
-    ['label' => 'Equipos',      'icono' => 'ti-device-laptop',    'activo' => false, 'badge' => null],
-    ['label' => 'Técnicos',     'icono' => 'ti-user-check',       'activo' => false, 'badge' => null],
+    ['label' => 'Dashboard', 'desc' => 'Mostrar resumen general del sistema', 'icono' => 'ti-layout-dashboard', 'activo' => true, 'badge' => null],
+
+    ['seccion' => true, 'label' => 'Gestión'],
+    ['label' => 'Clientes', 'desc' => 'Gestión de clientes registrados', 'icono' => 'ti-users', 'activo' => false, 'badge' => null],
+    ['label' => 'Equipos', 'desc' => 'Registro y administración de equipos', 'icono' => 'ti-device-laptop', 'activo' => false, 'badge' => null],
+    ['label' => 'Técnicos', 'desc' => 'Administración de técnicos', 'icono' => 'ti-user-check', 'activo' => false, 'badge' => null],
+    ['label' => 'Usuarios', 'desc' => 'Gestión de accesos y roles', 'icono' => 'ti-user-shield', 'activo' => false, 'badge' => null],
+
     ['seccion' => true, 'label' => 'Operaciones'],
-    ['label' => 'Órdenes',      'icono' => 'ti-clipboard-list',   'activo' => false, 'badge' => ['valor'=>8,  'bg'=>'#FF9500','color'=>'#fff']],
-    ['label' => 'Garantías',    'icono' => 'ti-shield-check',     'activo' => false, 'badge' => ['valor'=>11, 'bg'=>'#7B4EC4','color'=>'#fff']],
-    ['label' => 'Reportes',     'icono' => 'ti-chart-bar',        'activo' => false, 'badge' => null],
+    ['label' => 'Órdenes de reparación', 'desc' => 'Crear y gestionar órdenes', 'icono' => 'ti-clipboard-list', 'activo' => false, 'badge' => null],
+    ['label' => 'Diagnósticos', 'desc' => 'Registrar diagnósticos técnicos', 'icono' => 'ti-stethoscope', 'activo' => false, 'badge' => null],
+    ['label' => 'Inventario / Piezas', 'desc' => 'Gestión de piezas y stock', 'icono' => 'ti-package', 'activo' => false, 'badge' => null],
+    ['label' => 'Garantías', 'desc' => 'Ver y controlar garantías activas', 'icono' => 'ti-shield-check', 'activo' => false, 'badge' => null],
+
+    ['seccion' => true, 'label' => 'Comunicación'],
+    ['label' => 'Notificaciones', 'desc' => 'Historial de WhatsApp y correos enviados', 'icono' => 'ti-bell', 'activo' => false, 'badge' => null],
+
+    ['seccion' => true, 'label' => 'Analítica'],
+    ['label' => 'Reportes', 'desc' => 'Ingresos, productividad y estadísticas', 'icono' => 'ti-chart-bar', 'activo' => false, 'badge' => null],
+
     ['seccion' => true, 'label' => 'Sistema'],
-    ['label' => 'Configuración','icono' => 'ti-settings',         'activo' => false, 'badge' => null],
-    ['label' => 'WhatsApp',     'icono' => 'ti-brand-whatsapp',   'activo' => false, 'badge' => ['dot' => true, 'bg'=>'#25D366']],
+    ['label' => 'Configuración', 'desc' => 'Ajustes generales del sistema', 'icono' => 'ti-settings', 'activo' => false, 'badge' => null],
 ];
 
 $ordenes_recientes = [
@@ -352,8 +363,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
             <i class="ti ti-tool"></i>
         </div>
         <div>
-            <div class="sidebar-logo-text">FixMaster</div>
-            <div class="sidebar-logo-ver">ERP v2.4</div>
+            <div class="sidebar-logo-text">RepairlyRD</div>
+            <div class="sidebar-logo-ver">ERP</div>
         </div>
     </div>
 
@@ -365,7 +376,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
                 <a href="#"
                    class="nav-item<?= !empty($item['activo']) ? ' active' : '' ?>"
                    <?= !empty($item['activo']) ? 'aria-current="page"' : '' ?>
-                   title="<?= htmlspecialchars($item['label']) ?>">
+                   title="<?= htmlspecialchars($item['label'] . (!empty($item['desc']) ? ' — ' . $item['desc'] : '')) ?>">
                     <i class="ti <?= htmlspecialchars($item['icono']) ?>" aria-hidden="true"></i>
                     <span><?= htmlspecialchars($item['label']) ?></span>
                     <?php if (!empty($item['badge'])): ?>
