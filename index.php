@@ -1,4 +1,5 @@
 ﻿<?php
+ob_start();
 session_start();
 require_once __DIR__ . '/src/config/database.php';
 
@@ -234,7 +235,7 @@ if (!is_string($flash['msg'])) { $flash['msg'] = null; }
 // ---------------------------
 // Clientes (CRUD)
 // ---------------------------
-$cliente_table = pick_table($conn, ['cliente', 'CLIENTE']);
+$cliente_table = 'cliente', 'CLIENTE);
 $cliente_cols = $cliente_table ? table_columns($conn, $cliente_table) : [];
 $clientes_action = $_GET['action'] ?? '';
 $clientes_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -349,7 +350,7 @@ $nav_items = [
     ['seccion' => true, 'label' => 'Principal'],
     ['key' => 'dashboard', 'label' => $page_meta['dashboard']['label'], 'desc' => $page_meta['dashboard']['desc'], 'href' => '?page=dashboard', 'icono' => $page_meta['dashboard']['icono'], 'activo' => $current_page === 'dashboard', 'badge' => null],
 
-    ['seccion' => true, 'label' => 'Gestión'],
+    ['seccion' => true, 'label' => 'GestiÃ³n'],
     ['key' => 'clientes', 'label' => $page_meta['clientes']['label'], 'desc' => $page_meta['clientes']['desc'], 'href' => '?page=clientes', 'icono' => $page_meta['clientes']['icono'], 'activo' => $current_page === 'clientes', 'badge' => null],
     ['key' => 'equipos', 'label' => $page_meta['equipos']['label'], 'desc' => $page_meta['equipos']['desc'], 'href' => '?page=equipos', 'icono' => $page_meta['equipos']['icono'], 'activo' => $current_page === 'equipos', 'badge' => null],
     ['key' => 'tecnicos', 'label' => $page_meta['tecnicos']['label'], 'desc' => $page_meta['tecnicos']['desc'], 'href' => '?page=tecnicos', 'icono' => $page_meta['tecnicos']['icono'], 'activo' => $current_page === 'tecnicos', 'badge' => null],
@@ -361,11 +362,11 @@ $nav_items = [
     ['key' => 'inventario', 'label' => $page_meta['inventario']['label'], 'desc' => $page_meta['inventario']['desc'], 'href' => '?page=inventario', 'icono' => $page_meta['inventario']['icono'], 'activo' => $current_page === 'inventario', 'badge' => null],
     ['key' => 'garantias', 'label' => $page_meta['garantias']['label'], 'desc' => $page_meta['garantias']['desc'], 'href' => '?page=garantias', 'icono' => $page_meta['garantias']['icono'], 'activo' => $current_page === 'garantias', 'badge' => ['valor'=>0, 'bg'=>'#7B4EC4','color'=>'#fff']],
 
-    ['seccion' => true, 'label' => 'Comunicación'],
+    ['seccion' => true, 'label' => 'ComunicaciÃ³n'],
     ['key' => 'notificaciones', 'label' => $page_meta['notificaciones']['label'], 'desc' => $page_meta['notificaciones']['desc'], 'href' => '?page=notificaciones', 'icono' => $page_meta['notificaciones']['icono'], 'activo' => $current_page === 'notificaciones', 'badge' => null],
     ['key' => 'whatsapp', 'label' => $page_meta['whatsapp']['label'], 'desc' => $page_meta['whatsapp']['desc'], 'href' => '?page=whatsapp', 'icono' => $page_meta['whatsapp']['icono'], 'activo' => $current_page === 'whatsapp', 'badge' => ['dot' => true, 'bg'=>'#25D366']],
 
-    ['seccion' => true, 'label' => 'Analítica'],
+    ['seccion' => true, 'label' => 'AnalÃ­tica'],
     ['key' => 'reportes', 'label' => $page_meta['reportes']['label'], 'desc' => $page_meta['reportes']['desc'], 'href' => '?page=reportes', 'icono' => $page_meta['reportes']['icono'], 'activo' => $current_page === 'reportes', 'badge' => null],
 
     ['seccion' => true, 'label' => 'Sistema'],
@@ -464,12 +465,12 @@ $ordenes_recientes = [];
 $dispositivos = [];
 
 $dashboard_tables = [
-    'cliente' => pick_table($conn, ['cliente', 'CLIENTE', 'Cliente']),
-    'equipo' => pick_table($conn, ['equipo', 'EQUIPO', 'Equipo']),
-    'tecnico' => pick_table($conn, ['tecnico', 'TECNICO', 'Tecnico']),
-    'orden' => pick_table($conn, ['orden_reparacion', 'ORDEN_REPARACION', 'Order_Reparacion', 'ORDER_REPARACION']),
-    'estado' => pick_table($conn, ['estado_servicio', 'ESTADO_SERVICIO', 'Estado_Servicio', 'STATE_SERVICE']),
-    'garantia' => pick_table($conn, ['garantia', 'GARANTIA', 'Garantia']),
+    'cliente' => pick_table($conn, ['cliente', 'CLIENTE']),
+    'equipo' => pick_table($conn, ['equipo', 'EQUIPO']),
+    'tecnico' => pick_table($conn, ['tecnico', 'TECNICO']),
+    'orden' => pick_table($conn, ['orden_reparacion', 'ORDEN_REPARACION']),
+    'estado' => pick_table($conn, ['estado_servicio', 'ESTADO_SERVICIO']),
+    'garantia' => pick_table($conn, ['garantia', 'GARANTIA']),
 ];
 
 $has_dashboard_core = table_exists($conn, $dashboard_tables['orden'])
@@ -1182,11 +1183,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
             <div class="charts-card">
                 <div class="card-header" style="margin-bottom:2px;">
                     <span class="card-title"><?= htmlspecialchars($page['label']) ?></span>
-                    <span class="card-pill">Módulo</span>
+                    <span class="card-pill">MÃ³dulo</span>
                 </div>
                 <div class="card-sub"><?= htmlspecialchars($page['desc']) ?></div>
                 <div style="margin-top:12px;font-size:11.5px;color:#6B6560;line-height:1.55;">
-                    Esta pantalla está lista para conectarse a la base de datos y agregar formularios (crear, editar, listar).
+                    Esta pantalla estÃ¡ lista para conectarse a la base de datos y agregar formularios (crear, editar, listar).
                 </div>
             </div>
         </div>
