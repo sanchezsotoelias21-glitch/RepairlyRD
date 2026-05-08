@@ -472,12 +472,41 @@ $ordenes_recientes = [];
 $dispositivos = [];
 
 $dashboard_tables = [
-    'cliente' => pick_table($conn, ['Cliente', 'CLIENTE']),
-    'equipo' => pick_table($conn, ['Equipo', 'EQUIPO']),
-    'tecnico' => pick_table($conn, ['Tecnico', 'TECNICO']),
-    'orden' => pick_table($conn, ['Orden_Reparacion', 'ORDEN_REPARACION']),
-    'estado' => pick_table($conn, ['Estado_Servicio', 'ESTADO_SERVICIO']),
-    'garantia' => pick_table($conn, ['Garantia', 'GARANTIA']),
+    'cliente' => pick_table($conn, [
+        'cliente',
+        'Cliente',
+        'CLIENTE'
+    ]),
+
+    'equipo' => pick_table($conn, [
+        'equipo',
+        'Equipo',
+        'EQUIPO'
+    ]),
+
+    'tecnico' => pick_table($conn, [
+        'tecnico',
+        'Tecnico',
+        'TECNICO'
+    ]),
+
+    'orden' => pick_table($conn, [
+        'orden_reparacion',
+        'Orden_Reparacion',
+        'ORDEN_REPARACION'
+    ]),
+
+    'estado' => pick_table($conn, [
+        'estado_servicio',
+        'Estado_Servicio',
+        'ESTADO_SERVICIO'
+    ]),
+
+    'garantia' => pick_table($conn, [
+        'garantia',
+        'Garantia',
+        'GARANTIA'
+    ]),
 ];
 
 $has_dashboard_core = table_exists($conn, $dashboard_tables['orden'])
