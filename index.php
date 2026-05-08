@@ -75,31 +75,68 @@ $kpis = [
     ],
 ];
 
+$current_page = $_GET['page'] ?? 'dashboard';
+$allowed_pages = [
+    'dashboard',
+    'clientes',
+    'equipos',
+    'ordenes',
+    'diagnosticos',
+    'inventario',
+    'tecnicos',
+    'garantias',
+    'notificaciones',
+    'whatsapp',
+    'reportes',
+    'usuarios',
+    'configuracion',
+];
+if (!in_array($current_page, $allowed_pages, true)) {
+    $current_page = 'dashboard';
+}
+
+$page_meta = [
+    'dashboard' => ['label' => 'Dashboard', 'desc' => 'Mostrar resumen general del sistema', 'icono' => 'ti-layout-dashboard'],
+    'clientes' => ['label' => 'Clientes', 'desc' => 'GestiÃ³n de clientes registrados', 'icono' => 'ti-users'],
+    'equipos' => ['label' => 'Equipos', 'desc' => 'Registro y administraciÃ³n de equipos', 'icono' => 'ti-device-laptop'],
+    'ordenes' => ['label' => 'Ã“rdenes de reparaciÃ³n', 'desc' => 'Crear y gestionar Ã³rdenes', 'icono' => 'ti-clipboard-list'],
+    'diagnosticos' => ['label' => 'DiagnÃ³sticos', 'desc' => 'Registrar diagnÃ³sticos tÃ©cnicos', 'icono' => 'ti-stethoscope'],
+    'inventario' => ['label' => 'Inventario / Piezas', 'desc' => 'GestiÃ³n de piezas y stock', 'icono' => 'ti-package'],
+    'tecnicos' => ['label' => 'TÃ©cnicos', 'desc' => 'AdministraciÃ³n de tÃ©cnicos', 'icono' => 'ti-user-check'],
+    'garantias' => ['label' => 'GarantÃ­as', 'desc' => 'Ver y controlar garantÃ­as activas', 'icono' => 'ti-shield-check'],
+    'notificaciones' => ['label' => 'Notificaciones', 'desc' => 'Historial de WhatsApp y correos enviados', 'icono' => 'ti-bell'],
+    'whatsapp' => ['label' => 'WhatsApp', 'desc' => 'Historial de WhatsApp y correos enviados', 'icono' => 'ti-brand-whatsapp'],
+    'reportes' => ['label' => 'Reportes', 'desc' => 'Ingresos, productividad y estadÃ­sticas', 'icono' => 'ti-chart-bar'],
+    'usuarios' => ['label' => 'Usuarios', 'desc' => 'GestiÃ³n de accesos y roles', 'icono' => 'ti-user-shield'],
+    'configuracion' => ['label' => 'ConfiguraciÃ³n', 'desc' => 'Ajustes generales del sistema', 'icono' => 'ti-settings'],
+];
+$page = $page_meta[$current_page] ?? $page_meta['dashboard'];
+
 $nav_items = [
     ['seccion' => true, 'label' => 'Principal'],
-    ['label' => 'Dashboard', 'desc' => 'Mostrar resumen general del sistema', 'icono' => 'ti-layout-dashboard', 'activo' => true, 'badge' => null],
+    ['key' => 'dashboard', 'label' => $page_meta['dashboard']['label'], 'desc' => $page_meta['dashboard']['desc'], 'href' => '?page=dashboard', 'icono' => $page_meta['dashboard']['icono'], 'activo' => $current_page === 'dashboard', 'badge' => null],
 
-    ['seccion' => true, 'label' => 'Gestión'],
-    ['label' => 'Clientes', 'desc' => 'Gestión de clientes registrados', 'icono' => 'ti-users', 'activo' => false, 'badge' => null],
-    ['label' => 'Equipos', 'desc' => 'Registro y administración de equipos', 'icono' => 'ti-device-laptop', 'activo' => false, 'badge' => null],
-    ['label' => 'Técnicos', 'desc' => 'Administración de técnicos', 'icono' => 'ti-user-check', 'activo' => false, 'badge' => null],
-    ['label' => 'Usuarios', 'desc' => 'Gestión de accesos y roles', 'icono' => 'ti-user-shield', 'activo' => false, 'badge' => null],
+    ['seccion' => true, 'label' => 'GestiÃ³n'],
+    ['key' => 'clientes', 'label' => $page_meta['clientes']['label'], 'desc' => $page_meta['clientes']['desc'], 'href' => '?page=clientes', 'icono' => $page_meta['clientes']['icono'], 'activo' => $current_page === 'clientes', 'badge' => null],
+    ['key' => 'equipos', 'label' => $page_meta['equipos']['label'], 'desc' => $page_meta['equipos']['desc'], 'href' => '?page=equipos', 'icono' => $page_meta['equipos']['icono'], 'activo' => $current_page === 'equipos', 'badge' => null],
+    ['key' => 'tecnicos', 'label' => $page_meta['tecnicos']['label'], 'desc' => $page_meta['tecnicos']['desc'], 'href' => '?page=tecnicos', 'icono' => $page_meta['tecnicos']['icono'], 'activo' => $current_page === 'tecnicos', 'badge' => null],
+    ['key' => 'usuarios', 'label' => $page_meta['usuarios']['label'], 'desc' => $page_meta['usuarios']['desc'], 'href' => '?page=usuarios', 'icono' => $page_meta['usuarios']['icono'], 'activo' => $current_page === 'usuarios', 'badge' => null],
 
     ['seccion' => true, 'label' => 'Operaciones'],
-    ['label' => 'Órdenes de reparación', 'desc' => 'Crear y gestionar órdenes', 'icono' => 'ti-clipboard-list', 'activo' => false, 'badge' => null],
-    ['label' => 'Diagnósticos', 'desc' => 'Registrar diagnósticos técnicos', 'icono' => 'ti-stethoscope', 'activo' => false, 'badge' => null],
-    ['label' => 'Inventario / Piezas', 'desc' => 'Gestión de piezas y stock', 'icono' => 'ti-package', 'activo' => false, 'badge' => null],
-    ['label' => 'Garantías', 'desc' => 'Ver y controlar garantías activas', 'icono' => 'ti-shield-check', 'activo' => false, 'badge' => ['valor'=>11, 'bg'=>'#7B4EC4','color'=>'#fff']],
+    ['key' => 'ordenes', 'label' => $page_meta['ordenes']['label'], 'desc' => $page_meta['ordenes']['desc'], 'href' => '?page=ordenes', 'icono' => $page_meta['ordenes']['icono'], 'activo' => $current_page === 'ordenes', 'badge' => null],
+    ['key' => 'diagnosticos', 'label' => $page_meta['diagnosticos']['label'], 'desc' => $page_meta['diagnosticos']['desc'], 'href' => '?page=diagnosticos', 'icono' => $page_meta['diagnosticos']['icono'], 'activo' => $current_page === 'diagnosticos', 'badge' => null],
+    ['key' => 'inventario', 'label' => $page_meta['inventario']['label'], 'desc' => $page_meta['inventario']['desc'], 'href' => '?page=inventario', 'icono' => $page_meta['inventario']['icono'], 'activo' => $current_page === 'inventario', 'badge' => null],
+    ['key' => 'garantias', 'label' => $page_meta['garantias']['label'], 'desc' => $page_meta['garantias']['desc'], 'href' => '?page=garantias', 'icono' => $page_meta['garantias']['icono'], 'activo' => $current_page === 'garantias', 'badge' => ['valor'=>11, 'bg'=>'#7B4EC4','color'=>'#fff']],
 
-    ['seccion' => true, 'label' => 'Comunicación'],
-    ['label' => 'Notificaciones', 'desc' => 'Historial de WhatsApp y correos enviados', 'icono' => 'ti-bell', 'activo' => false, 'badge' => null],
-    ['label' => 'WhatsApp', 'desc' => 'Historial de WhatsApp y correos enviados', 'icono' => 'ti-brand-whatsapp', 'activo' => false, 'badge' => ['dot' => true, 'bg'=>'#25D366']],
+    ['seccion' => true, 'label' => 'ComunicaciÃ³n'],
+    ['key' => 'notificaciones', 'label' => $page_meta['notificaciones']['label'], 'desc' => $page_meta['notificaciones']['desc'], 'href' => '?page=notificaciones', 'icono' => $page_meta['notificaciones']['icono'], 'activo' => $current_page === 'notificaciones', 'badge' => null],
+    ['key' => 'whatsapp', 'label' => $page_meta['whatsapp']['label'], 'desc' => $page_meta['whatsapp']['desc'], 'href' => '?page=whatsapp', 'icono' => $page_meta['whatsapp']['icono'], 'activo' => $current_page === 'whatsapp', 'badge' => ['dot' => true, 'bg'=>'#25D366']],
 
-    ['seccion' => true, 'label' => 'Analítica'],
-    ['label' => 'Reportes', 'desc' => 'Ingresos, productividad y estadísticas', 'icono' => 'ti-chart-bar', 'activo' => false, 'badge' => null],
+    ['seccion' => true, 'label' => 'AnalÃ­tica'],
+    ['key' => 'reportes', 'label' => $page_meta['reportes']['label'], 'desc' => $page_meta['reportes']['desc'], 'href' => '?page=reportes', 'icono' => $page_meta['reportes']['icono'], 'activo' => $current_page === 'reportes', 'badge' => null],
 
     ['seccion' => true, 'label' => 'Sistema'],
-    ['label' => 'Configuración', 'desc' => 'Ajustes generales del sistema', 'icono' => 'ti-settings', 'activo' => false, 'badge' => null],
+    ['key' => 'configuracion', 'label' => $page_meta['configuracion']['label'], 'desc' => $page_meta['configuracion']['desc'], 'href' => '?page=configuracion', 'icono' => $page_meta['configuracion']['icono'], 'activo' => $current_page === 'configuracion', 'badge' => null],
 ];
 
 $ordenes_recientes = [
@@ -374,7 +411,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
             <?php if (!empty($item['seccion'])): ?>
                 <div class="nav-section"><?= htmlspecialchars($item['label']) ?></div>
             <?php else: ?>
-                <a href="#"
+                <a href="<?= htmlspecialchars($item['href'] ?? '#') ?>"
                    class="nav-item<?= !empty($item['activo']) ? ' active' : '' ?>"
                    <?= !empty($item['activo']) ? 'aria-current="page"' : '' ?>
                    title="<?= htmlspecialchars($item['label'] . (!empty($item['desc']) ? ' — ' . $item['desc'] : '')) ?>">
@@ -415,7 +452,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
     <!-- ── Top bar ── -->
     <header class="topbar">
         <div>
-            <div class="topbar-title">Dashboard</div>
+            <div class="topbar-title"><?= htmlspecialchars($page['label']) ?></div>
             <div class="topbar-sub">Bienvenido al sistema de gestión de reparaciones</div>
         </div>
         <div class="topbar-actions">
@@ -439,6 +476,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 
     <!-- ── Contenido ── -->
     <div class="content">
+        <?php if ($current_page === 'dashboard'): ?>
 
         <!-- Alerta de fallas urgentes -->
         <?php if ($total_fallas > 0): ?>
@@ -570,7 +608,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
             <div class="ordenes-card" id="ordenes">
                 <div class="ordenes-header">
                     <span class="card-title">Órdenes recientes</span>
-                    <a href="ordenes.php" class="ordenes-ver-btn">Ver todas &rarr;</a>
+                    <a href="?page=ordenes" class="ordenes-ver-btn">Ver todas &rarr;</a>
                 </div>
                 <div class="table-head" role="row" aria-label="Encabezados de tabla">
                     <div>#</div>
@@ -605,6 +643,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
             </div>
 
         </div><!-- /bottom-row -->
+        <?php else: ?>
+
+        <div class="charts-row">
+            <div class="charts-card">
+                <div class="card-header" style="margin-bottom:2px;">
+                    <span class="card-title"><?= htmlspecialchars($page['label']) ?></span>
+                    <span class="card-pill">MÃ³dulo</span>
+                </div>
+                <div class="card-sub"><?= htmlspecialchars($page['desc']) ?></div>
+                <div style="margin-top:12px;font-size:11.5px;color:#6B6560;line-height:1.55;">
+                    Esta pantalla estÃ¡ lista para conectarse a la base de datos y agregar formularios (crear, editar, listar).
+                </div>
+            </div>
+        </div>
+
+        <?php endif; ?>
     </div><!-- /content -->
 </main><!-- /main -->
 
