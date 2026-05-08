@@ -19,9 +19,9 @@ $kpis = [
         'valor'     => 24,
         'sub'       => 'órdenes activas',
         'icono'     => 'ti-loader',
-        'color'     => '#1F5C8B',
-        'bg'        => '#F0F6FC',
-        'texto'     => '#0A2540',
+        'color'     => '#0052CC',
+        'bg'        => '#E3F2FD',
+        'texto'     => '#0052CC',
     ],
     [
         'clave'     => 'pendientes',
@@ -29,19 +29,19 @@ $kpis = [
         'valor'     => 8,
         'sub'       => 'sin asignar',
         'icono'     => 'ti-clock',
-        'color'     => '#D4991A',
-        'bg'        => '#FFFBF0',
-        'texto'     => '#5C3E00',
+        'color'     => '#FF9500',
+        'bg'        => '#FFF3E0',
+        'texto'     => '#FF9500',
     ],
     [
         'clave'     => 'ingresos',
         'label'     => 'Ingresos hoy',
         'valor'     => '$4,820',
-        'sub'       => '<span style="color:#1A7A4A;display:flex;align-items:center;gap:3px;"><i class="ti ti-trending-up" style="font-size:11px;"></i>+12% vs ayer</span>',
+        'sub'       => '<span style="color:#00AA44;display:flex;align-items:center;gap:3px;"><i class="ti ti-trending-up" style="font-size:11px;"></i>+12% vs ayer</span>',
         'icono'     => 'ti-cash',
-        'color'     => '#1A7A4A',
-        'bg'        => '#F0FAF5',
-        'texto'     => '#0B3D24',
+        'color'     => '#00AA44',
+        'bg'        => '#E8F5E9',
+        'texto'     => '#00AA44',
     ],
     [
         'clave'     => 'garantias',
@@ -49,9 +49,9 @@ $kpis = [
         'valor'     => 11,
         'sub'       => 'activas este mes',
         'icono'     => 'ti-shield',
-        'color'     => '#5B42B0',
-        'bg'        => '#F4F1FC',
-        'texto'     => '#2A1E60',
+        'color'     => '#7B4EC4',
+        'bg'        => '#F3E5F5',
+        'texto'     => '#7B4EC4',
     ],
     [
         'clave'     => 'completadas',
@@ -59,9 +59,9 @@ $kpis = [
         'valor'     => 137,
         'sub'       => 'servicios este mes',
         'icono'     => 'ti-checks',
-        'color'     => '#4D4841',
-        'bg'        => '#FFFFFF',
-        'texto'     => '#1C1A17',
+        'color'     => '#424242',
+        'bg'        => '#F5F5F5',
+        'texto'     => '#424242',
     ],
     [
         'clave'     => 'con_falla',
@@ -69,9 +69,9 @@ $kpis = [
         'valor'     => 3,
         'sub'       => 'requieren atención',
         'icono'     => 'ti-alert-triangle',
-        'color'     => '#B83232',
-        'bg'        => '#FDF0F0',
-        'texto'     => '#5C1414',
+        'color'     => '#FF4444',
+        'bg'        => '#FFEBEE',
+        'texto'     => '#FF4444',
     ],
 ];
 
@@ -82,8 +82,8 @@ $nav_items = [
     ['label' => 'Equipos',      'icono' => 'ti-device-laptop',    'activo' => false, 'badge' => null],
     ['label' => 'Técnicos',     'icono' => 'ti-user-check',       'activo' => false, 'badge' => null],
     ['seccion' => true, 'label' => 'Operaciones'],
-    ['label' => 'Órdenes',      'icono' => 'ti-clipboard-list',   'activo' => false, 'badge' => ['valor'=>8,  'bg'=>'#D4991A','color'=>'#3A2600']],
-    ['label' => 'Garantías',    'icono' => 'ti-shield-check',     'activo' => false, 'badge' => ['valor'=>11, 'bg'=>'rgba(91,66,176,0.35)','color'=>'#C4B8F0']],
+    ['label' => 'Órdenes',      'icono' => 'ti-clipboard-list',   'activo' => false, 'badge' => ['valor'=>8,  'bg'=>'#FF9500','color'=>'#fff']],
+    ['label' => 'Garantías',    'icono' => 'ti-shield-check',     'activo' => false, 'badge' => ['valor'=>11, 'bg'=>'#7B4EC4','color'=>'#fff']],
     ['label' => 'Reportes',     'icono' => 'ti-chart-bar',        'activo' => false, 'badge' => null],
     ['seccion' => true, 'label' => 'Sistema'],
     ['label' => 'Configuración','icono' => 'ti-settings',         'activo' => false, 'badge' => null],
@@ -98,10 +98,10 @@ $ordenes_recientes = [
         'icono_eq' => 'ti-device-mobile',
         'tecnico'  => 'Juan',
         'estado'   => 'En proceso',
-        'est_bg'   => '#F0F6FC',
-        'est_color'=> '#0A2540',
-        'est_borde'=> '#1F5C8B',
-        'est_dot'  => '#1F5C8B',
+        'est_bg'   => '#E3F2FD',
+        'est_color'=> '#0052CC',
+        'est_borde'=> '#0052CC',
+        'est_dot'  => '#0052CC',
         'valor'    => '$850',
     ],
     [
@@ -111,10 +111,10 @@ $ordenes_recientes = [
         'icono_eq' => 'ti-device-laptop',
         'tecnico'  => 'María',
         'estado'   => 'Listo',
-        'est_bg'   => '#F0FAF5',
-        'est_color'=> '#0B3D24',
-        'est_borde'=> '#1A7A4A',
-        'est_dot'  => '#1A7A4A',
+        'est_bg'   => '#E8F5E9',
+        'est_color'=> '#00AA44',
+        'est_borde'=> '#00AA44',
+        'est_dot'  => '#00AA44',
         'valor'    => '$1,200',
     ],
     [
@@ -124,10 +124,10 @@ $ordenes_recientes = [
         'icono_eq' => 'ti-device-desktop',
         'tecnico'  => 'Carlos',
         'estado'   => 'Con falla',
-        'est_bg'   => '#FDF0F0',
-        'est_color'=> '#5C1414',
-        'est_borde'=> '#B83232',
-        'est_dot'  => '#B83232',
+        'est_bg'   => '#FFEBEE',
+        'est_color'=> '#FF4444',
+        'est_borde'=> '#FF4444',
+        'est_dot'  => '#FF4444',
         'valor'    => '$450',
     ],
     [
@@ -137,10 +137,10 @@ $ordenes_recientes = [
         'icono_eq' => 'ti-device-tablet',
         'tecnico'  => 'Ana',
         'estado'   => 'Pendiente',
-        'est_bg'   => '#FFFBF0',
-        'est_color'=> '#5C3E00',
-        'est_borde'=> '#D4991A',
-        'est_dot'  => '#D4991A',
+        'est_bg'   => '#FFF3E0',
+        'est_color'=> '#FF9500',
+        'est_borde'=> '#FF9500',
+        'est_dot'  => '#FF9500',
         'valor'    => '$380',
     ],
     [
@@ -150,10 +150,10 @@ $ordenes_recientes = [
         'icono_eq' => 'ti-device-mobile',
         'tecnico'  => 'Pedro',
         'estado'   => 'Garantía',
-        'est_bg'   => '#F4F1FC',
-        'est_color'=> '#2A1E60',
-        'est_borde'=> '#5B42B0',
-        'est_dot'  => '#5B42B0',
+        'est_bg'   => '#F3E5F5',
+        'est_color'=> '#7B4EC4',
+        'est_borde'=> '#7B4EC4',
+        'est_dot'  => '#7B4EC4',
         'valor'    => '$0',
     ],
     [
@@ -163,19 +163,19 @@ $ordenes_recientes = [
         'icono_eq' => 'ti-device-laptop',
         'tecnico'  => 'María',
         'estado'   => 'Diagnóstico',
-        'est_bg'   => '#F5F4F2',
-        'est_color'=> '#2C2925',
-        'est_borde'=> '#8C8479',
-        'est_dot'  => '#8C8479',
+        'est_bg'   => '#F5F5F5',
+        'est_color'=> '#424242',
+        'est_borde'=> '#424242',
+        'est_dot'  => '#424242',
         'valor'    => '$200',
     ],
 ];
 
 $dispositivos = [
-    ['tipo'=>'Teléfonos',  'icono'=>'ti-device-mobile',  'pct'=>45, 'color'=>'#1F5C8B', 'bg'=>'#F0F6FC',  'tc'=>'#1F5C8B'],
-    ['tipo'=>'Laptops',    'icono'=>'ti-device-laptop',  'pct'=>28, 'color'=>'#1A7A4A', 'bg'=>'#F0FAF5',  'tc'=>'#1A7A4A'],
-    ['tipo'=>'Tablets',    'icono'=>'ti-device-tablet',  'pct'=>15, 'color'=>'#D4991A', 'bg'=>'#FFFBF0',  'tc'=>'#D4991A'],
-    ['tipo'=>'PC Torre',   'icono'=>'ti-device-desktop', 'pct'=>12, 'color'=>'#5B42B0', 'bg'=>'#F4F1FC',  'tc'=>'#5B42B0'],
+    ['tipo'=>'Teléfonos',  'icono'=>'ti-device-mobile',  'pct'=>45, 'color'=>'#0052CC', 'bg'=>'#E3F2FD',  'tc'=>'#0052CC'],
+    ['tipo'=>'Laptops',    'icono'=>'ti-device-laptop',  'pct'=>28, 'color'=>'#00AA44', 'bg'=>'#E8F5E9',  'tc'=>'#00AA44'],
+    ['tipo'=>'Tablets',    'icono'=>'ti-device-tablet',  'pct'=>15, 'color'=>'#FF9500', 'bg'=>'#FFF3E0',  'tc'=>'#FF9500'],
+    ['tipo'=>'PC Torre',   'icono'=>'ti-device-desktop', 'pct'=>12, 'color'=>'#7B4EC4', 'bg'=>'#F3E5F5',  'tc'=>'#7B4EC4'],
 ];
 
 $fallas_urgentes = array_filter($ordenes_recientes, fn($o) => $o['estado'] === 'Con falla');
@@ -267,11 +267,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 /* ── KPI Grid ── */
 .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
 .kpi-grid:last-of-type{margin-bottom:18px}
-.kpi-card{border-radius:9px;border:0.5px solid #D0CCC6;padding:13px 15px;border-left-width:3px;border-left-style:solid}
-.kpi-label{font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;display:flex;align-items:center;gap:4px}
-.kpi-label i{font-size:11px}
-.kpi-valor{font-size:28px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1;font-family:'Courier New',Courier,monospace}
-.kpi-sub{font-size:10.5px;color:#4D4841;margin-top:3px}
+.kpi-card{border-radius:10px;border:none;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.08);transition:transform 0.2s,box-shadow 0.2s;position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px;background:var(--kpi-color,#0052CC);opacity:0.8}
+.kpi-label{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;display:flex;align-items:center;gap:4px}
+.kpi-label i{font-size:12px}
+.kpi-valor{font-size:32px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;font-family:'Courier New',Courier,monospace;margin-bottom:3px}
+.kpi-sub{font-size:11px;color:#6B6560;margin-top:4px}
 
 /* ── Fila de charts ── */
 .charts-row{display:grid;grid-template-columns:1.65fr 1fr;gap:12px;margin-bottom:14px}
@@ -443,9 +444,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
         <div class="kpi-grid">
             <?php foreach (array_slice($kpis, 0, 3) as $k): ?>
             <div class="kpi-card"
-                 style="background:<?= $k['bg'] ?>;border-left-color:<?= $k['color'] ?>;">
+                 style="background:<?= $k['bg'] ?>;--kpi-color:<?= $k['color'] ?>;">
                 <div class="kpi-label" style="color:<?= $k['color'] ?>;">
-                    <i class="ti <?= htmlspecialchars($k['icono']) ?>"></i>
+                    <i class="ti <?= htmlspecialchars($k['icono']) ?>" aria-hidden="true"></i>
                     <?= htmlspecialchars($k['label']) ?>
                 </div>
                 <div class="kpi-valor" style="color:<?= $k['texto'] ?>;">
@@ -460,9 +461,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
         <div class="kpi-grid">
             <?php foreach (array_slice($kpis, 3, 3) as $k): ?>
             <div class="kpi-card"
-                 style="background:<?= $k['bg'] ?>;border-left-color:<?= $k['color'] ?>;">
+                 style="background:<?= $k['bg'] ?>;--kpi-color:<?= $k['color'] ?>;">
                 <div class="kpi-label" style="color:<?= $k['color'] ?>;">
-                    <i class="ti <?= htmlspecialchars($k['icono']) ?>"></i>
+                    <i class="ti <?= htmlspecialchars($k['icono']) ?>" aria-hidden="true"></i>
                     <?= htmlspecialchars($k['label']) ?>
                 </div>
                 <div class="kpi-valor" style="color:<?= $k['texto'] ?>;">
@@ -485,11 +486,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
                 </div>
                 <div class="chart-legend">
                     <span class="legend-item">
-                        <span class="legend-sq" style="background:#1F5C8B;"></span>
+                        <span class="legend-sq" style="background:#0052CC;"></span>
                         Reparaciones
                     </span>
                     <span class="legend-item">
-                        <span class="legend-sq" style="background:#A8C3DC;"></span>
+                        <span class="legend-sq" style="background:#5BA3FF;"></span>
                         Ingresos ($100s)
                     </span>
                 </div>
@@ -515,12 +516,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
                     </canvas>
                 </div>
                 <div class="donut-legend">
-                    <span class="donut-legend-item"><span class="donut-dot" style="background:#D4991A;"></span>Recibido 7%</span>
-                    <span class="donut-legend-item"><span class="donut-dot" style="background:#1F5C8B;"></span>Diagnóstico 15%</span>
-                    <span class="donut-legend-item"><span class="donut-dot" style="background:#1A7A4A;"></span>Reparación 20%</span>
-                    <span class="donut-legend-item"><span class="donut-dot" style="background:#5B42B0;"></span>Listo 10%</span>
-                    <span class="donut-legend-item"><span class="donut-dot" style="background:#8C8479;"></span>Entregado 45%</span>
-                    <span class="donut-legend-item"><span class="donut-dot" style="background:#B83232;"></span>Con falla 3%</span>
+                    <span class="donut-legend-item"><span class="donut-dot" style="background:#FF9500;"></span>Recibido 7%</span>
+                    <span class="donut-legend-item"><span class="donut-dot" style="background:#0052CC;"></span>Diagnóstico 15%</span>
+                    <span class="donut-legend-item"><span class="donut-dot" style="background:#00AA44;"></span>Reparación 20%</span>
+                    <span class="donut-legend-item"><span class="donut-dot" style="background:#7B4EC4;"></span>Listo 10%</span>
+                    <span class="donut-legend-item"><span class="donut-dot" style="background:#424242;"></span>Entregado 45%</span>
+                    <span class="donut-legend-item"><span class="donut-dot" style="background:#FF4444;"></span>Con falla 3%</span>
                 </div>
             </div>
         </div>
@@ -613,7 +614,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
                 {
                     label: 'Reparaciones',
                     data: [23, 19, 21, 20, 18],
-                    backgroundColor: '#1F5C8B',
+                    backgroundColor: '#0052CC',
                     borderRadius: 4,
                     barPercentage: 0.55,
                     categoryPercentage: 0.8,
@@ -621,7 +622,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
                 {
                     label: 'Ingresos ($100s)',
                     data: [23, 21, 22, 20, 21],
-                    backgroundColor: '#A8C3DC',
+                    backgroundColor: '#5BA3FF',
                     borderRadius: 4,
                     barPercentage: 0.55,
                     categoryPercentage: 0.8,
@@ -662,7 +663,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
             labels: ['Recibido', 'Diagnóstico', 'En reparación', 'Listo', 'Entregado', 'Con falla'],
             datasets: [{
                 data: [7, 15, 20, 10, 45, 3],
-                backgroundColor: ['#D4991A', '#1F5C8B', '#1A7A4A', '#5B42B0', '#8C8479', '#B83232'],
+                backgroundColor: ['#FF9500', '#0052CC', '#00AA44', '#7B4EC4', '#424242', '#FF4444'],
                 borderWidth: 3,
                 borderColor: '#FFFFFF',
             }],
