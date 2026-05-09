@@ -523,10 +523,9 @@ $dashboard_tables = [
     ]),
 
     'orden' => pick_table($conn, [
-        'orden',
-        'orden_reparacion',
-        'reparacion'
-    ]),
+    'orden_reparacion',
+    'Orden_Reparacion'
+  ]),
 
     'estado' => pick_table($conn, [
         'estado',
