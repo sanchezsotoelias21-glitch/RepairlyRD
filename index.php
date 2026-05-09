@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 ob_start();
 
 ini_set('display_errors', 1);
@@ -1131,7 +1131,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
             $page_file = __DIR__ . '/src/pages/' . $current_page . '.php';
 
             // Evita duplicar módulos renderizados inline
-            $inline_pages = ['dashboard', 'clientes'];
+            $inline_pages = ['clientes'];
 
             if (!in_array($current_page, $inline_pages, true) && file_exists($page_file)) {
                 include $page_file;
