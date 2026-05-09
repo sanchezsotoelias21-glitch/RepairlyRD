@@ -30,25 +30,63 @@ function require_csrf(): void {
 }
 
 function table_exists(mysqli $conn, string $name): bool {
-    $stmt = $conn->prepare('SHOW TABLES LIKE ?');
+
+    $name = trim($name);
+
+    $sql = "
+        SELECT COUNT(*)
+        FROM information_schema.tables
+        WHERE table_schema = DATABASE()
+        AND LOWER(table_name) = LOWER(?)
+    ";
+
+    $stmt = $conn->prepare($sql);
+
     if (!$stmt) {
         return false;
     }
+
     $stmt->bind_param('s', $name);
     $stmt->execute();
-    $res = $stmt->get_result();
-    $exists = $res && $res->num_rows > 0;
+
+    $stmt->bind_result($count);
+    $stmt->fetch();
+
     $stmt->close();
-    return $exists;
+
+    return $count > 0;
 }
 
 function pick_table(mysqli $conn, array $candidates): string {
-    foreach ($candidates as $name) {
-        if (table_exists($conn, $name)) {
-            return $name;
+
+    $tables = [];
+
+    $res = $conn->query("SHOW TABLES");
+
+    if ($res) {
+        while ($row = $res->fetch_array()) {
+            $tables[] = strtolower($row[0]);
         }
     }
-    return $candidates[0] ?? '';
+
+    foreach ($candidates as $candidate) {
+
+        $candidate = strtolower(trim($candidate));
+
+        foreach ($tables as $table) {
+
+            if ($table === $candidate) {
+                return $table;
+            }
+
+            // búsqueda flexible
+            if (str_contains($table, $candidate)) {
+                return $table;
+            }
+        }
+    }
+
+    return '';
 }
 // ============================================================
 //  RepairlyRD — Dashboard Principal
@@ -473,41 +511,35 @@ $dispositivos = [];
 
 $dashboard_tables = [
     'cliente' => pick_table($conn, [
-        'cliente',
-        'Cliente',
-        'CLIENTE'
+        'cliente'
     ]),
 
     'equipo' => pick_table($conn, [
-        'equipo',
-        'Equipo',
-        'EQUIPO'
+        'equipo'
     ]),
 
     'tecnico' => pick_table($conn, [
-        'tecnico',
-        'Tecnico',
-        'TECNICO'
+        'tecnico'
     ]),
 
     'orden' => pick_table($conn, [
+        'orden',
         'orden_reparacion',
-        'Orden_Reparacion',
-        'ORDEN_REPARACION'
+        'reparacion'
     ]),
 
     'estado' => pick_table($conn, [
-        'estado_servicio',
-        'Estado_Servicio',
-        'ESTADO_SERVICIO'
+        'estado',
+        'estado_servicio'
     ]),
 
     'garantia' => pick_table($conn, [
-        'garantia',
-        'Garantia',
-        'GARANTIA'
+        'garantia'
     ]),
 ];
+echo "<pre>";
+print_r($dashboard_tables);
+echo "</pre>";
 
 $has_dashboard_core = table_exists($conn, $dashboard_tables['orden'])
     && table_exists($conn, $dashboard_tables['estado'])
