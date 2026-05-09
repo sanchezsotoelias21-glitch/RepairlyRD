@@ -537,9 +537,6 @@ $dashboard_tables = [
         'garantia'
     ]),
 ];
-echo "<pre>";
-print_r($dashboard_tables);
-echo "</pre>";
 
 $has_dashboard_core = table_exists($conn, $dashboard_tables['orden'])
     && table_exists($conn, $dashboard_tables['estado'])
