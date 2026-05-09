@@ -1,6 +1,4 @@
-// ---------------------------
-// Técnicos (CRUD)
-// ---------------------------
+<?php
 $tecnico_table = 'Tecnico';
 
 if ($current_page === 'tecnicos' && $_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -47,3 +45,4 @@ if ($current_page === 'tecnicos' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 }
+?>

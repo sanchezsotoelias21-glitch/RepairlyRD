@@ -1,6 +1,4 @@
-// ---------------------------
-// Equipos (CRUD)
-// ---------------------------
+<?php
 $equipo_table = 'Equipo';
 $equipo_cols = $equipo_table ? table_columns($conn, $equipo_table) : [];
 
@@ -48,3 +46,4 @@ if ($current_page === 'equipos' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 }
+?>

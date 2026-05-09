@@ -1,6 +1,4 @@
-// ---------------------------
-// Ordenes (CRUD)
-// ---------------------------
+<?php
 $orden_table = 'Orden_Reparacion';
 
 if ($current_page === 'ordenes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -54,3 +52,4 @@ if ($current_page === 'ordenes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 }
+?>
