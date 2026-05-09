@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 ob_start();
 
 ini_set('display_errors', 1);
@@ -99,69 +99,6 @@ $usuario = [
     'iniciales'=> 'CJ',
     'email'    => 'carlos.jerez@fixmaster.com',
     'rol'      => 'Administrador',
-];
-
-$kpis = [
-    [
-        'clave'     => 'en_proceso',
-        'label'     => 'En proceso',
-        'valor'     => 0,
-        'sub'       => 'órdenes activas',
-        'icono'     => 'ti-loader',
-        'color'     => '#0052CC',
-        'bg'        => '#E3F2FD',
-        'texto'     => '#0052CC',
-    ],
-    [
-        'clave'     => 'pendientes',
-        'label'     => 'Pendientes',
-        'valor'     => 0,
-        'sub'       => 'sin completar',
-        'icono'     => 'ti-clock',
-        'color'     => '#FF9500',
-        'bg'        => '#FFF3E0',
-        'texto'     => '#FF9500',
-    ],
-    [
-        'clave'     => 'ingresos',
-        'label'     => 'Ingresos hoy',
-        'valor'     => '$0.00',
-        'sub'       => '<span style="color:#00AA44;display:flex;align-items:center;gap:3px;"><i class="ti ti-trending-up" style="font-size:11px;"></i>0% vs ayer</span>',
-        'icono'     => 'ti-cash',
-        'color'     => '#00AA44',
-        'bg'        => '#E8F5E9',
-        'texto'     => '#00AA44',
-    ],
-    [
-        'clave'     => 'garantias',
-        'label'     => 'Garantías',
-        'valor'     => 0,
-        'sub'       => 'activas ahora',
-        'icono'     => 'ti-shield',
-        'color'     => '#7B4EC4',
-        'bg'        => '#F3E5F5',
-        'texto'     => '#7B4EC4',
-    ],
-    [
-        'clave'     => 'completadas',
-        'label'     => 'Completadas',
-        'valor'     => 0,
-        'sub'       => 'servicios este mes',
-        'icono'     => 'ti-checks',
-        'color'     => '#424242',
-        'bg'        => '#F5F5F5',
-        'texto'     => '#424242',
-    ],
-    [
-        'clave'     => 'con_falla',
-        'label'     => 'Con falla',
-        'valor'     => 0,
-        'sub'       => 'requieren atención',
-        'icono'     => 'ti-alert-triangle',
-        'color'     => '#FF4444',
-        'bg'        => '#FFEBEE',
-        'texto'     => '#FF4444',
-    ],
 ];
 
 $current_page = $_GET['page'] ?? 'dashboard';
