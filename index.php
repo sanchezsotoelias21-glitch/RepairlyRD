@@ -201,6 +201,12 @@ $page_meta = [
 ];
 $page = $page_meta[$current_page] ?? $page_meta['dashboard'];
 
+require_once __DIR__ . '/includes/crud_clientes.php';
+require_once __DIR__ . '/includes/crud_equipos.php';
+require_once __DIR__ . '/includes/crud_ordenes.php';
+require_once __DIR__ . '/includes/crud_tecnicos.php';
+
+
 function table_columns(mysqli $conn, string $table): array {
     $cols = [];
     $res = $conn->query("SHOW COLUMNS FROM `{$table}`");
@@ -497,8 +503,29 @@ $ordenes_recientes = [
         'est_dot'  => '#424242',
         'valor'    => '$200',
     ],
+    
 ];
+switch($page){
 
+    case 'clientes':
+        include 'pages/clientes.php';
+        break;
+
+    case 'equipos':
+        include 'pages/equipos.php';
+        break;
+
+    case 'tecnicos':
+        include 'pages/tecnicos.php';
+        break;
+
+    case 'ordenes':
+        include 'pages/ordenes.php';
+        break;
+
+    default:
+        include 'pages/dashboard.php';
+}
 $dispositivos = [
     ['tipo'=>'Teléfonos',  'icono'=>'ti-device-mobile',  'pct'=>45, 'color'=>'#0052CC', 'bg'=>'#E3F2FD',  'tc'=>'#0052CC'],
     ['tipo'=>'Laptops',    'icono'=>'ti-device-laptop',  'pct'=>28, 'color'=>'#00AA44', 'bg'=>'#E8F5E9',  'tc'=>'#00AA44'],
@@ -1253,18 +1280,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 
         <?php else: ?>
 
-        <div class="charts-row">
-            <div class="charts-card">
-                <div class="card-header" style="margin-bottom:2px;">
-                    <span class="card-title"><?= htmlspecialchars($page['label']) ?></span>
-                    <span class="card-pill">Módulo</span>
-                </div>
-                <div class="card-sub"><?= htmlspecialchars($page['desc']) ?></div>
-                <div style="margin-top:12px;font-size:11.5px;color:#6B6560;line-height:1.55;">
-                    Esta pantalla está lista para conectarse a la base de datos y agregar formularios (crear, editar, listar).
-                </div>
-            </div>
-        </div>
+        <?php
+            $page_file = __DIR__ . '/src/pages/' . $current_page . '.php';
+            if (file_exists($page_file)) {
+                include $page_file;
+            } else {
+                echo '<div class="charts-card">Módulo en construcción</div>';
+            }
+        ?>
 
         <?php endif; ?>
         <?php endif; ?>

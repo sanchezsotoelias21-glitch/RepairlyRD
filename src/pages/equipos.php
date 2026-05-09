@@ -1,0 +1,2 @@
+<?php $res = $conn->query("SELECT * FROM Equipo ORDER BY id_equipo DESC LIMIT 20"); ?>
+<div class="charts-card"><div class="card-title">Equipos</div><table border="0" width="100%"><tr><th>ID</th><th>Marca</th><th>Modelo</th></tr><?php while($r=$res->fetch_assoc()): ?><tr><td><?= $r['id_equipo'] ?></td><td><?= h($r['marca']) ?></td><td><?= h($r['modelo']) ?></td></tr><?php endwhile; ?></table></div>

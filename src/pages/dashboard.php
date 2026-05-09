@@ -1,0 +1,1 @@
+<div class="charts-row"><div class="charts-card"><div class="card-title">Dashboard</div><div class="card-sub">Bienvenido a RepairlyRD</div></div></div>
