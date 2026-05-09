@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 ob_start();
 
 ini_set('display_errors', 1);
@@ -738,6 +738,116 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
     .table-head,.table-row{grid-template-columns:36px 1fr 65px 55px}
     .col-tecnico{display:none}
 }
+
+/* ===== Clientes Moderno ===== */
+
+.clientes-form-card{
+    background:#fff;
+    border-radius:18px;
+    padding:22px;
+    margin-top:18px;
+    box-shadow:0 4px 18px rgba(0,0,0,.05);
+}
+
+.clientes-form-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px;
+    margin-top:20px;
+}
+
+.form-group{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+}
+
+.form-group.full{
+    grid-column:1/-1;
+}
+
+.form-group input{
+    height:46px;
+    border:1px solid #D8D5D0;
+    border-radius:12px;
+    padding:0 14px;
+    font-size:14px;
+}
+
+.clientes-actions{
+    display:flex;
+    gap:10px;
+    justify-content:flex-end;
+    grid-column:1/-1;
+}
+
+.btn-save{
+    background:#1F5C8B;
+    color:#fff;
+    border:none;
+    border-radius:10px;
+    padding:12px 18px;
+    cursor:pointer;
+}
+
+.btn-cancel{
+    border:1px solid #D8D5D0;
+    border-radius:10px;
+    padding:12px 18px;
+    text-decoration:none;
+    color:#444;
+}
+
+.dgv-clientes{
+    margin-top:24px;
+    background:#fff;
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 4px 18px rgba(0,0,0,.05);
+}
+
+.dgv-header,
+.dgv-row{
+    display:grid;
+    grid-template-columns:80px 1.4fr 1fr 1.2fr 180px;
+    gap:14px;
+    padding:16px 18px;
+    align-items:center;
+}
+
+.dgv-header{
+    background:#F6F8FB;
+    font-size:12px;
+    font-weight:700;
+    text-transform:uppercase;
+}
+
+.dgv-row{
+    border-top:1px solid #eee;
+}
+
+.dgv-actions{
+    display:flex;
+    gap:8px;
+}
+
+.btn-edit{
+    background:#E8F1FB;
+    color:#1F5C8B;
+    padding:8px 12px;
+    border-radius:9px;
+    text-decoration:none;
+}
+
+.btn-delete{
+    background:#FCEBEC;
+    color:#C0392B;
+    border:none;
+    border-radius:9px;
+    padding:8px 12px;
+    cursor:pointer;
+}
+
 </style>
 </head>
 <body>
@@ -829,9 +939,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
     <div class="content">
         <?php
             $page_file = __DIR__ . '/src/pages/' . $current_page . '.php';
-            if (file_exists($page_file)) {
+
+            // Evita duplicar módulos renderizados inline
+            $inline_pages = ['dashboard', 'clientes'];
+
+            if (!in_array($current_page, $inline_pages, true) && file_exists($page_file)) {
                 include $page_file;
-            } else {
+            } elseif (!in_array($current_page, $inline_pages, true)) {
                 echo '<div class="charts-card">Módulo en construcción</div>';
             }
         ?>
@@ -1015,9 +1129,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 
         <?php
             $page_file = __DIR__ . '/src/pages/' . $current_page . '.php';
-            if (file_exists($page_file)) {
+
+            // Evita duplicar módulos renderizados inline
+            $inline_pages = ['dashboard', 'clientes'];
+
+            if (!in_array($current_page, $inline_pages, true) && file_exists($page_file)) {
                 include $page_file;
-            } else {
+            } elseif (!in_array($current_page, $inline_pages, true)) {
                 echo '<div class="charts-card">Módulo en construcción</div>';
             }
         ?>
