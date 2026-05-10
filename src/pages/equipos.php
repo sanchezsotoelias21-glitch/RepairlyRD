@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 /** @var mysqli $conn */
 
-$t = $_GET['t'] ?? '';
-$m = $_GET['m'] ?? '';
 $action = $_GET['action'] ?? '';
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
@@ -59,12 +57,6 @@ if ($action === 'edit' && $id > 0) {
             </div>
             <a class="ordenes-ver-btn" href="?page=equipos&action=new">Nuevo equipo</a>
         </div>
-        <?php if ($t === 'ok' && is_string($m) && $m !== ''): ?>
-            <div style="margin-top:10px;font-size:12px;color:#1B5E20;"><?= h($m) ?></div>
-        <?php elseif ($t === 'err' && is_string($m) && $m !== ''): ?>
-            <div style="margin-top:10px;font-size:12px;color:#B83232;"><?= h($m) ?></div>
-        <?php endif; ?>
-
         <?php if ($action === 'new' || $action === 'edit'): ?>
             <form method="post" style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:720px;">
                 <input type="hidden" name="csrf" value="<?= h($_SESSION['csrf']) ?>">
@@ -102,7 +94,7 @@ if ($action === 'edit' && $id > 0) {
                 <?php if (isset($equipo_cols['id_cliente']) && $cliente_pick !== ''): ?>
                     <div style="grid-column:1/-1;">
                         <label style="font-size:10px;color:#6B6560;">Cliente</label>
-                        <select name="id_cliente" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;">
+                        <select name="id_cliente" required style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;">
                             <option value="0">— Seleccionar —</option>
                             <?php foreach ($clientes_opts as $c): ?>
                                 <option value="<?= (int)$c['id'] ?>" <?= (int)($edit['id_cliente'] ?? 0) === (int)$c['id'] ? 'selected' : '' ?>><?= h((string)$c['nombre']) ?></option>
