@@ -1,0 +1,112 @@
+<?php
+
+declare(strict_types=1);
+
+/** @var mysqli $conn */
+/** @var bool $auth_is_admin */
+
+$t = $_GET['t'] ?? '';
+$m = $_GET['m'] ?? '';
+?>
+<div class="charts-row">
+    <div class="charts-card">
+        <div class="card-header">
+            <div>
+                <div class="card-title">Configuración</div>
+                <div class="card-sub">Apariencia y permisos</div>
+            </div>
+        </div>
+        <?php if ($t === 'ok' && is_string($m) && $m !== ''): ?>
+            <div style="margin-top:10px;font-size:12px;color:#1B5E20;"><?= h($m) ?></div>
+        <?php elseif ($t === 'err' && is_string($m) && $m !== ''): ?>
+            <div style="margin-top:10px;font-size:12px;color:#B83232;"><?= h($m) ?></div>
+        <?php endif; ?>
+
+        <div style="margin-top:16px;padding:14px;border:0.5px solid #EDECEA;border-radius:10px;max-width:520px;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:10px;">Apariencia</div>
+            <label style="display:flex;align-items:center;gap:10px;font-size:12px;margin-bottom:10px;cursor:pointer;">
+                <input type="checkbox" id="toggle-dark"> Modo oscuro (se guarda en este navegador)
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;font-size:12px;cursor:pointer;">
+                <input type="checkbox" id="toggle-night"> Luz nocturna (filtro cálido sobre la pantalla)
+            </label>
+            <p style="font-size:11px;color:#6B6560;margin-top:10px;">Los ajustes se aplican al instante y persisten en <code>localStorage</code>.</p>
+        </div>
+
+        <?php if (!empty($auth_is_admin)):
+            $ut = repairly_usuario_table($conn);
+            $all_users = $ut !== '' ? db_rows($conn, "SELECT * FROM `{$ut}` ORDER BY id_usuario ASC") : [];
+            $idU = 'id_usuario';
+            if ($ut !== '') {
+                $uc = table_columns($conn, $ut);
+                foreach (array_keys($uc) as $k) {
+                    if (strcasecmp((string)$k, 'id_usuario') === 0) {
+                        $idU = $k;
+                        break;
+                    }
+                }
+            }
+            $roles_opts = ['administrador', 'tecnico', 'supervisor', 'operador', 'cliente', 'pendiente'];
+            ?>
+            <div style="margin-top:22px;padding:14px;border:0.5px solid #EDECEA;border-radius:10px;">
+                <div style="font-size:13px;font-weight:600;margin-bottom:10px;">Usuarios y roles</div>
+                <p style="font-size:11px;color:#6B6560;margin-bottom:12px;">Solo administradores pueden cambiar el rol. Los usuarios nuevos quedan como <strong>cliente</strong> hasta que se les asigne acceso al panel.</p>
+                <div class="table-head" style="grid-template-columns:56px 1fr 160px 100px;margin-bottom:0;">
+                    <div>ID</div><div>Usuario</div><div>Rol</div><div></div>
+                </div>
+                <?php foreach ($all_users as $urow): ?>
+                    <form method="post" class="table-row" style="grid-template-columns:56px 1fr 160px 100px;align-items:center;margin:0;border-bottom:0.5px solid #EDECEA;">
+                        <input type="hidden" name="csrf" value="<?= h($_SESSION['csrf']) ?>">
+                        <input type="hidden" name="config_action" value="update_user_role">
+                        <input type="hidden" name="id_usuario" value="<?= (int)($urow[$idU] ?? 0) ?>">
+                        <div class="order-id"><?= (int)($urow[$idU] ?? 0) ?></div>
+                        <div class="order-cliente"><?= h((string)($urow['username'] ?? '')) ?></div>
+                        <div>
+                            <select name="rol" style="width:100%;padding:8px;border-radius:8px;border:0.5px solid #D0CCC6;font-size:11px;">
+                                <?php foreach ($roles_opts as $ro): ?>
+                                    <option value="<?= h($ro) ?>" <?= repairly_normalize_role((string)($urow['rol'] ?? '')) === repairly_normalize_role($ro) ? 'selected' : '' ?>><?= h($ro) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div style="text-align:right;">
+                            <button type="submit" class="ordenes-ver-btn" style="background:#1F5C8B;color:#fff;border-color:#1F5C8B;">Guardar</button>
+                        </div>
+                    </form>
+                <?php endforeach; ?>
+                <?php if (empty($all_users)): ?>
+                    <p style="font-size:12px;color:#6B6560;padding:10px;">No hay usuarios en la tabla.</p>
+                <?php endif; ?>
+            </div>
+        <?php else: ?>
+            <p style="margin-top:16px;font-size:12px;color:#6B6560;">Solo un administrador puede modificar roles desde esta pantalla.</p>
+        <?php endif; ?>
+    </div>
+</div>
+<script>
+(function(){
+    var root = document.documentElement;
+    var darkKey = 'repairly_dark';
+    var nightKey = 'repairly_night';
+    function applyDark(on){
+        root.classList.toggle('theme-dark', on);
+        localStorage.setItem(darkKey, on ? '1' : '0');
+    }
+    function applyNight(on){
+        var el = document.getElementById('night-overlay');
+        if (el) { el.classList.toggle('on', on); }
+        localStorage.setItem(nightKey, on ? '1' : '0');
+    }
+    var td = document.getElementById('toggle-dark');
+    var tn = document.getElementById('toggle-night');
+    if (td) {
+        td.checked = localStorage.getItem(darkKey) === '1';
+        applyDark(td.checked);
+        td.addEventListener('change', function(){ applyDark(td.checked); });
+    }
+    if (tn) {
+        tn.checked = localStorage.getItem(nightKey) === '1';
+        applyNight(tn.checked);
+        tn.addEventListener('change', function(){ applyNight(tn.checked); });
+    }
+})();
+</script>

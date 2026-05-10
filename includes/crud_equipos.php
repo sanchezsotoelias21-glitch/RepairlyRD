@@ -7,15 +7,20 @@ if ($current_page === 'equipos' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $post_action = $_POST['equipos_action'] ?? '';
 
+    $tipo = trim($_POST['tipo'] ?? '');
     $marca = trim($_POST['marca'] ?? '');
     $modelo = trim($_POST['modelo'] ?? '');
-    $serial = trim($_POST['serial'] ?? '');
-    $tipo = trim($_POST['tipo'] ?? '');
+    $numero_identificacion = trim($_POST['numero_identificacion'] ?? '');
+    $tipo_identificacion = trim($_POST['tipo_identificacion'] ?? '');
+    $bloqueo_tipo = trim($_POST['bloqueo_tipo'] ?? '');
+    $requiere_desbloqueo = isset($_POST['requiere_desbloqueo']) ? 1 : 0;
+    $observaciones_ingreso = trim($_POST['observaciones_ingreso'] ?? '');
+    $id_cliente = (int)($_POST['id_cliente'] ?? 0);
 
     if ($post_action === 'create') {
 
-        $stmt = $conn->prepare("INSERT INTO Equipo (marca, modelo, serial, tipo) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param('ssss', $marca, $modelo, $serial, $tipo);
+        $stmt = $conn->prepare("INSERT INTO Equipo (tipo, marca, modelo, numero_identificacion, tipo_identificacion, bloqueo_tipo, requiere_desbloqueo, observaciones_ingreso, id_cliente) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param('ssssssisi', $tipo, $marca, $modelo, $numero_identificacion, $tipo_identificacion, $bloqueo_tipo, $requiere_desbloqueo, $observaciones_ingreso, $id_cliente);
         $stmt->execute();
 
         header('Location:?page=equipos&t=ok&m=Equipo+creado');
@@ -26,8 +31,8 @@ if ($current_page === 'equipos' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $id = (int)($_POST['id'] ?? 0);
 
-        $stmt = $conn->prepare("UPDATE Equipo SET marca=?, modelo=?, serial=?, tipo=? WHERE id_equipo=?");
-        $stmt->bind_param('ssssi', $marca, $modelo, $serial, $tipo, $id);
+        $stmt = $conn->prepare("UPDATE Equipo SET tipo=?, marca=?, modelo=?, numero_identificacion=?, tipo_identificacion=?, bloqueo_tipo=?, requiere_desbloqueo=?, observaciones_ingreso=?, id_cliente=? WHERE id_equipo=?");
+        $stmt->bind_param('ssssssisii', $tipo, $marca, $modelo, $numero_identificacion, $tipo_identificacion, $bloqueo_tipo, $requiere_desbloqueo, $observaciones_ingreso, $id_cliente, $id);
         $stmt->execute();
 
         header('Location:?page=equipos&t=ok&m=Equipo+actualizado');
