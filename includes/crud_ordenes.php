@@ -158,32 +158,110 @@ if ($current_page === 'ordenes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->bind_param($types, ...$vals);
             }
             $ok = $stmt->execute();
+            $newOrderId = (int)$stmt->insert_id;
 
-            $webhookData = [
-    "codigo" => $codigo,
-    "equipo" => $id_equipo,
-    "tecnico" => $id_tecnico,
-    "estado" => $id_estado,
-    "mano_obra" => $mano_obra,
-    "costo_total" => $costo_total
-];
+            // Notificar a n8n solo si la orden se creó correctamente.
+            if ($ok) {
+                $codigoWebhook = '';
+                if (isset($data['codigo_seguimiento']) && is_string($data['codigo_seguimiento'])) {
+                    $codigoWebhook = $data['codigo_seguimiento'];
+                } elseif ($codigo !== '') {
+                    $codigoWebhook = $codigo;
+                } elseif ($newOrderId > 0) {
+                    $codigoWebhook = (string)$newOrderId;
+                }
 
-$options = [
-    'http' => [
-        'header'  => "Content-type: application/json",
-        'method'  => 'POST',
-        'content' => json_encode($webhookData),
-        'ignore_errors' => true
-    ]
-];
+                // Intentar resolver el email del cliente desde la orden -> equipo -> cliente.
+                $clienteEmail = '';
+                $clienteNombre = '';
+                $clienteId = 0;
+                if ($id_equipo > 0) {
+                    $eqTbl = pick_table($conn, ['equipo', 'Equipo']);
+                    $cliTbl = pick_table($conn, ['cliente', 'Cliente']);
+                    if ($eqTbl !== '' && $cliTbl !== '') {
+                        $eqCols = table_columns($conn, $eqTbl);
+                        $cliCols = table_columns($conn, $cliTbl);
 
-$context = stream_context_create($options);
+                        $eqIdCol = 'id_equipo';
+                        foreach (array_keys($eqCols) as $k) {
+                            if (strcasecmp((string)$k, 'id_equipo') === 0) {
+                                $eqIdCol = $k;
+                                break;
+                            }
+                        }
+                        $cliIdCol = 'id_cliente';
+                        foreach (array_keys($cliCols) as $k) {
+                            if (strcasecmp((string)$k, 'id_cliente') === 0) {
+                                $cliIdCol = $k;
+                                break;
+                            }
+                        }
 
-@file_get_contents(
-    'https://simple-n8n-production-edc5.up.railway.app/webhook-test/nueva-reparacion',
-    false,
-    $context
-);
+                        $eqCliCol = null;
+                        foreach (array_keys($eqCols) as $k) {
+                            if (strcasecmp((string)$k, 'id_cliente') === 0) {
+                                $eqCliCol = $k;
+                                break;
+                            }
+                        }
+
+                        $cliEmailCol = repairly_pick_column($cliCols, ['email', 'correo', 'correo_electronico', 'mail']);
+                        $cliNombreCol = repairly_pick_column($cliCols, ['nombre', 'name', 'nombre_cliente']);
+
+                        if ($eqCliCol !== null && $cliEmailCol !== null) {
+                            $sqlCli = "SELECT c.`{$cliIdCol}` AS id_cliente"
+                                . ($cliNombreCol !== null ? ", c.`{$cliNombreCol}` AS nombre" : ", '' AS nombre")
+                                . ", c.`{$cliEmailCol}` AS email"
+                                . " FROM `{$eqTbl}` e"
+                                . " JOIN `{$cliTbl}` c ON c.`{$cliIdCol}` = e.`{$eqCliCol}`"
+                                . " WHERE e.`{$eqIdCol}`=? LIMIT 1";
+                            $stCli = $conn->prepare($sqlCli);
+                            if ($stCli) {
+                                $stCli->bind_param('i', $id_equipo);
+                                $stCli->execute();
+                                $resCli = $stCli->get_result();
+                                $rowCli = $resCli ? ($resCli->fetch_assoc() ?: null) : null;
+                                $stCli->close();
+                                if ($rowCli) {
+                                    $clienteId = (int)($rowCli['id_cliente'] ?? 0);
+                                    $clienteNombre = (string)($rowCli['nombre'] ?? '');
+                                    $clienteEmail = (string)($rowCli['email'] ?? '');
+                                }
+                            }
+                        }
+                    }
+                }
+
+                $webhookData = [
+                    'id_orden' => $newOrderId,
+                    'codigo' => $codigoWebhook,
+                    'equipo' => $id_equipo,
+                    'tecnico' => $id_tecnico,
+                    'estado' => $id_estado,
+                    'mano_obra' => $mano_obra,
+                    'costo_total' => $costo_total,
+                    'id_cliente' => $clienteId,
+                    'cliente_nombre' => $clienteNombre,
+                    'cliente_email' => $clienteEmail,
+                ];
+
+                $options = [
+                    'http' => [
+                        'header'  => "Content-type: application/json",
+                        'method'  => 'POST',
+                        'content' => json_encode($webhookData),
+                        'ignore_errors' => true,
+                    ],
+                ];
+
+                $context = stream_context_create($options);
+
+                @file_get_contents(
+                    'https://simple-n8n-production-edc5.up.railway.app/webhook-test/nueva-reparacion',
+                    false,
+                    $context
+                );
+            }
 
             $stmt->close();
             header('Location: ?page=ordenes&t=' . ($ok ? 'ok' : 'err') . '&m=' . ($ok ? 'Orden+creada' : 'Error+al+crear'));
