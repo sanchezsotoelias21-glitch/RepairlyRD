@@ -126,6 +126,57 @@ function mysql_enum_values_from_type(string $columnType): array
     return $vals;
 }
 
+/**
+ * Si la columna es ENUM, devuelve uno de los literales permitidos (evita "Data truncated").
+ * Si no es ENUM, devuelve $value sin cambiar.
+ */
+function repairly_coerce_value_for_enum_column(mysqli $conn, string $table, string $column, string $value): string
+{
+    $type = column_mysql_type($conn, $table, $column);
+    if ($type === null || stripos(trim($type), 'enum(') !== 0) {
+        return $value;
+    }
+    $allowed = mysql_enum_values_from_type($type);
+    if ($allowed === []) {
+        return $value;
+    }
+    $norm = static function (string $s): string {
+        return mb_strtolower(trim($s));
+    };
+    $v = trim($value);
+    $vn = $norm($v);
+    if ($vn === '') {
+        foreach (['otro', 'otros', 'general', 'varios', 'mixto', 'n/a', 'sin_clasificar'] as $hint) {
+            foreach ($allowed as $a) {
+                if ($norm((string)$a) === $hint) {
+                    return (string)$a;
+                }
+            }
+        }
+        return (string)$allowed[0];
+    }
+    foreach ($allowed as $a) {
+        if ($norm((string)$a) === $vn) {
+            return (string)$a;
+        }
+    }
+    foreach ($allowed as $a) {
+        $an = $norm((string)$a);
+        if ($an !== '' && str_contains($vn, $an)) {
+            return (string)$a;
+        }
+    }
+    foreach (['otro', 'otros', 'general', 'varios', 'mixto', 'n/a', 'sin_clasificar'] as $hint) {
+        foreach ($allowed as $a) {
+            $an = $norm((string)$a);
+            if ($an === $hint || str_contains($an, $hint)) {
+                return (string)$a;
+            }
+        }
+    }
+    return (string)$allowed[0];
+}
+
 function db_scalar(mysqli $conn, string $sql, int|float|string $default = 0): int|float|string
 {
     $res = $conn->query($sql);

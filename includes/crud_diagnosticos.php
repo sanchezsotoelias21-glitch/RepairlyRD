@@ -61,7 +61,8 @@ if ($current_page === 'diagnosticos' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $add($diag_col_orden, 'i', $id_orden);
             if ($diag_col_tipo !== null) {
-                $add($diag_col_tipo, 's', $tipo);
+                $tipoDb = repairly_coerce_value_for_enum_column($conn, $diag_table, $diag_col_tipo, $tipo);
+                $add($diag_col_tipo, 's', $tipoDb);
             }
             if ($diag_col_desc !== null) {
                 $add($diag_col_desc, 's', $descripcion !== '' ? $descripcion : '—');
@@ -116,7 +117,8 @@ if ($current_page === 'diagnosticos' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $push($diag_col_orden, 'i', $id_orden);
         }
         if ($diag_col_tipo !== null) {
-            $push($diag_col_tipo, 's', $tipo);
+            $tipoDb = repairly_coerce_value_for_enum_column($conn, $diag_table, $diag_col_tipo, $tipo);
+            $push($diag_col_tipo, 's', $tipoDb);
         }
         if ($diag_col_desc !== null) {
             $push($diag_col_desc, 's', $descripcion !== '' ? $descripcion : '—');
