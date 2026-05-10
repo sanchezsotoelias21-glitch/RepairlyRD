@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 $action = $_GET['action'] ?? '';
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$search_q = isset($_GET['q']) && is_string($_GET['q']) ? trim($_GET['q']) : '';
 
 if (empty($diag_table)) {
     echo '<div class="charts-card">Tabla Diagnostico no encontrada.</div>';
@@ -77,7 +78,54 @@ if ($orden_tbl !== '') {
     $ordenes_opts = db_rows($conn, $sql_ord);
 }
 
-$rows = db_rows($conn, "SELECT * FROM `{$diag_table}` ORDER BY `{$idField}` DESC LIMIT 200");
+$rows = [];
+$sql = "SELECT * FROM `{$diag_table}`";
+$types = '';
+$params = [];
+if ($search_q !== '') {
+    $like = '%' . $search_q . '%';
+    $ors = [];
+    $ors[] = "CAST(`{$idField}` AS CHAR) = ?";
+    $types .= 's';
+    $params[] = $search_q;
+    if ($diag_col_orden !== null) {
+        if (ctype_digit($search_q)) {
+            $ors[] = "`{$diag_col_orden}` = ?";
+            $types .= 'i';
+            $params[] = (int)$search_q;
+        } else {
+            $ors[] = "CAST(`{$diag_col_orden}` AS CHAR) LIKE ?";
+            $types .= 's';
+            $params[] = $like;
+        }
+    }
+    if ($diag_col_tipo !== null) {
+        $ors[] = "`{$diag_col_tipo}` LIKE ?";
+        $types .= 's';
+        $params[] = $like;
+    }
+    if ($diag_col_desc !== null) {
+        $ors[] = "`{$diag_col_desc}` LIKE ?";
+        $types .= 's';
+        $params[] = $like;
+    }
+    if ($ors !== []) {
+        $sql .= ' WHERE ' . implode(' OR ', $ors);
+    }
+}
+$sql .= " ORDER BY `{$idField}` DESC LIMIT 200";
+if ($types !== '') {
+    $st = $conn->prepare($sql);
+    if ($st) {
+        $st->bind_param($types, ...$params);
+        $st->execute();
+        $res = $st->get_result();
+        $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+        $st->close();
+    }
+} else {
+    $rows = db_rows($conn, $sql);
+}
 $edit = null;
 if ($action === 'edit' && $id > 0) {
     $st = $conn->prepare("SELECT * FROM `{$diag_table}` WHERE `{$idField}`=? LIMIT 1");
@@ -107,6 +155,19 @@ $ev_desc = $diag_col_desc !== null && $edit ? (string)($edit[$diag_col_desc] ?? 
                 <div class="card-sub">Por orden de reparación</div>
             </div>
             <a class="ordenes-ver-btn" href="?page=diagnosticos&action=new">Nuevo diagnóstico</a>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;">
+            <form method="get" style="display:flex;gap:8px;align-items:center;flex:1;min-width:240px;">
+                <input type="hidden" name="page" value="diagnosticos">
+                <div class="topbar-search" style="flex:1;min-width:220px;">
+                    <i class="ti ti-search" aria-hidden="true"></i>
+                    <input name="q" value="<?= h($search_q) ?>" placeholder="Buscar por orden, tipo o texto" style="border:0;background:transparent;outline:none;font:inherit;color:#4D4841;width:100%;">
+                </div>
+                <button class="ordenes-ver-btn" type="submit">Buscar</button>
+                <?php if ($search_q !== ''): ?>
+                    <a class="ordenes-ver-btn" href="?page=diagnosticos">Limpiar</a>
+                <?php endif; ?>
+            </form>
         </div>
         <?php if ($action === 'new' || $action === 'edit'): ?>
             <form method="post" style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:720px;">

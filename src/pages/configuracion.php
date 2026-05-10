@@ -5,6 +5,7 @@ declare(strict_types=1);
 /** @var mysqli $conn */
 /** @var bool $auth_is_admin */
 
+$search_q = isset($_GET['q']) && is_string($_GET['q']) ? trim($_GET['q']) : '';
 ?>
 <div class="charts-row">
     <div class="charts-card">
@@ -33,13 +34,70 @@ declare(strict_types=1);
             if ($ut !== '') {
                 $uc = table_columns($conn, $ut);
                 $idU = repairly_usuario_id_field($uc);
-                $all_users = db_rows($conn, "SELECT * FROM `{$ut}` ORDER BY `{$idU}` ASC");
+                $sql = "SELECT * FROM `{$ut}`";
+                $types = '';
+                $params = [];
+                if ($search_q !== '') {
+                    $like = '%' . $search_q . '%';
+                    $ors = [];
+                    $ors[] = "CAST(`{$idU}` AS CHAR) = ?";
+                    $types .= 's';
+                    $params[] = $search_q;
+
+                    $userCol = repairly_pick_column($uc, ['username', 'user', 'usuario', 'login', 'email']);
+                    if ($userCol !== null) {
+                        $ors[] = "`{$userCol}` LIKE ?";
+                        $types .= 's';
+                        $params[] = $like;
+                    }
+                    $rolCol = repairly_pick_column($uc, ['rol', 'role']);
+                    if ($rolCol !== null) {
+                        $ors[] = "`{$rolCol}` LIKE ?";
+                        $types .= 's';
+                        $params[] = $like;
+                    }
+                    $estCol = repairly_pick_column($uc, ['estado']);
+                    if ($estCol !== null) {
+                        $ors[] = "`{$estCol}` LIKE ?";
+                        $types .= 's';
+                        $params[] = $like;
+                    }
+                    if ($ors !== []) {
+                        $sql .= ' WHERE ' . implode(' OR ', $ors);
+                    }
+                }
+                $sql .= " ORDER BY `{$idU}` ASC";
+                if ($types !== '') {
+                    $st = $conn->prepare($sql);
+                    if ($st) {
+                        $st->bind_param($types, ...$params);
+                        $st->execute();
+                        $res = $st->get_result();
+                        $all_users = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+                        $st->close();
+                    }
+                } else {
+                    $all_users = db_rows($conn, $sql);
+                }
             }
             $roles_opts = ['administrador', 'tecnico', 'supervisor', 'operador', 'cliente', 'pendiente'];
             ?>
             <div style="margin-top:22px;padding:14px;border:0.5px solid #EDECEA;border-radius:10px;">
                 <div style="font-size:13px;font-weight:600;margin-bottom:10px;">Usuarios y roles</div>
                 <p style="font-size:11px;color:#6B6560;margin-bottom:12px;">Solo administradores pueden cambiar el rol. Los usuarios nuevos quedan como <strong>cliente</strong> hasta que se les asigne acceso al panel.</p>
+                <div style="display:flex;gap:8px;align-items:center;margin:10px 0 12px;flex-wrap:wrap;">
+                    <form method="get" style="display:flex;gap:8px;align-items:center;flex:1;min-width:240px;">
+                        <input type="hidden" name="page" value="configuracion">
+                        <div class="topbar-search" style="flex:1;min-width:220px;">
+                            <i class="ti ti-search" aria-hidden="true"></i>
+                            <input name="q" value="<?= h($search_q) ?>" placeholder="Buscar usuarios por nombre, rol o ID" style="border:0;background:transparent;outline:none;font:inherit;color:#4D4841;width:100%;">
+                        </div>
+                        <button class="ordenes-ver-btn" type="submit">Buscar</button>
+                        <?php if ($search_q !== ''): ?>
+                            <a class="ordenes-ver-btn" href="?page=configuracion">Limpiar</a>
+                        <?php endif; ?>
+                    </form>
+                </div>
                 <div class="table-head" style="grid-template-columns:56px 1fr 160px 100px;margin-bottom:0;">
                     <div>ID</div><div>Usuario</div><div>Rol</div><div></div>
                 </div>

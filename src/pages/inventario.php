@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 $action = $_GET['action'] ?? '';
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$search_q = isset($_GET['q']) && is_string($_GET['q']) ? trim($_GET['q']) : '';
 
 if (empty($pieza_table)) {
     echo '<div class="charts-card">Tabla Pieza no encontrada.</div>';
@@ -20,7 +21,43 @@ foreach (array_keys($pieza_cols) as $k) {
     }
 }
 
-$rows = db_rows($conn, "SELECT * FROM `{$pieza_table}` ORDER BY `{$idField}` DESC LIMIT 300");
+$rows = [];
+$sql = "SELECT * FROM `{$pieza_table}`";
+$types = '';
+$params = [];
+if ($search_q !== '') {
+    $like = '%' . $search_q . '%';
+    $ors = [];
+    $ors[] = "CAST(`{$idField}` AS CHAR) = ?";
+    $types .= 's';
+    $params[] = $search_q;
+    if ($pz_col_nombre !== null) {
+        $ors[] = "`{$pz_col_nombre}` LIKE ?";
+        $types .= 's';
+        $params[] = $like;
+    }
+    if ($pz_col_ref !== null) {
+        $ors[] = "`{$pz_col_ref}` LIKE ?";
+        $types .= 's';
+        $params[] = $like;
+    }
+    if ($ors !== []) {
+        $sql .= ' WHERE ' . implode(' OR ', $ors);
+    }
+}
+$sql .= " ORDER BY `{$idField}` DESC LIMIT 300";
+if ($types !== '') {
+    $st = $conn->prepare($sql);
+    if ($st) {
+        $st->bind_param($types, ...$params);
+        $st->execute();
+        $res = $st->get_result();
+        $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+        $st->close();
+    }
+} else {
+    $rows = db_rows($conn, $sql);
+}
 $edit = null;
 if ($action === 'edit' && $id > 0) {
     $st = $conn->prepare("SELECT * FROM `{$pieza_table}` WHERE `{$idField}`=? LIMIT 1");
@@ -47,6 +84,19 @@ $es = $pz_col_stock !== null && $edit ? (string)($edit[$pz_col_stock] ?? '0') : 
                 <div class="card-sub">Stock y precios</div>
             </div>
             <a class="ordenes-ver-btn" href="?page=inventario&action=new">Nueva pieza</a>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;">
+            <form method="get" style="display:flex;gap:8px;align-items:center;flex:1;min-width:240px;">
+                <input type="hidden" name="page" value="inventario">
+                <div class="topbar-search" style="flex:1;min-width:220px;">
+                    <i class="ti ti-search" aria-hidden="true"></i>
+                    <input name="q" value="<?= h($search_q) ?>" placeholder="Buscar por nombre, referencia o ID" style="border:0;background:transparent;outline:none;font:inherit;color:#4D4841;width:100%;">
+                </div>
+                <button class="ordenes-ver-btn" type="submit">Buscar</button>
+                <?php if ($search_q !== ''): ?>
+                    <a class="ordenes-ver-btn" href="?page=inventario">Limpiar</a>
+                <?php endif; ?>
+            </form>
         </div>
 
         <?php if ($action === 'new' || $action === 'edit'): ?>

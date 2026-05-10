@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 $action = $_GET['action'] ?? '';
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$search_q = isset($_GET['q']) && is_string($_GET['q']) ? trim($_GET['q']) : '';
 
 if (empty($tecnico_table)) {
     echo '<div class="charts-card">Tabla Técnico no encontrada.</div>';
@@ -20,7 +21,40 @@ foreach (array_keys($tecnico_cols) as $k) {
     }
 }
 
-$rows = db_rows($conn, "SELECT * FROM `{$tecnico_table}` ORDER BY `{$idField}` DESC LIMIT 200");
+$rows = [];
+$sql = "SELECT * FROM `{$tecnico_table}`";
+$types = '';
+$params = [];
+if ($search_q !== '') {
+    $like = '%' . $search_q . '%';
+    $ors = [];
+    $ors[] = "CAST(`{$idField}` AS CHAR) = ?";
+    $types .= 's';
+    $params[] = $search_q;
+    foreach (['nombre', 'especialidad', 'email', 'telefono'] as $c) {
+        if (isset($tecnico_cols[$c])) {
+            $ors[] = "`{$c}` LIKE ?";
+            $types .= 's';
+            $params[] = $like;
+        }
+    }
+    if ($ors !== []) {
+        $sql .= ' WHERE ' . implode(' OR ', $ors);
+    }
+}
+$sql .= " ORDER BY `{$idField}` DESC LIMIT 200";
+if ($types !== '') {
+    $st = $conn->prepare($sql);
+    if ($st) {
+        $st->bind_param($types, ...$params);
+        $st->execute();
+        $res = $st->get_result();
+        $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+        $st->close();
+    }
+} else {
+    $rows = db_rows($conn, $sql);
+}
 $edit = null;
 if ($action === 'edit' && $id > 0) {
     $st = $conn->prepare("SELECT * FROM `{$tecnico_table}` WHERE `{$idField}`=? LIMIT 1");
@@ -41,6 +75,19 @@ if ($action === 'edit' && $id > 0) {
                 <div class="card-sub">Equipo técnico del taller</div>
             </div>
             <a class="ordenes-ver-btn" href="?page=tecnicos&action=new">Nuevo técnico</a>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;">
+            <form method="get" style="display:flex;gap:8px;align-items:center;flex:1;min-width:240px;">
+                <input type="hidden" name="page" value="tecnicos">
+                <div class="topbar-search" style="flex:1;min-width:220px;">
+                    <i class="ti ti-search" aria-hidden="true"></i>
+                    <input name="q" value="<?= h($search_q) ?>" placeholder="Buscar por nombre, especialidad o ID" style="border:0;background:transparent;outline:none;font:inherit;color:#4D4841;width:100%;">
+                </div>
+                <button class="ordenes-ver-btn" type="submit">Buscar</button>
+                <?php if ($search_q !== ''): ?>
+                    <a class="ordenes-ver-btn" href="?page=tecnicos">Limpiar</a>
+                <?php endif; ?>
+            </form>
         </div>
         <?php if ($action === 'new' || $action === 'edit'): ?>
             <form method="post" style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:640px;">

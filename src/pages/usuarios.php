@@ -6,12 +6,58 @@ declare(strict_types=1);
 /** @var bool $auth_is_admin */
 
 $ut = repairly_usuario_table($conn);
+$search_q = isset($_GET['q']) && is_string($_GET['q']) ? trim($_GET['q']) : '';
 $rows = [];
 $idU = 'id_usuario';
 if ($ut !== '') {
     $uc = table_columns($conn, $ut);
     $idU = repairly_usuario_id_field($uc);
-    $rows = db_rows($conn, "SELECT * FROM `{$ut}` ORDER BY `{$idU}` ASC");
+
+    $sql = "SELECT * FROM `{$ut}`";
+    $types = '';
+    $params = [];
+    if ($search_q !== '') {
+        $like = '%' . $search_q . '%';
+        $ors = [];
+        $ors[] = "CAST(`{$idU}` AS CHAR) = ?";
+        $types .= 's';
+        $params[] = $search_q;
+
+        $userCol = repairly_pick_column($uc, ['username', 'user', 'usuario', 'login', 'email']);
+        if ($userCol !== null) {
+            $ors[] = "`{$userCol}` LIKE ?";
+            $types .= 's';
+            $params[] = $like;
+        }
+        $rolCol = repairly_pick_column($uc, ['rol', 'role']);
+        if ($rolCol !== null) {
+            $ors[] = "`{$rolCol}` LIKE ?";
+            $types .= 's';
+            $params[] = $like;
+        }
+        $estCol = repairly_pick_column($uc, ['estado']);
+        if ($estCol !== null) {
+            $ors[] = "`{$estCol}` LIKE ?";
+            $types .= 's';
+            $params[] = $like;
+        }
+        if ($ors !== []) {
+            $sql .= ' WHERE ' . implode(' OR ', $ors);
+        }
+    }
+    $sql .= " ORDER BY `{$idU}` ASC";
+    if ($types !== '') {
+        $st = $conn->prepare($sql);
+        if ($st) {
+            $st->bind_param($types, ...$params);
+            $st->execute();
+            $res = $st->get_result();
+            $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+            $st->close();
+        }
+    } else {
+        $rows = db_rows($conn, $sql);
+    }
 }
 ?>
 <div class="charts-row">
@@ -24,6 +70,19 @@ if ($ut !== '') {
             <?php if (!empty($auth_is_admin)): ?>
                 <a class="ordenes-ver-btn" href="?page=configuracion">Configuración</a>
             <?php endif; ?>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;">
+            <form method="get" style="display:flex;gap:8px;align-items:center;flex:1;min-width:240px;">
+                <input type="hidden" name="page" value="usuarios">
+                <div class="topbar-search" style="flex:1;min-width:220px;">
+                    <i class="ti ti-search" aria-hidden="true"></i>
+                    <input name="q" value="<?= h($search_q) ?>" placeholder="Buscar por usuario, rol, estado o ID" style="border:0;background:transparent;outline:none;font:inherit;color:#4D4841;width:100%;">
+                </div>
+                <button class="ordenes-ver-btn" type="submit">Buscar</button>
+                <?php if ($search_q !== ''): ?>
+                    <a class="ordenes-ver-btn" href="?page=usuarios">Limpiar</a>
+                <?php endif; ?>
+            </form>
         </div>
         <?php if ($ut === ''): ?>
             <p style="padding:12px;">Tabla Usuario no encontrada.</p>

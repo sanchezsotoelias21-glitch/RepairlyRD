@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 $action = $_GET['action'] ?? '';
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$search_q = isset($_GET['q']) && is_string($_GET['q']) ? trim($_GET['q']) : '';
 
 if (empty($equipo_table)) {
     echo '<div class="charts-card"><div class="card-title">Equipos</div><p style="padding:12px;color:#B83232;">No se encontró la tabla Equipo.</p></div>';
@@ -34,7 +35,46 @@ if ($cliente_pick !== '') {
     $clientes_opts = db_rows($conn, "SELECT `{$cid}` AS id, `nombre` FROM `{$cliente_pick}` ORDER BY `nombre` ASC LIMIT 500");
 }
 
-$rows = db_rows($conn, "SELECT * FROM `{$equipo_table}` ORDER BY `{$idField}` DESC LIMIT 150");
+$rows = [];
+$sql = "SELECT * FROM `{$equipo_table}`";
+$types = '';
+$params = [];
+if ($search_q !== '') {
+    $like = '%' . $search_q . '%';
+    $ors = [];
+    $ors[] = "CAST(`{$idField}` AS CHAR) = ?";
+    $types .= 's';
+    $params[] = $search_q;
+
+    foreach (['tipo', 'marca', 'modelo', 'numero_identificacion'] as $c) {
+        if (isset($equipo_cols[$c])) {
+            $ors[] = "`{$c}` LIKE ?";
+            $types .= 's';
+            $params[] = $like;
+        }
+    }
+    if (isset($equipo_cols['id_cliente']) && ctype_digit($search_q)) {
+        $ors[] = "`id_cliente` = ?";
+        $types .= 'i';
+        $params[] = (int)$search_q;
+    }
+    if ($ors !== []) {
+        $sql .= ' WHERE ' . implode(' OR ', $ors);
+    }
+}
+$sql .= " ORDER BY `{$idField}` DESC LIMIT 150";
+if ($types !== '') {
+    $st = $conn->prepare($sql);
+    if ($st) {
+        $st->bind_param($types, ...$params);
+        $st->execute();
+        $res = $st->get_result();
+        $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+        $st->close();
+    }
+} else {
+    $rows = db_rows($conn, $sql);
+}
 
 $edit = null;
 if ($action === 'edit' && $id > 0) {
@@ -56,6 +96,19 @@ if ($action === 'edit' && $id > 0) {
                 <div class="card-sub">Registro de equipos y vínculo con clientes</div>
             </div>
             <a class="ordenes-ver-btn" href="?page=equipos&action=new">Nuevo equipo</a>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;">
+            <form method="get" style="display:flex;gap:8px;align-items:center;flex:1;min-width:240px;">
+                <input type="hidden" name="page" value="equipos">
+                <div class="topbar-search" style="flex:1;min-width:220px;">
+                    <i class="ti ti-search" aria-hidden="true"></i>
+                    <input name="q" value="<?= h($search_q) ?>" placeholder="Buscar por tipo, marca, modelo o ID" style="border:0;background:transparent;outline:none;font:inherit;color:#4D4841;width:100%;">
+                </div>
+                <button class="ordenes-ver-btn" type="submit">Buscar</button>
+                <?php if ($search_q !== ''): ?>
+                    <a class="ordenes-ver-btn" href="?page=equipos">Limpiar</a>
+                <?php endif; ?>
+            </form>
         </div>
         <?php if ($action === 'new' || $action === 'edit'): ?>
             <form method="post" style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:720px;">

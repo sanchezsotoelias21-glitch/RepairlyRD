@@ -5,11 +5,57 @@ declare(strict_types=1);
 /** @var mysqli $conn */
 
 $nt = pick_table($conn, ['notificacion', 'Notificacion']);
+$search_q = isset($_GET['q']) && is_string($_GET['q']) ? trim($_GET['q']) : '';
 $rows = [];
 if ($nt !== '') {
     $nc = table_columns($conn, $nt);
     $ord = isset($nc['fecha_envio']) ? 'fecha_envio' : 'id_notificacion';
-    $rows = db_rows($conn, "SELECT * FROM `{$nt}` ORDER BY `{$ord}` DESC LIMIT 200");
+    $sql = "SELECT * FROM `{$nt}`";
+    $types = '';
+    $params = [];
+    if ($search_q !== '') {
+        $like = '%' . $search_q . '%';
+        $ors = [];
+        foreach (['tipo', 'mensaje', 'estado'] as $c) {
+            if (isset($nc[$c])) {
+                $ors[] = "`{$c}` LIKE ?";
+                $types .= 's';
+                $params[] = $like;
+            }
+        }
+        if (isset($nc['id_orden'])) {
+            if (ctype_digit($search_q)) {
+                $ors[] = "`id_orden` = ?";
+                $types .= 'i';
+                $params[] = (int)$search_q;
+            } else {
+                $ors[] = "CAST(`id_orden` AS CHAR) LIKE ?";
+                $types .= 's';
+                $params[] = $like;
+            }
+        }
+        if (isset($nc['id_notificacion'])) {
+            $ors[] = "CAST(`id_notificacion` AS CHAR) = ?";
+            $types .= 's';
+            $params[] = $search_q;
+        }
+        if ($ors !== []) {
+            $sql .= ' WHERE ' . implode(' OR ', $ors);
+        }
+    }
+    $sql .= " ORDER BY `{$ord}` DESC LIMIT 200";
+    if ($types !== '') {
+        $st = $conn->prepare($sql);
+        if ($st) {
+            $st->bind_param($types, ...$params);
+            $st->execute();
+            $res = $st->get_result();
+            $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+            $st->close();
+        }
+    } else {
+        $rows = db_rows($conn, $sql);
+    }
 }
 ?>
 <div class="charts-row">
@@ -19,6 +65,19 @@ if ($nt !== '') {
                 <div class="card-title">Notificaciones</div>
                 <div class="card-sub">Historial reciente del sistema</div>
             </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;">
+            <form method="get" style="display:flex;gap:8px;align-items:center;flex:1;min-width:240px;">
+                <input type="hidden" name="page" value="notificaciones">
+                <div class="topbar-search" style="flex:1;min-width:220px;">
+                    <i class="ti ti-search" aria-hidden="true"></i>
+                    <input name="q" value="<?= h($search_q) ?>" placeholder="Buscar por tipo, mensaje u orden" style="border:0;background:transparent;outline:none;font:inherit;color:#4D4841;width:100%;">
+                </div>
+                <button class="ordenes-ver-btn" type="submit">Buscar</button>
+                <?php if ($search_q !== ''): ?>
+                    <a class="ordenes-ver-btn" href="?page=notificaciones">Limpiar</a>
+                <?php endif; ?>
+            </form>
         </div>
         <?php if ($nt === ''): ?>
             <p style="padding:12px;color:#B83232;">Tabla Notificacion no encontrada.</p>

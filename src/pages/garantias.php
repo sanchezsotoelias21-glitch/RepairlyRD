@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 $action = $_GET['action'] ?? '';
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$search_q = isset($_GET['q']) && is_string($_GET['q']) ? trim($_GET['q']) : '';
 
 if (empty($garantia_table_name)) {
     echo '<div class="charts-card">Tabla Garantia no encontrada.</div>';
@@ -38,7 +39,54 @@ if ($orden_tbl !== '') {
     }
 }
 
-$rows = db_rows($conn, "SELECT * FROM `{$garantia_table_name}` ORDER BY `{$idField}` DESC LIMIT 200");
+$rows = [];
+$sql = "SELECT * FROM `{$garantia_table_name}`";
+$types = '';
+$params = [];
+if ($search_q !== '') {
+    $like = '%' . $search_q . '%';
+    $ors = [];
+    $ors[] = "CAST(`{$idField}` AS CHAR) = ?";
+    $types .= 's';
+    $params[] = $search_q;
+    if ($gar_col_orden !== null) {
+        if (ctype_digit($search_q)) {
+            $ors[] = "`{$gar_col_orden}` = ?";
+            $types .= 'i';
+            $params[] = (int)$search_q;
+        } else {
+            $ors[] = "CAST(`{$gar_col_orden}` AS CHAR) LIKE ?";
+            $types .= 's';
+            $params[] = $like;
+        }
+    }
+    if ($gar_col_tipo !== null) {
+        $ors[] = "`{$gar_col_tipo}` LIKE ?";
+        $types .= 's';
+        $params[] = $like;
+    }
+    if ($gar_col_est !== null) {
+        $ors[] = "`{$gar_col_est}` LIKE ?";
+        $types .= 's';
+        $params[] = $like;
+    }
+    if ($ors !== []) {
+        $sql .= ' WHERE ' . implode(' OR ', $ors);
+    }
+}
+$sql .= " ORDER BY `{$idField}` DESC LIMIT 200";
+if ($types !== '') {
+    $st = $conn->prepare($sql);
+    if ($st) {
+        $st->bind_param($types, ...$params);
+        $st->execute();
+        $res = $st->get_result();
+        $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+        $st->close();
+    }
+} else {
+    $rows = db_rows($conn, $sql);
+}
 $edit = null;
 if ($action === 'edit' && $id > 0) {
     $st = $conn->prepare("SELECT * FROM `{$garantia_table_name}` WHERE `{$idField}`=? LIMIT 1");
@@ -66,6 +114,20 @@ $eest = $gar_col_est !== null && $edit ? (string)($edit[$gar_col_est] ?? 'activa
                 <div class="card-sub">Vinculadas a órdenes</div>
             </div>
             <a class="ordenes-ver-btn" href="?page=garantias&action=new">Nueva garantía</a>
+        </div>
+
+        <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;">
+            <form method="get" style="display:flex;gap:8px;align-items:center;flex:1;min-width:240px;">
+                <input type="hidden" name="page" value="garantias">
+                <div class="topbar-search" style="flex:1;min-width:220px;">
+                    <i class="ti ti-search" aria-hidden="true"></i>
+                    <input name="q" value="<?= h($search_q) ?>" placeholder="Buscar por orden, tipo, estado o ID" style="border:0;background:transparent;outline:none;font:inherit;color:#4D4841;width:100%;">
+                </div>
+                <button class="ordenes-ver-btn" type="submit">Buscar</button>
+                <?php if ($search_q !== ''): ?>
+                    <a class="ordenes-ver-btn" href="?page=garantias">Limpiar</a>
+                <?php endif; ?>
+            </form>
         </div>
 
         <?php if ($action === 'new' || $action === 'edit'): ?>
