@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 /** @var mysqli $conn */
 
-$t = $_GET['t'] ?? '';
-$m = $_GET['m'] ?? '';
 $action = $_GET['action'] ?? '';
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $ord_q = isset($_GET['ord_q']) && is_string($_GET['ord_q']) ? trim($_GET['ord_q']) : '';
@@ -104,9 +102,6 @@ $estado_name = function (int $eid) use ($estados): string {
             <button class="ordenes-ver-btn" type="submit">Filtrar</button>
             <?php if ($ord_q !== ''): ?><a class="ordenes-ver-btn" href="?page=ordenes">Limpiar</a><?php endif; ?>
         </form>
-        <?php if ($t === 'ok' && is_string($m) && $m !== ''): ?>
-            <div style="margin-top:10px;font-size:12px;color:#1B5E20;"><?= h($m) ?></div>
-        <?php endif; ?>
 
         <?php if ($action === 'new' || $action === 'edit'): ?>
             <form method="post" style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:800px;">
@@ -122,7 +117,7 @@ $estado_name = function (int $eid) use ($estados): string {
                 <?php if (isset($orden_cols['id_equipo'])): ?>
                     <div style="grid-column:1/-1;">
                         <label style="font-size:10px;color:#6B6560;">Equipo</label>
-                        <select name="id_equipo" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;">
+                        <select name="id_equipo" required style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;">
                             <option value="0">—</option>
                             <?php foreach ($equipos_list as $e): ?>
                                 <option value="<?= (int)$e['id_equipo'] ?>" <?= (int)($edit['id_equipo'] ?? 0) === (int)$e['id_equipo'] ? 'selected' : '' ?>><?= h((string)($e['label'] ?? $e['id_equipo'])) ?></option>
@@ -144,7 +139,7 @@ $estado_name = function (int $eid) use ($estados): string {
                 <?php if (isset($orden_cols['id_estado_actual'])): ?>
                     <div>
                         <label style="font-size:10px;color:#6B6560;">Estado</label>
-                        <select name="id_estado_actual" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;">
+                        <select name="id_estado_actual" required style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;">
                             <option value="0">—</option>
                             <?php foreach ($estados as $e): ?>
                                 <option value="<?= (int)($e['id_estado'] ?? 0) ?>" <?= (int)($edit['id_estado_actual'] ?? 0) === (int)($e['id_estado'] ?? 0) ? 'selected' : '' ?>><?= h((string)($e['nombre_estado'] ?? '')) ?></option>

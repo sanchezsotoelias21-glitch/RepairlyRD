@@ -36,6 +36,22 @@ if ($current_page === 'ordenes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $fecha_ent_real = trim((string)($_POST['fecha_entrega_real'] ?? ''));
 
     if ($post_action === 'create' || $post_action === 'update') {
+        // Validaciones mínimas (alineado con otros CRUDs)
+        if (isset($orden_cols['id_equipo']) && $id_equipo <= 0) {
+            $back = $post_action === 'update'
+                ? ('?page=ordenes&action=edit&id=' . (int)($_POST['id_orden'] ?? 0))
+                : '?page=ordenes&action=new';
+            header('Location: ' . $back . '&t=err&m=Debes+seleccionar+un+equipo');
+            exit;
+        }
+        if (isset($orden_cols['id_estado_actual']) && $id_estado <= 0) {
+            $back = $post_action === 'update'
+                ? ('?page=ordenes&action=edit&id=' . (int)($_POST['id_orden'] ?? 0))
+                : '?page=ordenes&action=new';
+            header('Location: ' . $back . '&t=err&m=Debes+seleccionar+un+estado');
+            exit;
+        }
+
         $data = [];
         if (isset($orden_cols['codigo_seguimiento'])) {
             $data['codigo_seguimiento'] = $codigo !== '' ? $codigo : ('ORD-' . strtoupper(bin2hex(random_bytes(3))));
@@ -55,8 +71,9 @@ if ($current_page === 'ordenes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($orden_cols['costo_total'])) {
             $data['costo_total'] = $costo_total;
         }
-        if (isset($orden_cols['fecha_ingreso']) && $fecha_ingreso !== '') {
-            $data['fecha_ingreso'] = $fecha_ingreso;
+        if (isset($orden_cols['fecha_ingreso'])) {
+            // Si existe la columna y no envían fecha, usar la de hoy.
+            $data['fecha_ingreso'] = $fecha_ingreso !== '' ? $fecha_ingreso : date('Y-m-d');
         }
         if (isset($orden_cols['fecha_estimada_entrega']) && $fecha_est !== '') {
             $data['fecha_estimada_entrega'] = $fecha_est;
@@ -98,12 +115,16 @@ if ($current_page === 'ordenes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $sql = "INSERT INTO `{$orden_table_name}` (" . implode(',', $fields) . ') VALUES (' . implode(',', array_fill(0, count($fields), '?')) . ')';
             $stmt = $conn->prepare($sql);
-            if ($stmt && $types !== '') {
-                $stmt->bind_param($types, ...$vals);
-                $stmt->execute();
-                $stmt->close();
+            if (!$stmt) {
+                header('Location: ?page=ordenes&t=err&m=No+se+pudo+crear+la+orden');
+                exit;
             }
-            header('Location: ?page=ordenes&t=' . ($stmt ? 'ok' : 'err') . '&m=' . ($stmt ? 'Orden+creada' : 'Error'));
+            if ($types !== '') {
+                $stmt->bind_param($types, ...$vals);
+            }
+            $ok = $stmt->execute();
+            $stmt->close();
+            header('Location: ?page=ordenes&t=' . ($ok ? 'ok' : 'err') . '&m=' . ($ok ? 'Orden+creada' : 'Error+al+crear'));
             exit;
         }
 
@@ -139,14 +160,16 @@ if ($current_page === 'ordenes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $sql = "UPDATE `{$orden_table_name}` SET " . implode(',', $sets) . " WHERE `{$idField}`=? LIMIT 1";
         $stmt = $conn->prepare($sql);
-        if ($stmt) {
-            $typesU .= 'i';
-            $valsU[] = $id;
-            $stmt->bind_param($typesU, ...$valsU);
-            $stmt->execute();
-            $stmt->close();
+        if (!$stmt) {
+            header('Location: ?page=ordenes&t=err&m=No+se+pudo+actualizar');
+            exit;
         }
-        header('Location: ?page=ordenes&t=ok&m=Orden+actualizada');
+        $typesU .= 'i';
+        $valsU[] = $id;
+        $stmt->bind_param($typesU, ...$valsU);
+        $ok = $stmt->execute();
+        $stmt->close();
+        header('Location: ?page=ordenes&t=' . ($ok ? 'ok' : 'err') . '&m=' . ($ok ? 'Orden+actualizada' : 'Error+al+actualizar'));
         exit;
     }
 
@@ -157,12 +180,14 @@ if ($current_page === 'ordenes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
         $stmt = $conn->prepare("DELETE FROM `{$orden_table_name}` WHERE `{$idField}`=? LIMIT 1");
-        if ($stmt) {
-            $stmt->bind_param('i', $id);
-            $stmt->execute();
-            $stmt->close();
+        if (!$stmt) {
+            header('Location: ?page=ordenes&t=err&m=No+se+pudo+eliminar');
+            exit;
         }
-        header('Location: ?page=ordenes&t=ok&m=Orden+eliminada');
+        $stmt->bind_param('i', $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        header('Location: ?page=ordenes&t=' . ($ok ? 'ok' : 'err') . '&m=' . ($ok ? 'Orden+eliminada' : 'Error+al+eliminar'));
         exit;
     }
 }
