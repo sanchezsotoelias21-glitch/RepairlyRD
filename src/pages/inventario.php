@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 /** @var mysqli $conn */
 
-$t = $_GET['t'] ?? '';
-$m = $_GET['m'] ?? '';
 $action = $_GET['action'] ?? '';
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
@@ -34,6 +32,12 @@ if ($action === 'edit' && $id > 0) {
         $st->close();
     }
 }
+
+$en = $pz_col_nombre !== null && $edit ? (string)($edit[$pz_col_nombre] ?? '') : '';
+$er = $pz_col_ref !== null && $edit ? (string)($edit[$pz_col_ref] ?? '') : '';
+$epc = $pz_col_pc !== null && $edit ? (string)($edit[$pz_col_pc] ?? '0') : '0';
+$epv = $pz_col_pv !== null && $edit ? (string)($edit[$pz_col_pv] ?? '0') : '0';
+$es = $pz_col_stock !== null && $edit ? (string)($edit[$pz_col_stock] ?? '0') : '0';
 ?>
 <div class="charts-row">
     <div class="charts-card">
@@ -44,42 +48,41 @@ if ($action === 'edit' && $id > 0) {
             </div>
             <a class="ordenes-ver-btn" href="?page=inventario&action=new">Nueva pieza</a>
         </div>
-        <?php if ($t === 'ok' && is_string($m) && $m !== ''): ?>
-            <div style="margin-top:8px;font-size:12px;color:#1B5E20;"><?= h($m) ?></div>
-        <?php endif; ?>
 
         <?php if ($action === 'new' || $action === 'edit'): ?>
+            <?php if ($pz_col_nombre === null): ?>
+                <p style="padding:12px;color:#B83232;font-size:12px;">La tabla no tiene una columna de nombre reconocida (nombre, nombre_pieza, descripcion).</p>
+            <?php else: ?>
             <form method="post" style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:640px;">
                 <input type="hidden" name="csrf" value="<?= h($_SESSION['csrf']) ?>">
                 <input type="hidden" name="piezas_action" value="<?= $action === 'edit' ? 'update' : 'create' ?>">
                 <?php if ($action === 'edit'): ?>
                     <input type="hidden" name="id_pieza" value="<?= (int)($edit[$idField] ?? 0) ?>">
                 <?php endif; ?>
-                <?php if (isset($pieza_cols['nombre'])): ?>
-                    <div style="grid-column:1/-1;"><label style="font-size:10px;color:#6B6560;">Nombre *</label>
-                        <input name="nombre" required style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;" value="<?= h((string)($edit['nombre'] ?? '')) ?>"></div>
-                <?php endif; ?>
-                <?php if (isset($pieza_cols['referencia'])): ?>
+                <div style="grid-column:1/-1;"><label style="font-size:10px;color:#6B6560;">Nombre *</label>
+                    <input name="nombre" required style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;" value="<?= h($action === 'edit' ? $en : '') ?>"></div>
+                <?php if ($pz_col_ref !== null): ?>
                     <div><label style="font-size:10px;color:#6B6560;">Referencia</label>
-                        <input name="referencia" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;" value="<?= h((string)($edit['referencia'] ?? '')) ?>"></div>
+                        <input name="referencia" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;" value="<?= h($action === 'edit' ? $er : '') ?>"></div>
                 <?php endif; ?>
-                <?php if (isset($pieza_cols['precio_compra'])): ?>
+                <?php if ($pz_col_pc !== null): ?>
                     <div><label style="font-size:10px;color:#6B6560;">Precio compra</label>
-                        <input name="precio_compra" type="number" step="0.01" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;" value="<?= h((string)($edit['precio_compra'] ?? '0')) ?>"></div>
+                        <input name="precio_compra" type="number" step="0.01" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;" value="<?= h($action === 'edit' ? $epc : '0') ?>"></div>
                 <?php endif; ?>
-                <?php if (isset($pieza_cols['precio_venta'])): ?>
+                <?php if ($pz_col_pv !== null): ?>
                     <div><label style="font-size:10px;color:#6B6560;">Precio venta</label>
-                        <input name="precio_venta" type="number" step="0.01" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;" value="<?= h((string)($edit['precio_venta'] ?? '0')) ?>"></div>
+                        <input name="precio_venta" type="number" step="0.01" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;" value="<?= h($action === 'edit' ? $epv : '0') ?>"></div>
                 <?php endif; ?>
-                <?php if (isset($pieza_cols['stock'])): ?>
+                <?php if ($pz_col_stock !== null): ?>
                     <div><label style="font-size:10px;color:#6B6560;">Stock</label>
-                        <input name="stock" type="number" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;" value="<?= h((string)($edit['stock'] ?? '0')) ?>"></div>
+                        <input name="stock" type="number" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;" value="<?= h($action === 'edit' ? $es : '0') ?>"></div>
                 <?php endif; ?>
                 <div style="grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end;">
                     <a class="ordenes-ver-btn" href="?page=inventario">Cancelar</a>
                     <button type="submit" class="ordenes-ver-btn" style="background:#1F5C8B;color:#fff;border-color:#1F5C8B;">Guardar</button>
                 </div>
             </form>
+            <?php endif; ?>
         <?php endif; ?>
 
         <div style="margin-top:14px;border-top:0.5px solid #EDECEA;padding-top:12px;">
@@ -87,12 +90,18 @@ if ($action === 'edit' && $id > 0) {
                 <div>ID</div><div>Nombre</div><div>Ref.</div><div>Stock</div><div>P. venta</div><div style="text-align:right;">Acciones</div>
             </div>
             <?php foreach ($rows as $r): ?>
+                <?php
+                $rn = $pz_col_nombre !== null ? (string)($r[$pz_col_nombre] ?? '') : '';
+                $rr = $pz_col_ref !== null ? (string)($r[$pz_col_ref] ?? '') : '';
+                $rsv = $pz_col_stock !== null ? (int)($r[$pz_col_stock] ?? 0) : 0;
+                $rpv = $pz_col_pv !== null ? (float)($r[$pz_col_pv] ?? 0) : 0.0;
+                ?>
                 <div class="table-row" style="grid-template-columns:48px 1fr 100px 80px 80px 120px;">
                     <div class="order-id"><?= (int)($r[$idField] ?? 0) ?></div>
-                    <div class="order-cliente"><?= h((string)($r['nombre'] ?? '')) ?></div>
-                    <div class="order-tecnico"><?= h((string)($r['referencia'] ?? '')) ?></div>
-                    <div><?= (int)($r['stock'] ?? 0) ?></div>
-                    <div>$<?= number_format((float)($r['precio_venta'] ?? 0), 2) ?></div>
+                    <div class="order-cliente"><?= h($rn) ?></div>
+                    <div class="order-tecnico"><?= h($rr) ?></div>
+                    <div><?= $rsv ?></div>
+                    <div>$<?= number_format($rpv, 2) ?></div>
                     <div style="display:flex;gap:6px;justify-content:flex-end;">
                         <a class="ordenes-ver-btn" href="?page=inventario&action=edit&id=<?= (int)($r[$idField] ?? 0) ?>">Editar</a>
                         <form method="post" style="display:inline;" onsubmit="return confirm('¿Eliminar pieza?');">

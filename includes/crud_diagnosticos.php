@@ -2,8 +2,14 @@
 
 declare(strict_types=1);
 
-$diag_table = pick_table($conn, ['diagnostico', 'Diagnostico']);
+$diag_table = pick_table($conn, ['diagnostico', 'Diagnostico', 'DIAGNOSTICO']);
 $diag_cols = $diag_table ? table_columns($conn, $diag_table) : [];
+
+$diag_col_orden = $diag_table ? repairly_pick_column($diag_cols, ['id_orden', 'orden_id']) : null;
+$diag_col_tipo = $diag_table ? repairly_pick_column($diag_cols, ['tipo', 'tipo_diagnostico', 'categoria']) : null;
+$diag_col_desc = $diag_table ? repairly_pick_column($diag_cols, ['descripcion', 'detalle', 'notas', 'comentario']) : null;
+$diag_col_cost = $diag_table ? repairly_pick_column($diag_cols, ['costo_estimado', 'costo', 'precio_estimado', 'monto_estimado']) : null;
+$diag_col_fecha = $diag_table ? repairly_pick_column($diag_cols, ['fecha', 'fecha_diagnostico', 'fecha_registro']) : null;
 
 if ($current_page === 'diagnosticos' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     require_csrf();
@@ -26,95 +32,110 @@ if ($current_page === 'diagnosticos' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $id_orden = (int)($_POST['id_orden'] ?? 0);
-    $tipo = trim((string)($_POST['tipo'] ?? ''));
-    $descripcion = trim((string)($_POST['descripcion'] ?? ''));
+    $tipo = isset($_POST['tipo']) && is_string($_POST['tipo']) ? trim($_POST['tipo']) : '';
+    $descripcion = isset($_POST['descripcion']) && is_string($_POST['descripcion']) ? trim($_POST['descripcion']) : '';
     $costo_estimado = (float)str_replace(',', '.', (string)($_POST['costo_estimado'] ?? '0'));
-    $fecha = trim((string)($_POST['fecha'] ?? date('Y-m-d')));
+    $fecha = isset($_POST['fecha']) && is_string($_POST['fecha']) ? trim($_POST['fecha']) : '';
 
     if ($post_action === 'create' || $post_action === 'update') {
+        if ($diag_col_orden === null) {
+            header('Location: ?page=diagnosticos&t=err&m=La+tabla+no+tiene+columna+de+orden');
+            exit;
+        }
+
         if ($post_action === 'create') {
+            if ($id_orden <= 0) {
+                header('Location: ?page=diagnosticos&action=new&t=err&m=Selecciona+una+orden');
+                exit;
+            }
+
             $fields = [];
             $types = '';
             $vals = [];
-            $map = [
-                'id_orden' => $id_orden,
-                'tipo' => $tipo,
-                'descripcion' => $descripcion,
-                'costo_estimado' => $costo_estimado,
-                'fecha' => $fecha,
-            ];
-            foreach ($map as $col => $val) {
-                if (!isset($diag_cols[$col])) {
-                    continue;
-                }
+
+            $add = static function (string $col, string $t, int|float|string $v) use (&$fields, &$types, &$vals): void {
                 $fields[] = "`{$col}`";
-                if ($col === 'id_orden') {
-                    $types .= 'i';
-                    $vals[] = (int)$val;
-                } elseif ($col === 'costo_estimado') {
-                    $types .= 'd';
-                    $vals[] = (float)$val;
-                } else {
-                    $types .= 's';
-                    $vals[] = (string)$val;
-                }
+                $types .= $t;
+                $vals[] = $v;
+            };
+
+            $add($diag_col_orden, 'i', $id_orden);
+            if ($diag_col_tipo !== null) {
+                $add($diag_col_tipo, 's', $tipo);
             }
-            if (empty($fields) || $id_orden <= 0) {
-                header('Location: ?page=diagnosticos&action=new&t=err&m=Datos+insuficientes');
+            if ($diag_col_desc !== null) {
+                $add($diag_col_desc, 's', $descripcion !== '' ? $descripcion : '—');
+            }
+            if ($diag_col_cost !== null) {
+                $add($diag_col_cost, 'd', $costo_estimado);
+            }
+            if ($diag_col_fecha !== null) {
+                $fechaIns = $fecha !== '' ? $fecha : date('Y-m-d');
+                $add($diag_col_fecha, 's', $fechaIns);
+            }
+
+            $sql = 'INSERT INTO `' . $diag_table . '` (' . implode(',', $fields) . ') VALUES (' . implode(',', array_fill(0, count($fields), '?')) . ')';
+            $stmt = $conn->prepare($sql);
+            if (!$stmt) {
+                header('Location: ?page=diagnosticos&t=err&m=No+se+pudo+crear+el+diagn%C3%B3stico');
                 exit;
             }
-            $sql = "INSERT INTO `{$diag_table}` (" . implode(',', $fields) . ') VALUES (' . implode(',', array_fill(0, count($fields), '?')) . ')';
-            $stmt = $conn->prepare($sql);
-            if ($stmt && $types !== '') {
-                $stmt->bind_param($types, ...$vals);
-                $stmt->execute();
-                $stmt->close();
-            }
-            header('Location: ?page=diagnosticos&t=ok&m=Diagn%C3%B3stico+creado');
+            $stmt->bind_param($types, ...$vals);
+            $ok = $stmt->execute();
+            $stmt->close();
+            header('Location: ?page=diagnosticos&t=' . ($ok ? 'ok' : 'err') . '&m=' . ($ok ? 'Diagn%C3%B3stico+creado' : 'Error+al+crear'));
             exit;
         }
+
         $id = (int)($_POST['id_diagnostico'] ?? 0);
         if ($id <= 0) {
             header('Location: ?page=diagnosticos&t=err&m=ID+inv%C3%A1lido');
             exit;
         }
+
         $sets = [];
         $typesU = '';
         $valsU = [];
-        foreach (
-            [
-            'id_orden' => $id_orden,
-            'tipo' => $tipo,
-            'descripcion' => $descripcion,
-            'costo_estimado' => $costo_estimado,
-            'fecha' => $fecha,
-            ] as $col => $val
-        ) {
-            if (!isset($diag_cols[$col])) {
-                continue;
-            }
+
+        $push = static function (string $col, string $t, int|float|string $v) use (&$sets, &$typesU, &$valsU): void {
             $sets[] = "`{$col}`=?";
-            if ($col === 'id_orden') {
-                $typesU .= 'i';
-                $valsU[] = (int)$val;
-            } elseif ($col === 'costo_estimado') {
-                $typesU .= 'd';
-                $valsU[] = (float)$val;
-            } else {
-                $typesU .= 's';
-                $valsU[] = (string)$val;
-            }
+            $typesU .= $t;
+            $valsU[] = $v;
+        };
+
+        if ($id_orden > 0) {
+            $push($diag_col_orden, 'i', $id_orden);
         }
+        if ($diag_col_tipo !== null) {
+            $push($diag_col_tipo, 's', $tipo);
+        }
+        if ($diag_col_desc !== null) {
+            $push($diag_col_desc, 's', $descripcion !== '' ? $descripcion : '—');
+        }
+        if ($diag_col_cost !== null) {
+            $push($diag_col_cost, 'd', $costo_estimado);
+        }
+        if ($diag_col_fecha !== null) {
+            $push($diag_col_fecha, 's', $fecha !== '' ? $fecha : date('Y-m-d'));
+        }
+
+        if ($sets === []) {
+            header('Location: ?page=diagnosticos&t=err&m=Nada+que+actualizar');
+            exit;
+        }
+
         $sql = "UPDATE `{$diag_table}` SET " . implode(',', $sets) . " WHERE `{$idField}`=? LIMIT 1";
         $stmt = $conn->prepare($sql);
-        if ($stmt) {
-            $typesU .= 'i';
-            $valsU[] = $id;
-            $stmt->bind_param($typesU, ...$valsU);
-            $stmt->execute();
-            $stmt->close();
+        if (!$stmt) {
+            header('Location: ?page=diagnosticos&t=err&m=No+se+pudo+actualizar');
+            exit;
         }
-        header('Location: ?page=diagnosticos&t=ok&m=Actualizado');
+        $typesU .= 'i';
+        $valsU[] = $id;
+        $stmt->bind_param($typesU, ...$valsU);
+        $ok = $stmt->execute();
+        $stmt->close();
+        header('Location: ?page=diagnosticos&t=' . ($ok ? 'ok' : 'err') . '&m=' . ($ok ? 'Actualizado' : 'Error+al+actualizar'));
         exit;
     }
 
@@ -125,12 +146,14 @@ if ($current_page === 'diagnosticos' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
         $stmt = $conn->prepare("DELETE FROM `{$diag_table}` WHERE `{$idField}`=? LIMIT 1");
-        if ($stmt) {
-            $stmt->bind_param('i', $id);
-            $stmt->execute();
-            $stmt->close();
+        if (!$stmt) {
+            header('Location: ?page=diagnosticos&t=err&m=No+se+pudo+eliminar');
+            exit;
         }
-        header('Location: ?page=diagnosticos&t=ok&m=Eliminado');
+        $stmt->bind_param('i', $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        header('Location: ?page=diagnosticos&t=' . ($ok ? 'ok' : 'err') . '&m=' . ($ok ? 'Eliminado' : 'Error+al+eliminar'));
         exit;
     }
 }

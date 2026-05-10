@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 /** @var mysqli $conn */
 
-$t = $_GET['t'] ?? '';
-$m = $_GET['m'] ?? '';
 $action = $_GET['action'] ?? '';
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
@@ -91,6 +89,15 @@ if ($action === 'edit' && $id > 0) {
         $st->close();
     }
 }
+
+$edit_id_orden = 0;
+if ($edit && $diag_col_orden !== null) {
+    $edit_id_orden = (int)($edit[$diag_col_orden] ?? 0);
+}
+$ev_tipo = $diag_col_tipo !== null && $edit ? (string)($edit[$diag_col_tipo] ?? '') : '';
+$ev_cost = $diag_col_cost !== null && $edit ? (string)($edit[$diag_col_cost] ?? '0') : '0';
+$ev_fecha = $diag_col_fecha !== null && $edit ? substr((string)($edit[$diag_col_fecha] ?? date('Y-m-d')), 0, 10) : substr(date('Y-m-d'), 0, 10);
+$ev_desc = $diag_col_desc !== null && $edit ? (string)($edit[$diag_col_desc] ?? '') : '';
 ?>
 <div class="charts-row">
     <div class="charts-card">
@@ -101,10 +108,6 @@ if ($action === 'edit' && $id > 0) {
             </div>
             <a class="ordenes-ver-btn" href="?page=diagnosticos&action=new">Nuevo diagnóstico</a>
         </div>
-        <?php if ($t === 'ok' && is_string($m) && $m !== ''): ?>
-            <div style="margin-top:8px;font-size:12px;color:#1B5E20;"><?= h($m) ?></div>
-        <?php endif; ?>
-
         <?php if ($action === 'new' || $action === 'edit'): ?>
             <form method="post" style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:720px;">
                 <input type="hidden" name="csrf" value="<?= h($_SESSION['csrf']) ?>">
@@ -112,7 +115,7 @@ if ($action === 'edit' && $id > 0) {
                 <?php if ($action === 'edit'): ?>
                     <input type="hidden" name="id_diagnostico" value="<?= (int)($edit[$idField] ?? 0) ?>">
                 <?php endif; ?>
-                <?php if (isset($diag_cols['id_orden'])): ?>
+                <?php if ($diag_col_orden !== null): ?>
                     <div style="grid-column:1/-1;">
                         <label style="font-size:10px;color:#6B6560;">Orden</label>
                         <select id="diag-id-orden" name="id_orden" required style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;">
@@ -132,28 +135,28 @@ if ($action === 'edit' && $id > 0) {
                                     data-orden-precio="<?= h((string)$op) ?>"
                                     data-orden-fecha="<?= h($of) ?>"
                                     data-orden-desc="<?= h($od) ?>"
-                                    <?= (int)($edit['id_orden'] ?? 0) === (int)$o['id_orden'] ? 'selected' : '' ?>
+                                    <?= $edit_id_orden === (int)$o['id_orden'] ? 'selected' : '' ?>
                                 ><?= h((string)($o['lbl'] ?? $o['id_orden'])) ?></option>
                             <?php endforeach; ?>
                         </select>
                         <p style="font-size:10px;color:#6B6560;margin-top:6px;">Al elegir una orden se rellenan tipo, costo estimado, fecha y descripción con los datos de la orden y el equipo vinculado (puedes editarlos antes de guardar).</p>
                     </div>
                 <?php endif; ?>
-                <?php if (isset($diag_cols['tipo'])): ?>
+                <?php if ($diag_col_tipo !== null): ?>
                     <div><label style="font-size:10px;color:#6B6560;">Tipo</label>
-                        <input name="tipo" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;" value="<?= h((string)($edit['tipo'] ?? '')) ?>"></div>
+                        <input name="tipo" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;" value="<?= h($action === 'edit' ? $ev_tipo : '') ?>"></div>
                 <?php endif; ?>
-                <?php if (isset($diag_cols['costo_estimado'])): ?>
+                <?php if ($diag_col_cost !== null): ?>
                     <div><label style="font-size:10px;color:#6B6560;">Costo estimado</label>
-                        <input name="costo_estimado" type="number" step="0.01" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;" value="<?= h((string)($edit['costo_estimado'] ?? '0')) ?>"></div>
+                        <input name="costo_estimado" type="number" step="0.01" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;" value="<?= h($action === 'edit' ? $ev_cost : '0') ?>"></div>
                 <?php endif; ?>
-                <?php if (isset($diag_cols['fecha'])): ?>
+                <?php if ($diag_col_fecha !== null): ?>
                     <div><label style="font-size:10px;color:#6B6560;">Fecha</label>
-                        <input name="fecha" type="date" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;" value="<?= h(substr((string)($edit['fecha'] ?? date('Y-m-d')), 0, 10)) ?>"></div>
+                        <input name="fecha" type="date" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;" value="<?= h($action === 'edit' ? $ev_fecha : substr(date('Y-m-d'), 0, 10)) ?>"></div>
                 <?php endif; ?>
-                <?php if (isset($diag_cols['descripcion'])): ?>
+                <?php if ($diag_col_desc !== null): ?>
                     <div style="grid-column:1/-1;"><label style="font-size:10px;color:#6B6560;">Descripción</label>
-                        <textarea name="descripcion" rows="3" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;"><?= h((string)($edit['descripcion'] ?? '')) ?></textarea></div>
+                        <textarea name="descripcion" rows="3" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;"><?= h($action === 'edit' ? $ev_desc : '') ?></textarea></div>
                 <?php endif; ?>
                 <div style="grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end;">
                     <a class="ordenes-ver-btn" href="?page=diagnosticos">Cancelar</a>
@@ -167,11 +170,17 @@ if ($action === 'edit' && $id > 0) {
                 <div>ID</div><div>Orden</div><div>Tipo / Descripción</div><div>Fecha</div><div style="text-align:right;">Acciones</div>
             </div>
             <?php foreach ($rows as $r): ?>
+                <?php
+                $rid_ord = $diag_col_orden !== null ? (int)($r[$diag_col_orden] ?? 0) : 0;
+                $rtipo = $diag_col_tipo !== null ? (string)($r[$diag_col_tipo] ?? '') : '';
+                $rdesc = $diag_col_desc !== null ? (string)($r[$diag_col_desc] ?? '') : '';
+                $rfecha = $diag_col_fecha !== null ? (string)($r[$diag_col_fecha] ?? '') : '';
+                ?>
                 <div class="table-row" style="grid-template-columns:52px 80px 1fr 100px 120px;">
                     <div class="order-id"><?= (int)($r[$idField] ?? 0) ?></div>
-                    <div><?= (int)($r['id_orden'] ?? 0) ?></div>
-                    <div class="order-tecnico" style="font-size:11px;"><?= h((string)($r['tipo'] ?? '')) ?> — <?= h(mb_substr((string)($r['descripcion'] ?? ''), 0, 80)) ?></div>
-                    <div style="font-size:11px;"><?= h(substr((string)($r['fecha'] ?? ''), 0, 10)) ?></div>
+                    <div><?= $rid_ord ?></div>
+                    <div class="order-tecnico" style="font-size:11px;"><?= h($rtipo) ?> — <?= h(mb_substr($rdesc, 0, 80)) ?></div>
+                    <div style="font-size:11px;"><?= h(substr($rfecha, 0, 10)) ?></div>
                     <div style="display:flex;gap:6px;justify-content:flex-end;">
                         <a class="ordenes-ver-btn" href="?page=diagnosticos&action=edit&id=<?= (int)($r[$idField] ?? 0) ?>">Editar</a>
                         <form method="post" style="display:inline;" onsubmit="return confirm('¿Eliminar?');">
@@ -186,7 +195,7 @@ if ($action === 'edit' && $id > 0) {
         </div>
     </div>
 </div>
-<?php if (($action === 'new' || $action === 'edit') && isset($diag_cols['id_orden'])): ?>
+<?php if (($action === 'new' || $action === 'edit') && $diag_col_orden !== null): ?>
 <script>
 (function () {
     'use strict';

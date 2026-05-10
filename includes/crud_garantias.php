@@ -2,8 +2,15 @@
 
 declare(strict_types=1);
 
-$garantia_table_name = pick_table($conn, ['garantia', 'Garantia']);
+$garantia_table_name = pick_table($conn, ['garantia', 'Garantia', 'GARANTIA']);
 $garantia_cols = $garantia_table_name ? table_columns($conn, $garantia_table_name) : [];
+
+$gar_col_orden = $garantia_table_name ? repairly_pick_column($garantia_cols, ['id_orden', 'orden_id']) : null;
+$gar_col_fi = $garantia_table_name ? repairly_pick_column($garantia_cols, ['fecha_inicio', 'inicio', 'fecha_ini']) : null;
+$gar_col_ff = $garantia_table_name ? repairly_pick_column($garantia_cols, ['fecha_fin', 'fin', 'fecha_vencimiento', 'vencimiento']) : null;
+$gar_col_cob = $garantia_table_name ? repairly_pick_column($garantia_cols, ['cobertura_dias', 'dias', 'duracion_dias']) : null;
+$gar_col_tipo = $garantia_table_name ? repairly_pick_column($garantia_cols, ['tipo', 'tipo_garantia']) : null;
+$gar_col_est = $garantia_table_name ? repairly_pick_column($garantia_cols, ['estado']) : null;
 
 if ($current_page === 'garantias' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     require_csrf();
@@ -26,87 +33,130 @@ if ($current_page === 'garantias' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $id_orden = (int)($_POST['id_orden'] ?? 0);
-    $fecha_inicio = trim((string)($_POST['fecha_inicio'] ?? ''));
-    $fecha_fin = trim((string)($_POST['fecha_fin'] ?? ''));
+    $fecha_inicio = isset($_POST['fecha_inicio']) && is_string($_POST['fecha_inicio']) ? trim($_POST['fecha_inicio']) : '';
+    $fecha_fin = isset($_POST['fecha_fin']) && is_string($_POST['fecha_fin']) ? trim($_POST['fecha_fin']) : '';
     $cobertura_dias = (int)($_POST['cobertura_dias'] ?? 0);
-    $tipo = trim((string)($_POST['tipo'] ?? ''));
-    $estado = trim((string)($_POST['estado'] ?? 'activa'));
+    $tipo = isset($_POST['tipo']) && is_string($_POST['tipo']) ? trim($_POST['tipo']) : '';
+    $estado = isset($_POST['estado']) && is_string($_POST['estado']) ? trim($_POST['estado']) : 'activa';
 
     if ($post_action === 'create' || $post_action === 'update') {
-        $map = [
-            'id_orden' => $id_orden,
-            'fecha_inicio' => $fecha_inicio,
-            'fecha_fin' => $fecha_fin,
-            'cobertura_dias' => $cobertura_dias,
-            'tipo' => $tipo,
-            'estado' => $estado,
-        ];
+        if ($gar_col_orden === null) {
+            header('Location: ?page=garantias&t=err&m=La+tabla+no+tiene+columna+de+orden');
+            exit;
+        }
+
+        if ($gar_col_ff !== null && $fecha_fin === '') {
+            $baseIni = $fecha_inicio !== '' ? $fecha_inicio : date('Y-m-d');
+            if ($cobertura_dias > 0) {
+                $fecha_fin = date('Y-m-d', strtotime('+' . max(0, $cobertura_dias) . ' days', strtotime($baseIni)));
+            } else {
+                $fecha_fin = $baseIni;
+            }
+        }
+
         if ($post_action === 'create') {
             if ($id_orden <= 0) {
                 header('Location: ?page=garantias&action=new&t=err&m=Orden+requerida');
                 exit;
             }
+
             $fields = [];
             $types = '';
             $vals = [];
-            foreach ($map as $col => $val) {
-                if (!isset($garantia_cols[$col])) {
-                    continue;
-                }
+
+            $add = static function (string $col, string $t, int|float|string $v) use (&$fields, &$types, &$vals): void {
                 $fields[] = "`{$col}`";
-                if ($col === 'id_orden' || $col === 'cobertura_dias') {
-                    $types .= 'i';
-                    $vals[] = (int)$val;
-                } else {
-                    $types .= 's';
-                    $vals[] = (string)$val;
-                }
+                $types .= $t;
+                $vals[] = $v;
+            };
+
+            $add($gar_col_orden, 'i', $id_orden);
+            if ($gar_col_fi !== null) {
+                $add($gar_col_fi, 's', $fecha_inicio !== '' ? $fecha_inicio : date('Y-m-d'));
             }
-            if (empty($fields)) {
+            if ($gar_col_ff !== null) {
+                $add($gar_col_ff, 's', $fecha_fin);
+            }
+            if ($gar_col_cob !== null) {
+                $add($gar_col_cob, 'i', $cobertura_dias);
+            }
+            if ($gar_col_tipo !== null) {
+                $add($gar_col_tipo, 's', $tipo !== '' ? $tipo : 'estándar');
+            }
+            if ($gar_col_est !== null) {
+                $add($gar_col_est, 's', $estado !== '' ? $estado : 'activa');
+            }
+
+            if ($fields === []) {
                 header('Location: ?page=garantias&t=err&m=Sin+columnas');
                 exit;
             }
-            $sql = "INSERT INTO `{$garantia_table_name}` (" . implode(',', $fields) . ') VALUES (' . implode(',', array_fill(0, count($fields), '?')) . ')';
+
+            $sql = 'INSERT INTO `' . $garantia_table_name . '` (' . implode(',', $fields) . ') VALUES (' . implode(',', array_fill(0, count($fields), '?')) . ')';
             $stmt = $conn->prepare($sql);
-            if ($stmt && $types !== '') {
-                $stmt->bind_param($types, ...$vals);
-                $stmt->execute();
-                $stmt->close();
+            if (!$stmt) {
+                header('Location: ?page=garantias&t=err&m=No+se+pudo+crear+la+garant%C3%ADa');
+                exit;
             }
-            header('Location: ?page=garantias&t=ok&m=Garant%C3%ADa+creada');
+            $stmt->bind_param($types, ...$vals);
+            $ok = $stmt->execute();
+            $stmt->close();
+            header('Location: ?page=garantias&t=' . ($ok ? 'ok' : 'err') . '&m=' . ($ok ? 'Garant%C3%ADa+creada' : 'Error+al+crear'));
             exit;
         }
+
         $id = (int)($_POST['id_garantia'] ?? 0);
         if ($id <= 0) {
             header('Location: ?page=garantias&t=err&m=ID+inv%C3%A1lido');
             exit;
         }
+
         $sets = [];
         $typesU = '';
         $valsU = [];
-        foreach ($map as $col => $val) {
-            if (!isset($garantia_cols[$col])) {
-                continue;
-            }
+
+        $push = static function (string $col, string $t, int|float|string $v) use (&$sets, &$typesU, &$valsU): void {
             $sets[] = "`{$col}`=?";
-            if ($col === 'id_orden' || $col === 'cobertura_dias') {
-                $typesU .= 'i';
-                $valsU[] = (int)$val;
-            } else {
-                $typesU .= 's';
-                $valsU[] = (string)$val;
-            }
+            $typesU .= $t;
+            $valsU[] = $v;
+        };
+
+        if ($id_orden > 0) {
+            $push($gar_col_orden, 'i', $id_orden);
         }
+        if ($gar_col_fi !== null) {
+            $push($gar_col_fi, 's', $fecha_inicio !== '' ? $fecha_inicio : date('Y-m-d'));
+        }
+        if ($gar_col_ff !== null) {
+            $push($gar_col_ff, 's', $fecha_fin);
+        }
+        if ($gar_col_cob !== null) {
+            $push($gar_col_cob, 'i', $cobertura_dias);
+        }
+        if ($gar_col_tipo !== null) {
+            $push($gar_col_tipo, 's', $tipo);
+        }
+        if ($gar_col_est !== null) {
+            $push($gar_col_est, 's', $estado);
+        }
+
+        if ($sets === []) {
+            header('Location: ?page=garantias&t=err&m=Nada+que+actualizar');
+            exit;
+        }
+
         $sql = "UPDATE `{$garantia_table_name}` SET " . implode(',', $sets) . " WHERE `{$idField}`=? LIMIT 1";
         $stmt = $conn->prepare($sql);
-        if ($stmt) {
-            $typesU .= 'i';
-            $valsU[] = $id;
-            $stmt->bind_param($typesU, ...$valsU);
-            $stmt->execute();
-            $stmt->close();
+        if (!$stmt) {
+            header('Location: ?page=garantias&t=err&m=No+se+pudo+actualizar');
+            exit;
         }
-        header('Location: ?page=garantias&t=ok&m=Actualizada');
+        $typesU .= 'i';
+        $valsU[] = $id;
+        $stmt->bind_param($typesU, ...$valsU);
+        $ok = $stmt->execute();
+        $stmt->close();
+        header('Location: ?page=garantias&t=' . ($ok ? 'ok' : 'err') . '&m=' . ($ok ? 'Actualizada' : 'Error+al+actualizar'));
         exit;
     }
 
@@ -117,12 +167,14 @@ if ($current_page === 'garantias' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
         $stmt = $conn->prepare("DELETE FROM `{$garantia_table_name}` WHERE `{$idField}`=? LIMIT 1");
-        if ($stmt) {
-            $stmt->bind_param('i', $id);
-            $stmt->execute();
-            $stmt->close();
+        if (!$stmt) {
+            header('Location: ?page=garantias&t=err&m=No+se+pudo+eliminar');
+            exit;
         }
-        header('Location: ?page=garantias&t=ok&m=Eliminada');
+        $stmt->bind_param('i', $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        header('Location: ?page=garantias&t=' . ($ok ? 'ok' : 'err') . '&m=' . ($ok ? 'Eliminada' : 'Error+al+eliminar'));
         exit;
     }
 }

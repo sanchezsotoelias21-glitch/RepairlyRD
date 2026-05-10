@@ -147,3 +147,22 @@ function db_rows(mysqli $conn, string $sql): array
     $res->free();
     return $rows;
 }
+
+/**
+ * Devuelve el nombre real de columna en $cols que coincide con el primer candidato (comparación sin mayúsculas).
+ *
+ * @param array<string, mixed> $cols
+ * @param list<string> $candidates
+ */
+function repairly_pick_column(array $cols, array $candidates): ?string
+{
+    foreach ($candidates as $cand) {
+        $want = mb_strtolower(trim((string)$cand));
+        foreach (array_keys($cols) as $k) {
+            if (mb_strtolower((string)$k) === $want) {
+                return (string)$k;
+            }
+        }
+    }
+    return null;
+}
