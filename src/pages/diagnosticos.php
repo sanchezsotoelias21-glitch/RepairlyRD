@@ -22,8 +22,62 @@ foreach (array_keys($diag_cols) as $k) {
     }
 }
 
-$orden_tbl = pick_table($conn, ['orden_reparacion', 'Orden_Reparacion']);
-$ordenes_opts = $orden_tbl !== '' ? db_rows($conn, "SELECT `id_orden`, COALESCE(`codigo_seguimiento`, CAST(`id_orden` AS CHAR)) AS lbl FROM `{$orden_tbl}` ORDER BY `id_orden` DESC LIMIT 300") : [];
+$orden_tbl = pick_table($conn, ['orden_reparacion', 'Orden_Reparacion', 'orden']);
+$orden_cols_for_join = $orden_tbl !== '' ? table_columns($conn, $orden_tbl) : [];
+$eq_tbl_diag = pick_table($conn, ['equipo', 'Equipo']);
+$orden_id_col = 'id_orden';
+foreach (array_keys($orden_cols_for_join) as $ok) {
+    if (strcasecmp((string)$ok, 'id_orden') === 0) {
+        $orden_id_col = $ok;
+        break;
+    }
+}
+
+$ordenes_opts = [];
+if ($orden_tbl !== '') {
+    $sel = ["o.`{$orden_id_col}` AS id_orden"];
+    if (isset($orden_cols_for_join['codigo_seguimiento'])) {
+        $sel[] = "COALESCE(o.`codigo_seguimiento`, CAST(o.`{$orden_id_col}` AS CHAR)) AS lbl";
+    } else {
+        $sel[] = "CAST(o.`{$orden_id_col}` AS CHAR) AS lbl";
+    }
+    $tipo_expr = "''";
+    if ($eq_tbl_diag !== '' && isset($orden_cols_for_join['id_equipo'])) {
+        $tipo_expr = "TRIM(CONCAT(COALESCE(e.`tipo`,''),' ',COALESCE(e.`marca`,''),' ',COALESCE(e.`modelo`,'')))";
+    }
+    $sel[] = "{$tipo_expr} AS orden_tipo";
+    $precio_parts = [];
+    if (isset($orden_cols_for_join['costo_total'])) {
+        $precio_parts[] = 'o.`costo_total`';
+    }
+    if (isset($orden_cols_for_join['mano_obra'])) {
+        $precio_parts[] = 'o.`mano_obra`';
+    }
+    $sel[] = $precio_parts !== []
+        ? ('COALESCE(' . implode(',', $precio_parts) . ',0) AS orden_precio')
+        : '0 AS orden_precio';
+    if (isset($orden_cols_for_join['fecha_ingreso'])) {
+        $sel[] = 'COALESCE(DATE(o.`fecha_ingreso`), CURDATE()) AS orden_fecha';
+    } elseif (isset($orden_cols_for_join['fecha_creacion'])) {
+        $sel[] = 'COALESCE(DATE(o.`fecha_creacion`), CURDATE()) AS orden_fecha';
+    } else {
+        $sel[] = 'CURDATE() AS orden_fecha';
+    }
+    $cod_ref = isset($orden_cols_for_join['codigo_seguimiento'])
+        ? "CONCAT('Orden ', COALESCE(o.`codigo_seguimiento`, CAST(o.`{$orden_id_col}` AS CHAR)))"
+        : "CONCAT('Orden #', o.`{$orden_id_col}`)";
+    if ($eq_tbl_diag !== '' && isset($orden_cols_for_join['id_equipo'])) {
+        $sel[] = "TRIM(CONCAT_WS(' · ', {$cod_ref}, NULLIF({$tipo_expr}, ''))) AS orden_descripcion";
+    } else {
+        $sel[] = "{$cod_ref} AS orden_descripcion";
+    }
+    $from = "FROM `{$orden_tbl}` o";
+    $join = ($eq_tbl_diag !== '' && isset($orden_cols_for_join['id_equipo']))
+        ? " LEFT JOIN `{$eq_tbl_diag}` e ON e.`id_equipo` = o.`id_equipo`"
+        : '';
+    $sql_ord = 'SELECT ' . implode(', ', $sel) . " {$from}{$join} ORDER BY o.`{$orden_id_col}` DESC LIMIT 300";
+    $ordenes_opts = db_rows($conn, $sql_ord);
+}
 
 $rows = db_rows($conn, "SELECT * FROM `{$diag_table}` ORDER BY `{$idField}` DESC LIMIT 200");
 $edit = null;
@@ -61,11 +115,28 @@ if ($action === 'edit' && $id > 0) {
                 <?php if (isset($diag_cols['id_orden'])): ?>
                     <div style="grid-column:1/-1;">
                         <label style="font-size:10px;color:#6B6560;">Orden</label>
-                        <select name="id_orden" required style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;">
+                        <select id="diag-id-orden" name="id_orden" required style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;">
                             <?php foreach ($ordenes_opts as $o): ?>
-                                <option value="<?= (int)$o['id_orden'] ?>" <?= (int)($edit['id_orden'] ?? 0) === (int)$o['id_orden'] ? 'selected' : '' ?>><?= h((string)($o['lbl'] ?? $o['id_orden'])) ?></option>
+                                <?php
+                                $ot = (string)($o['orden_tipo'] ?? '');
+                                $op = isset($o['orden_precio']) ? (float)$o['orden_precio'] : 0.0;
+                                $of = (string)($o['orden_fecha'] ?? '');
+                                if ($of !== '' && strlen($of) > 10) {
+                                    $of = substr($of, 0, 10);
+                                }
+                                $od = (string)($o['orden_descripcion'] ?? '');
+                                ?>
+                                <option
+                                    value="<?= (int)$o['id_orden'] ?>"
+                                    data-orden-tipo="<?= h($ot) ?>"
+                                    data-orden-precio="<?= h((string)$op) ?>"
+                                    data-orden-fecha="<?= h($of) ?>"
+                                    data-orden-desc="<?= h($od) ?>"
+                                    <?= (int)($edit['id_orden'] ?? 0) === (int)$o['id_orden'] ? 'selected' : '' ?>
+                                ><?= h((string)($o['lbl'] ?? $o['id_orden'])) ?></option>
                             <?php endforeach; ?>
                         </select>
+                        <p style="font-size:10px;color:#6B6560;margin-top:6px;">Al elegir una orden se rellenan tipo, costo estimado, fecha y descripción con los datos de la orden y el equipo vinculado (puedes editarlos antes de guardar).</p>
                     </div>
                 <?php endif; ?>
                 <?php if (isset($diag_cols['tipo'])): ?>
@@ -115,3 +186,36 @@ if ($action === 'edit' && $id > 0) {
         </div>
     </div>
 </div>
+<?php if (($action === 'new' || $action === 'edit') && isset($diag_cols['id_orden'])): ?>
+<script>
+(function () {
+    'use strict';
+    var sel = document.getElementById('diag-id-orden');
+    if (!sel) return;
+    var ti = document.querySelector('input[name="tipo"]');
+    var pr = document.querySelector('input[name="costo_estimado"]');
+    var fe = document.querySelector('input[name="fecha"]');
+    var de = document.querySelector('textarea[name="descripcion"]');
+    function applyFromOrden() {
+        var opt = sel.options[sel.selectedIndex];
+        if (!opt) return;
+        var t = opt.getAttribute('data-orden-tipo') || '';
+        var p = opt.getAttribute('data-orden-precio') || '';
+        var f = opt.getAttribute('data-orden-fecha') || '';
+        var d = opt.getAttribute('data-orden-desc') || '';
+        if (ti) ti.value = t;
+        if (pr) pr.value = p;
+        if (fe) fe.value = f.length > 10 ? f.slice(0, 10) : f;
+        if (de) de.value = d;
+    }
+    sel.addEventListener('change', applyFromOrden);
+    <?php if ($action === 'new'): ?>
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', applyFromOrden);
+    } else {
+        applyFromOrden();
+    }
+    <?php endif; ?>
+})();
+</script>
+<?php endif; ?>
