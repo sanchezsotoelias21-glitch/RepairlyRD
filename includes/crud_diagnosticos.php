@@ -8,7 +8,7 @@ $diag_cols = $diag_table ? table_columns($conn, $diag_table) : [];
 $diag_col_orden = $diag_table ? repairly_pick_column($diag_cols, ['id_orden', 'orden_id']) : null;
 $diag_col_tipo = $diag_table ? repairly_pick_column($diag_cols, ['tipo', 'tipo_diagnostico', 'categoria']) : null;
 $diag_col_desc = $diag_table ? repairly_pick_column($diag_cols, ['descripcion', 'detalle', 'notas', 'comentario']) : null;
-$diag_col_cost = $diag_table ? repairly_pick_column($diag_cols, ['costo_estimado', 'costo', 'precio_estimado', 'monto_estimado']) : null;
+$diag_col_cost = $diag_table ? repairly_pick_column($diag_cols, ['costo_estimado', 'costo', 'precio_estimado', 'monto_estimado', 'valor', 'importe', 'precio', 'monto']) : null;
 $diag_col_fecha = $diag_table ? repairly_pick_column($diag_cols, ['fecha', 'fecha_diagnostico', 'fecha_registro']) : null;
 
 if ($current_page === 'diagnosticos' && $_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -67,23 +67,32 @@ if ($current_page === 'diagnosticos' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 $add($diag_col_desc, 's', $descripcion !== '' ? $descripcion : '—');
             }
             if ($diag_col_cost !== null) {
-                $add($diag_col_cost, 'd', $costo_estimado);
+                [$ct, $cv] = repairly_mysqli_param_for_column($conn, $diag_table, $diag_col_cost, $costo_estimado);
+                $add($diag_col_cost, $ct, $cv);
             }
             if ($diag_col_fecha !== null) {
                 $fechaIns = $fecha !== '' ? $fecha : date('Y-m-d');
-                $add($diag_col_fecha, 's', $fechaIns);
+                $fechaSql = repairly_sql_date_value_for_column($conn, $diag_table, $diag_col_fecha, $fechaIns);
+                $add($diag_col_fecha, 's', $fechaSql);
             }
 
             $sql = 'INSERT INTO `' . $diag_table . '` (' . implode(',', $fields) . ') VALUES (' . implode(',', array_fill(0, count($fields), '?')) . ')';
             $stmt = $conn->prepare($sql);
             if (!$stmt) {
-                header('Location: ?page=diagnosticos&t=err&m=No+se+pudo+crear+el+diagn%C3%B3stico');
+                $prepErr = $conn->error !== '' ? (': ' . $conn->error) : '';
+                header('Location: ?page=diagnosticos&t=err&m=' . rawurlencode('No se pudo preparar el guardado' . $prepErr));
                 exit;
             }
             $stmt->bind_param($types, ...$vals);
             $ok = $stmt->execute();
+            if (!$ok) {
+                $sqlErr = $stmt->error !== '' ? $stmt->error : $conn->error;
+                $stmt->close();
+                header('Location: ?page=diagnosticos&t=err&m=' . rawurlencode('Error al crear' . ($sqlErr !== '' ? (': ' . $sqlErr) : '')));
+                exit;
+            }
             $stmt->close();
-            header('Location: ?page=diagnosticos&t=' . ($ok ? 'ok' : 'err') . '&m=' . ($ok ? 'Diagn%C3%B3stico+creado' : 'Error+al+crear'));
+            header('Location: ?page=diagnosticos&t=ok&m=' . rawurlencode('Diagnóstico creado'));
             exit;
         }
 
@@ -113,10 +122,12 @@ if ($current_page === 'diagnosticos' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $push($diag_col_desc, 's', $descripcion !== '' ? $descripcion : '—');
         }
         if ($diag_col_cost !== null) {
-            $push($diag_col_cost, 'd', $costo_estimado);
+            [$ct, $cv] = repairly_mysqli_param_for_column($conn, $diag_table, $diag_col_cost, $costo_estimado);
+            $push($diag_col_cost, $ct, $cv);
         }
         if ($diag_col_fecha !== null) {
-            $push($diag_col_fecha, 's', $fecha !== '' ? $fecha : date('Y-m-d'));
+            $fd = $fecha !== '' ? $fecha : date('Y-m-d');
+            $push($diag_col_fecha, 's', repairly_sql_date_value_for_column($conn, $diag_table, $diag_col_fecha, $fd));
         }
 
         if ($sets === []) {
@@ -127,15 +138,21 @@ if ($current_page === 'diagnosticos' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $sql = "UPDATE `{$diag_table}` SET " . implode(',', $sets) . " WHERE `{$idField}`=? LIMIT 1";
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
-            header('Location: ?page=diagnosticos&t=err&m=No+se+pudo+actualizar');
+            header('Location: ?page=diagnosticos&t=err&m=' . rawurlencode('No se pudo actualizar' . ($conn->error !== '' ? (': ' . $conn->error) : '')));
             exit;
         }
         $typesU .= 'i';
         $valsU[] = $id;
         $stmt->bind_param($typesU, ...$valsU);
         $ok = $stmt->execute();
+        if (!$ok) {
+            $sqlErr = $stmt->error !== '' ? $stmt->error : $conn->error;
+            $stmt->close();
+            header('Location: ?page=diagnosticos&t=err&m=' . rawurlencode('Error al actualizar' . ($sqlErr !== '' ? (': ' . $sqlErr) : '')));
+            exit;
+        }
         $stmt->close();
-        header('Location: ?page=diagnosticos&t=' . ($ok ? 'ok' : 'err') . '&m=' . ($ok ? 'Actualizado' : 'Error+al+actualizar'));
+        header('Location: ?page=diagnosticos&t=ok&m=' . rawurlencode('Actualizado'));
         exit;
     }
 

@@ -156,13 +156,61 @@ function db_rows(mysqli $conn, string $sql): array
  */
 function repairly_pick_column(array $cols, array $candidates): ?string
 {
+    $norm = static function (string $s): string {
+        return (string)preg_replace('/[^a-z0-9]/', '', mb_strtolower($s));
+    };
     foreach ($candidates as $cand) {
-        $want = mb_strtolower(trim((string)$cand));
+        $want = $norm((string)$cand);
+        if ($want === '') {
+            continue;
+        }
         foreach (array_keys($cols) as $k) {
-            if (mb_strtolower((string)$k) === $want) {
+            if ($norm((string)$k) === $want) {
                 return (string)$k;
             }
         }
     }
     return null;
+}
+
+/**
+ * Tipo mysqli y valor listos para bind_param según el tipo SQL de la columna.
+ *
+ * @return array{0: 'i'|'d'|'s', 1: int|float|string}
+ */
+function repairly_mysqli_param_for_column(mysqli $conn, string $table, string $column, mixed $value): array
+{
+    $type = column_mysql_type($conn, $table, $column);
+    if ($type === null) {
+        if (is_int($value)) {
+            return ['i', $value];
+        }
+        if (is_float($value)) {
+            return ['d', $value];
+        }
+        return ['s', (string)$value];
+    }
+    $t = trim($type);
+    if (mysql_type_is_integer_like($t)) {
+        return ['i', (int)$value];
+    }
+    if ((bool)preg_match('/^(decimal|float|double|numeric)\b/i', $t)) {
+        return ['d', (float)$value];
+    }
+    return ['s', (string)$value];
+}
+
+/** Valor fecha/hora acorde a DATE vs DATETIME/TIMESTAMP. */
+function repairly_sql_date_value_for_column(mysqli $conn, string $table, string $column, string $fechaYmd): string
+{
+    $fechaYmd = substr(trim($fechaYmd), 0, 10);
+    if ($fechaYmd === '') {
+        $fechaYmd = date('Y-m-d');
+    }
+    $type = column_mysql_type($conn, $table, $column);
+    if ($type !== null && (bool)preg_match('/\b(datetime|timestamp)\b/i', $type)) {
+        $ts = strtotime($fechaYmd);
+        return $ts ? date('Y-m-d H:i:s', $ts) : date('Y-m-d H:i:s');
+    }
+    return $fechaYmd;
 }
