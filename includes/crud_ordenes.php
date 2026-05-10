@@ -17,6 +17,41 @@ if ($current_page === 'ordenes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    // Sembrar estados por defecto (cuando el selector sale vacío).
+    if ($post_action === 'seed_estados') {
+        $estados_tbl = pick_table($conn, ['estado_servicio', 'estado', 'Estado_Servicio']);
+        $target = $estados_tbl !== '' ? $estados_tbl : 'estado_servicio';
+
+        $ok = true;
+        $sqlCreate = "
+            CREATE TABLE IF NOT EXISTS `{$target}` (
+                `id_estado` INT AUTO_INCREMENT PRIMARY KEY,
+                `nombre_estado` VARCHAR(60) NOT NULL UNIQUE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ";
+        if (!$conn->query($sqlCreate)) {
+            $ok = false;
+        } else {
+            $defaults = ['Recibido', 'En diagnóstico', 'En reparación', 'En espera de piezas', 'Listo para entrega', 'Entregado'];
+            $ins = $conn->prepare("INSERT IGNORE INTO `{$target}` (`nombre_estado`) VALUES (?)");
+            if (!$ins) {
+                $ok = false;
+            } else {
+                foreach ($defaults as $name) {
+                    $ins->bind_param('s', $name);
+                    if (!$ins->execute()) {
+                        $ok = false;
+                        break;
+                    }
+                }
+                $ins->close();
+            }
+        }
+
+        header('Location: ?page=ordenes&t=' . ($ok ? 'ok' : 'err') . '&m=' . ($ok ? 'Estados+creados' : 'No+se+pudieron+crear+los+estados'));
+        exit;
+    }
+
     $idField = 'id_orden';
     foreach (array_keys($orden_cols) as $k) {
         if (strcasecmp((string)$k, 'id_orden') === 0) {

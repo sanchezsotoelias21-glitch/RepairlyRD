@@ -103,6 +103,17 @@ $estado_name = function (int $eid) use ($estados): string {
             <?php if ($ord_q !== ''): ?><a class="ordenes-ver-btn" href="?page=ordenes">Limpiar</a><?php endif; ?>
         </form>
 
+        <?php if (empty($estados)): ?>
+            <div style="margin-top:12px;padding:12px;border:0.5px solid #EDECEA;border-radius:10px;max-width:800px;">
+                <div style="font-size:12px;color:#6B6560;">No hay estados disponibles para las órdenes. Crea los estados por defecto para poder guardar una orden.</div>
+                <form method="post" style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end;">
+                    <input type="hidden" name="csrf" value="<?= h($_SESSION['csrf']) ?>">
+                    <input type="hidden" name="orden_action" value="seed_estados">
+                    <button type="submit" class="ordenes-ver-btn" style="background:#1F5C8B;color:#fff;border-color:#1F5C8B;">Crear estados</button>
+                </form>
+            </div>
+        <?php endif; ?>
+
         <?php if ($action === 'new' || $action === 'edit'): ?>
             <form method="post" style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:800px;">
                 <input type="hidden" name="csrf" value="<?= h($_SESSION['csrf']) ?>">
