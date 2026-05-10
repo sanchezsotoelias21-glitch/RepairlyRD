@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-if ($current_page === 'configuracion' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($current_page === 'usuarios' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     require_csrf();
-    $action = $_POST['config_action'] ?? '';
+    $action = $_POST['usuarios_action'] ?? '';
     if (!is_string($action)) {
         $action = '';
     }
@@ -14,7 +14,7 @@ if ($current_page === 'configuracion' && $_SERVER['REQUEST_METHOD'] === 'POST') 
         $res = repairly_try_update_usuario_rol_admin($conn, (bool)$auth_is_admin, $usuario_row, $uid, $newRol);
         $q = $res['ok'] ? 'ok' : 'err';
         $m = rawurlencode($res['msg']);
-        header('Location: ?page=configuracion&t=' . $q . '&m=' . $m);
+        header('Location: ?page=usuarios&t=' . $q . '&m=' . $m);
         exit;
     }
 }

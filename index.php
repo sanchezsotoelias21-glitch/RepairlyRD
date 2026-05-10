@@ -118,6 +118,7 @@ require_once __DIR__ . '/includes/crud_equipos.php';
 require_once __DIR__ . '/includes/crud_ordenes.php';
 require_once __DIR__ . '/includes/crud_tecnicos.php';
 require_once __DIR__ . '/includes/crud_configuracion.php';
+require_once __DIR__ . '/includes/crud_usuarios.php';
 require_once __DIR__ . '/includes/crud_piezas.php';
 require_once __DIR__ . '/includes/crud_diagnosticos.php';
 require_once __DIR__ . '/includes/crud_garantias.php';

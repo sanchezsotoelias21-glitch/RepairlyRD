@@ -168,6 +168,74 @@ function repairly_usuario_id_field(array $cols): string
     return 'id_usuario';
 }
 
+/** Columna de rol en tabla Usuario (`rol`, `ROL`, `role`). */
+function repairly_usuario_rol_column(array $cols): ?string
+{
+    foreach (['rol', 'ROL', 'role'] as $rk) {
+        if (isset($cols[$rk])) {
+            return $rk;
+        }
+    }
+    return null;
+}
+
+/**
+ * Actualiza rol de usuario (solo administradores). Compatible con ENUM/VARCHAR vía repairly_resolve_rol_for_insert.
+ *
+ * @param array $actorUsuarioRow Fila de repairly_load_usuario del usuario en sesión.
+ * @return array{ok:bool, msg:string}
+ */
+function repairly_try_update_usuario_rol_admin(mysqli $conn, bool $auth_is_admin, array $actorUsuarioRow, int $targetUid, string $newRolInput): array
+{
+    if (!$auth_is_admin) {
+        return ['ok' => false, 'msg' => 'Sin permiso'];
+    }
+    if ($targetUid <= 0) {
+        return ['ok' => false, 'msg' => 'Usuario inválido'];
+    }
+    $allowed = ['administrador', 'tecnico', 'supervisor', 'operador', 'cliente', 'pendiente'];
+    $normIn = repairly_normalize_role(trim($newRolInput));
+    $logical = '';
+    foreach ($allowed as $a) {
+        if ($normIn === repairly_normalize_role($a)) {
+            $logical = $a;
+            break;
+        }
+    }
+    if ($logical === '') {
+        return ['ok' => false, 'msg' => 'Rol inválido'];
+    }
+    $actorId = (int)($actorUsuarioRow['id_usuario'] ?? 0);
+    if ($targetUid === $actorId && repairly_normalize_role($logical) !== 'administrador') {
+        return ['ok' => false, 'msg' => 'No puedes quitarte el rol administrador'];
+    }
+    $table = repairly_usuario_table($conn);
+    if ($table === '') {
+        return ['ok' => false, 'msg' => 'Tabla de usuarios no encontrada'];
+    }
+    $cols = table_columns($conn, $table);
+    $rolCol = repairly_usuario_rol_column($cols);
+    if ($rolCol === null) {
+        return ['ok' => false, 'msg' => 'La tabla no tiene columna de rol'];
+    }
+    $idCol = repairly_usuario_id_field($cols);
+    $storedRol = repairly_resolve_rol_for_insert($conn, $table, $rolCol, $logical);
+
+    $sql = "UPDATE `{$table}` SET `{$rolCol}` = ? WHERE `{$idCol}` = ? LIMIT 1";
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        return ['ok' => false, 'msg' => 'No se pudo guardar'];
+    }
+    $stmt->bind_param('si', $storedRol, $targetUid);
+    $ok = $stmt->execute();
+    if (!$ok) {
+        $stmt->close();
+        return ['ok' => false, 'msg' => 'No se pudo guardar el rol'];
+    }
+    $stmt->close();
+    return ['ok' => true, 'msg' => 'Rol actualizado'];
+}
+
 /** @return array{id_usuario:int, username:string, rol:string, estado:string, id_tecnico:?int}|null */
 function repairly_load_usuario(mysqli $conn, int $id): ?array
 {

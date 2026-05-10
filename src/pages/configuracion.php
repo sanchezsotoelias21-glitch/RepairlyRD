@@ -5,8 +5,6 @@ declare(strict_types=1);
 /** @var mysqli $conn */
 /** @var bool $auth_is_admin */
 
-$t = $_GET['t'] ?? '';
-$m = $_GET['m'] ?? '';
 ?>
 <div class="charts-row">
     <div class="charts-card">
@@ -16,11 +14,6 @@ $m = $_GET['m'] ?? '';
                 <div class="card-sub">Apariencia y permisos</div>
             </div>
         </div>
-        <?php if ($t === 'ok' && is_string($m) && $m !== ''): ?>
-            <div style="margin-top:10px;font-size:12px;color:#1B5E20;"><?= h($m) ?></div>
-        <?php elseif ($t === 'err' && is_string($m) && $m !== ''): ?>
-            <div style="margin-top:10px;font-size:12px;color:#B83232;"><?= h($m) ?></div>
-        <?php endif; ?>
 
         <div style="margin-top:16px;padding:14px;border:0.5px solid #EDECEA;border-radius:10px;max-width:520px;">
             <div style="font-size:13px;font-weight:600;margin-bottom:10px;">Apariencia</div>
@@ -35,16 +28,12 @@ $m = $_GET['m'] ?? '';
 
         <?php if (!empty($auth_is_admin)):
             $ut = repairly_usuario_table($conn);
-            $all_users = $ut !== '' ? db_rows($conn, "SELECT * FROM `{$ut}` ORDER BY id_usuario ASC") : [];
+            $all_users = [];
             $idU = 'id_usuario';
             if ($ut !== '') {
                 $uc = table_columns($conn, $ut);
-                foreach (array_keys($uc) as $k) {
-                    if (strcasecmp((string)$k, 'id_usuario') === 0) {
-                        $idU = $k;
-                        break;
-                    }
-                }
+                $idU = repairly_usuario_id_field($uc);
+                $all_users = db_rows($conn, "SELECT * FROM `{$ut}` ORDER BY `{$idU}` ASC");
             }
             $roles_opts = ['administrador', 'tecnico', 'supervisor', 'operador', 'cliente', 'pendiente'];
             ?>
@@ -63,8 +52,17 @@ $m = $_GET['m'] ?? '';
                         <div class="order-cliente"><?= h((string)($urow['username'] ?? '')) ?></div>
                         <div>
                             <select name="rol" style="width:100%;padding:8px;border-radius:8px;border:0.5px solid #D0CCC6;font-size:11px;">
+                                <?php
+                                $urol = '';
+                                foreach (['rol', 'ROL', 'role'] as $rk) {
+                                    if (isset($urow[$rk])) {
+                                        $urol = (string)$urow[$rk];
+                                        break;
+                                    }
+                                }
+                                ?>
                                 <?php foreach ($roles_opts as $ro): ?>
-                                    <option value="<?= h($ro) ?>" <?= repairly_normalize_role((string)($urow['rol'] ?? '')) === repairly_normalize_role($ro) ? 'selected' : '' ?>><?= h($ro) ?></option>
+                                    <option value="<?= h($ro) ?>" <?= repairly_normalize_role($urol) === repairly_normalize_role($ro) ? 'selected' : '' ?>><?= h($ro) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
