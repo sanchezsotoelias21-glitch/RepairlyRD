@@ -158,6 +158,33 @@ if ($current_page === 'ordenes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->bind_param($types, ...$vals);
             }
             $ok = $stmt->execute();
+
+            $webhookData = [
+    "codigo" => $codigo,
+    "equipo" => $id_equipo,
+    "tecnico" => $id_tecnico,
+    "estado" => $id_estado,
+    "mano_obra" => $mano_obra,
+    "costo_total" => $costo_total
+];
+
+$options = [
+    'http' => [
+        'header'  => "Content-type: application/json",
+        'method'  => 'POST',
+        'content' => json_encode($webhookData),
+        'ignore_errors' => true
+    ]
+];
+
+$context = stream_context_create($options);
+
+@file_get_contents(
+    'https://simple-n8n-production-edc5.up.railway.app/webhook-test/nueva-reparacion',
+    false,
+    $context
+);
+
             $stmt->close();
             header('Location: ?page=ordenes&t=' . ($ok ? 'ok' : 'err') . '&m=' . ($ok ? 'Orden+creada' : 'Error+al+crear'));
             exit;
