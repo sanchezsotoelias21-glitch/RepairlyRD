@@ -51,7 +51,14 @@ $es = $pz_col_stock !== null && $edit ? (string)($edit[$pz_col_stock] ?? '0') : 
 
         <?php if ($action === 'new' || $action === 'edit'): ?>
             <?php if ($pz_col_nombre === null): ?>
-                <p style="padding:12px;color:#B83232;font-size:12px;">La tabla no tiene una columna de nombre reconocida (nombre, nombre_pieza, descripcion).</p>
+                <p style="padding:12px;color:#B83232;font-size:12px;">
+                    No se encontró una columna de nombre reconocida en la tabla de inventario.
+                    <?php if (!empty($pieza_cols)): ?>
+                        <br><span style="color:#4D4841;font-size:11px;">Columnas en <code><?= h((string)$pieza_table) ?></code>:
+                        <?= h(implode(', ', array_keys($pieza_cols))) ?></span>
+                    <?php endif; ?>
+                    <br><span style="font-size:11px;color:#6B6560;">Si el nombre de la pieza está en otra columna, indícanos el nombre exacto para añadirlo al sistema.</span>
+                </p>
             <?php else: ?>
             <form method="post" style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:640px;">
                 <input type="hidden" name="csrf" value="<?= h($_SESSION['csrf']) ?>">

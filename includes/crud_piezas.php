@@ -2,10 +2,25 @@
 
 declare(strict_types=1);
 
-$pieza_table = pick_table($conn, ['pieza', 'Pieza', 'PIEZA']);
+$pieza_table = pick_table($conn, [
+    'pieza', 'Pieza', 'PIEZA',
+    'inventario', 'Inventario', 'INVENTARIO',
+    'repuesto', 'Repuesto', 'REPUESTO',
+    'articulo', 'Articulo', 'ARTICULO', 'artículo',
+    'producto', 'Producto', 'PRODUCTO',
+    'stock_pieza', 'Stock_Pieza',
+]);
 $pieza_cols = $pieza_table ? table_columns($conn, $pieza_table) : [];
 
-$pz_col_nombre = $pieza_table ? repairly_pick_column($pieza_cols, ['nombre', 'nombre_pieza', 'descripcion']) : null;
+$pz_col_nombre = $pieza_table ? repairly_pick_column($pieza_cols, [
+    'nombre', 'nombre_pieza', 'nombre_articulo', 'nombre_producto', 'nom_pieza', 'nom_articulo',
+    'descripcion', 'descripcion_pieza', 'desc_pieza', 'desc_corta', 'descripcion_corta',
+    'articulo', 'producto', 'item', 'titulo', 'etiqueta', 'pieza', 'label', 'name',
+    'denominacion',
+]) : null;
+if ($pieza_table && $pz_col_nombre === null) {
+    $pz_col_nombre = repairly_guess_pieza_nombre_column($pieza_cols);
+}
 $pz_col_ref = $pieza_table ? repairly_pick_column($pieza_cols, ['referencia', 'codigo', 'sku', 'ref']) : null;
 $pz_col_pc = $pieza_table ? repairly_pick_column($pieza_cols, ['precio_compra', 'costo', 'precio_costo']) : null;
 $pz_col_pv = $pieza_table ? repairly_pick_column($pieza_cols, ['precio_venta', 'precio', 'precio_publico']) : null;

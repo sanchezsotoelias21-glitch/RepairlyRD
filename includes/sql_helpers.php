@@ -130,6 +130,41 @@ function mysql_enum_values_from_type(string $columnType): array
  * Si la columna es ENUM, devuelve uno de los literales permitidos (evita "Data truncated").
  * Si no es ENUM, devuelve $value sin cambiar.
  */
+/**
+ * Si no hay columna "nombre" estándar, intenta la primera columna que parezca etiqueta de pieza.
+ *
+ * @param array<string, mixed> $cols
+ */
+function repairly_guess_pieza_nombre_column(array $cols): ?string
+{
+    $skipNorm = [];
+    foreach ([
+        'id', 'id_pieza', 'id_articulo', 'id_producto', 'referencia', 'codigo', 'sku', 'ref',
+        'stock', 'cantidad', 'existencia', 'unidades', 'minimo', 'maximo',
+        'precio_compra', 'precio_venta', 'precio', 'costo', 'precio_costo', 'precio_publico',
+        'fecha', 'fecha_alta', 'fecha_mod', 'creado', 'actualizado', 'estado', 'activo',
+    ] as $s) {
+        $skipNorm[] = (string)preg_replace('/[^a-z0-9]/', '', mb_strtolower($s));
+    }
+    foreach (array_keys($cols) as $k) {
+        $norm = (string)preg_replace('/[^a-z0-9]/', '', mb_strtolower((string)$k));
+        if ($norm === '' || in_array($norm, $skipNorm, true)) {
+            continue;
+        }
+        if (str_starts_with($norm, 'id')) {
+            continue;
+        }
+        if (str_contains($norm, 'precio') || str_contains($norm, 'costo')) {
+            continue;
+        }
+        if (str_contains($norm, 'stock') || str_contains($norm, 'cantidad') || str_contains($norm, 'existencia')) {
+            continue;
+        }
+        return (string)$k;
+    }
+    return null;
+}
+
 function repairly_coerce_value_for_enum_column(mysqli $conn, string $table, string $column, string $value): string
 {
     $type = column_mysql_type($conn, $table, $column);
