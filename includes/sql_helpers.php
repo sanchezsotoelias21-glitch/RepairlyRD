@@ -41,8 +41,21 @@ function pick_table(mysqli $conn, array $candidates): string
     }
     foreach ($candidates as $candidate) {
         $candidate = strtolower(trim((string)$candidate));
+        if ($candidate === '') {
+            continue;
+        }
+
+        // 1) Prioriza coincidencia exacta para evitar falsos positivos
+        //    (p.ej. "pieza" matcheando "orden_pieza").
         foreach ($tables as $table) {
-            if ($table === $candidate || str_contains($table, $candidate)) {
+            if ($table === $candidate) {
+                return $originalByLower[$table] ?? $candidate;
+            }
+        }
+
+        // 2) Luego permite coincidencia parcial como fallback.
+        foreach ($tables as $table) {
+            if (str_contains($table, $candidate)) {
                 return $originalByLower[$table] ?? $candidate;
             }
         }
