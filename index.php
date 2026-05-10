@@ -1,14 +1,20 @@
-﻿<?php
+<?php
 ob_start();
 
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
-if (session_status() === PHP_SESSION_NONE) {
-    @session_start();
+// En Railway/producción: no imprimir errores en la respuesta (evita "headers already sent").
+// Para depurar: variable PHP_DISPLAY_ERRORS=1 en el servicio.
+if (getenv('PHP_DISPLAY_ERRORS') === '1' || getenv('PHP_DISPLAY_ERRORS') === 'true') {
+    ini_set('display_errors', '1');
+    error_reporting(E_ALL);
+} else {
+    ini_set('display_errors', '0');
+    error_reporting(E_ALL);
+    ini_set('log_errors', '1');
 }
 
 require_once __DIR__ . '/src/config/database.php';
+require_once __DIR__ . '/includes/session_bootstrap.php';
+repairly_session_start();
 
 function h(string $value): string {
     return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
@@ -29,77 +35,46 @@ function require_csrf(): void {
     }
 }
 
-function table_exists(mysqli $conn, string $name): bool {
+require_once __DIR__ . '/includes/sql_helpers.php';
+require_once __DIR__ . '/includes/auth.php';
 
-    $name = trim($name);
-
-    $sql = "
-        SELECT COUNT(*)
-        FROM information_schema.tables
-        WHERE table_schema = DATABASE()
-        AND LOWER(table_name) = LOWER(?)
-    ";
-
-    $stmt = $conn->prepare($sql);
-
-    if (!$stmt) {
-        return false;
+if (isset($_GET['logout'])) {
+    $_SESSION = [];
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_destroy();
     }
-
-    $stmt->bind_param('s', $name);
-    $stmt->execute();
-
-    $stmt->bind_result($count);
-    $stmt->fetch();
-
-    $stmt->close();
-
-    return $count > 0;
+    repairly_redirect('login.php');
 }
 
-function pick_table(mysqli $conn, array $candidates): string {
-
-    $tables = [];
-
-    $res = $conn->query("SHOW TABLES");
-
-    if ($res) {
-        while ($row = $res->fetch_array()) {
-            $tables[] = strtolower($row[0]);
-        }
-    }
-
-    foreach ($candidates as $candidate) {
-
-        $candidate = strtolower(trim($candidate));
-
-        foreach ($tables as $table) {
-
-            if ($table === $candidate) {
-                return $table;
-            }
-
-            // búsqueda flexible
-            if (str_contains($table, $candidate)) {
-                return $table;
-            }
-        }
-    }
-
-    return '';
+$repairly_uid = isset($_SESSION['repairly_uid']) ? (int)$_SESSION['repairly_uid'] : 0;
+if ($repairly_uid <= 0) {
+    $qs = isset($_SERVER['QUERY_STRING']) && $_SERVER['QUERY_STRING'] !== '' ? '?' . $_SERVER['QUERY_STRING'] : '';
+    repairly_redirect('login.php?next=' . urlencode('index.php' . $qs));
 }
+
+$usuario_row = repairly_load_usuario($conn, $repairly_uid);
+if (!$usuario_row || !repairly_usuario_esta_activo($usuario_row['estado'])) {
+    $_SESSION = [];
+    session_destroy();
+    repairly_redirect('login.php?msg=' . urlencode('Sesión inválida o cuenta inactiva.'));
+}
+
+if (!repairly_role_can_panel($usuario_row['rol'])) {
+    repairly_redirect('portal.php');
+}
+
+$usuario = [
+    'nombre'    => $usuario_row['username'],
+    'iniciales' => repairly_iniciales($usuario_row['username']),
+    'email'     => '',
+    'rol'       => ucfirst(repairly_normalize_role($usuario_row['rol']) ?: 'usuario'),
+];
+$auth_is_admin = repairly_is_admin($usuario_row['rol']);
+
 // ============================================================
 //  RepairlyRD — Dashboard Principal
 //  Paleta oficial según guía de identidad visual v1.0
 // ============================================================
-
-// ── Datos del sistema (en producción vendrían de la BD) ─────
-$usuario = [
-    'nombre'   => 'Carlos Jerez',
-    'iniciales'=> 'CJ',
-    'email'    => 'carlos.jerez@fixmaster.com',
-    'rol'      => 'Administrador',
-];
 
 $current_page = $_GET['page'] ?? 'dashboard';
 $allowed_pages = [
@@ -142,42 +117,11 @@ require_once __DIR__ . '/includes/crud_clientes.php';
 require_once __DIR__ . '/includes/crud_equipos.php';
 require_once __DIR__ . '/includes/crud_ordenes.php';
 require_once __DIR__ . '/includes/crud_tecnicos.php';
-
-
-function table_columns(mysqli $conn, string $table): array {
-    $cols = [];
-    $res = $conn->query("SHOW COLUMNS FROM `{$table}`");
-    if (!$res) {
-        return $cols;
-    }
-    while ($row = $res->fetch_assoc()) {
-        if (!empty($row['Field'])) {
-            $cols[$row['Field']] = true;
-        }
-    }
-    $res->free();
-    return $cols;
-}
-
-function db_scalar(mysqli $conn, string $sql, int|float|string $default = 0): int|float|string {
-    $res = $conn->query($sql);
-    if (!$res) {
-        return $default;
-    }
-    $row = $res->fetch_row();
-    $res->free();
-    return $row[0] ?? $default;
-}
-
-function db_rows(mysqli $conn, string $sql): array {
-    $res = $conn->query($sql);
-    if (!$res) {
-        return [];
-    }
-    $rows = $res->fetch_all(MYSQLI_ASSOC);
-    $res->free();
-    return $rows;
-}
+require_once __DIR__ . '/includes/crud_configuracion.php';
+require_once __DIR__ . '/includes/crud_piezas.php';
+require_once __DIR__ . '/includes/crud_diagnosticos.php';
+require_once __DIR__ . '/includes/crud_garantias.php';
+require_once __DIR__ . '/includes/crud_notificaciones.php';
 
 function status_palette(string $status): array {
     $name = strtolower($status);
@@ -196,7 +140,7 @@ function status_palette(string $status): array {
     if (str_contains($name, 'diagn')) {
         return ['bg' => '#F5F5F5', 'color' => '#424242', 'border' => '#424242', 'dot' => '#424242'];
     }
-    return ['bg' => '#E3F2FD', 'color' => '#0052CC', 'border' => '#0052CC', 'dot' => '#0052CC'];
+    return ['bg' => '#E3F2FD', 'color' => '#2b7abc', 'border' => '#2b7abc', 'dot' => '#2b7abc'];
 }
 
 function device_icon(string $type): string {
@@ -370,9 +314,9 @@ $ordenes_recientes = [
         'tecnico'  => 'Juan',
         'estado'   => 'En proceso',
         'est_bg'   => '#E3F2FD',
-        'est_color'=> '#0052CC',
-        'est_borde'=> '#0052CC',
-        'est_dot'  => '#0052CC',
+        'est_color'=> '#2b7abc',
+        'est_borde'=> '#2b7abc',
+        'est_dot'  => '#2b7abc',
         'valor'    => '$850',
     ],
     [
@@ -443,7 +387,7 @@ $ordenes_recientes = [
     
 ];
 $dispositivos = [
-    ['tipo'=>'Teléfonos',  'icono'=>'ti-device-mobile',  'pct'=>45, 'color'=>'#0052CC', 'bg'=>'#E3F2FD',  'tc'=>'#0052CC'],
+    ['tipo'=>'Teléfonos',  'icono'=>'ti-device-mobile',  'pct'=>45, 'color'=>'#2b7abc', 'bg'=>'#E3F2FD',  'tc'=>'#2b7abc'],
     ['tipo'=>'Laptops',    'icono'=>'ti-device-laptop',  'pct'=>28, 'color'=>'#00AA44', 'bg'=>'#E8F5E9',  'tc'=>'#00AA44'],
     ['tipo'=>'Tablets',    'icono'=>'ti-device-tablet',  'pct'=>15, 'color'=>'#FF9500', 'bg'=>'#FFF3E0',  'tc'=>'#FF9500'],
     ['tipo'=>'PC Torre',   'icono'=>'ti-device-desktop', 'pct'=>12, 'color'=>'#7B4EC4', 'bg'=>'#F3E5F5',  'tc'=>'#7B4EC4'],
@@ -492,32 +436,32 @@ $chart_estado_values = [];
 $chart_estado_colors = [];
 
 if ($has_dashboard_core) {
-    $orden_table = $dashboard_tables['orden'];
-    $estado_table = $dashboard_tables['estado'];
-    $equipo_table = $dashboard_tables['equipo'];
+    $d_ord = $dashboard_tables['orden'];
+    $d_est = $dashboard_tables['estado'];
+    $d_eq = $dashboard_tables['equipo'];
     $cliente_table_dashboard = $dashboard_tables['cliente'];
-    $tecnico_table = $dashboard_tables['tecnico'];
-    $garantia_table = $dashboard_tables['garantia'];
+    $d_tec = $dashboard_tables['tecnico'];
+    $d_gar = $dashboard_tables['garantia'];
 
-    $estado_join = "FROM `{$orden_table}` o LEFT JOIN `{$estado_table}` s ON s.id_estado = o.id_estado_actual";
+    $estado_join = "FROM `{$d_ord}` o LEFT JOIN `{$d_est}` s ON s.id_estado = o.id_estado_actual";
     $estado_expr = "LOWER(COALESCE(s.nombre_estado, ''))";
 
     $en_proceso = (int)db_scalar($conn, "SELECT COUNT(*) {$estado_join} WHERE {$estado_expr} LIKE '%proceso%' OR {$estado_expr} LIKE '%repar%'");
     $pendientes = (int)db_scalar($conn, "SELECT COUNT(*) {$estado_join} WHERE {$estado_expr} LIKE '%pend%' OR {$estado_expr} LIKE '%recib%'");
     $con_falla = (int)db_scalar($conn, "SELECT COUNT(*) {$estado_join} WHERE {$estado_expr} LIKE '%falla%'");
     $completadas = (int)db_scalar($conn, "SELECT COUNT(*) {$estado_join} WHERE ({$estado_expr} LIKE '%entreg%' OR {$estado_expr} LIKE '%complet%' OR {$estado_expr} LIKE '%listo%') AND MONTH(COALESCE(o.fecha_entrega_real, o.fecha_actualizacion, o.fecha_ingreso)) = MONTH(CURDATE()) AND YEAR(COALESCE(o.fecha_entrega_real, o.fecha_actualizacion, o.fecha_ingreso)) = YEAR(CURDATE())");
-    $ingresos_hoy = (float)db_scalar($conn, "SELECT COALESCE(SUM(o.costo_total), 0) FROM `{$orden_table}` o WHERE DATE(COALESCE(o.fecha_entrega_real, o.fecha_actualizacion, o.fecha_ingreso)) = CURDATE()", 0);
-    $ingresos_ayer = (float)db_scalar($conn, "SELECT COALESCE(SUM(o.costo_total), 0) FROM `{$orden_table}` o WHERE DATE(COALESCE(o.fecha_entrega_real, o.fecha_actualizacion, o.fecha_ingreso)) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)", 0);
-    $garantias_activas = table_exists($conn, $garantia_table)
-        ? (int)db_scalar($conn, "SELECT COUNT(*) FROM `{$garantia_table}` WHERE (LOWER(COALESCE(estado, '')) LIKE '%activ%' OR (CURDATE() BETWEEN fecha_inicio AND fecha_fin))")
+    $ingresos_hoy = (float)db_scalar($conn, "SELECT COALESCE(SUM(o.costo_total), 0) FROM `{$d_ord}` o WHERE DATE(COALESCE(o.fecha_entrega_real, o.fecha_actualizacion, o.fecha_ingreso)) = CURDATE()", 0);
+    $ingresos_ayer = (float)db_scalar($conn, "SELECT COALESCE(SUM(o.costo_total), 0) FROM `{$d_ord}` o WHERE DATE(COALESCE(o.fecha_entrega_real, o.fecha_actualizacion, o.fecha_ingreso)) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)", 0);
+    $garantias_activas = table_exists($conn, $d_gar)
+        ? (int)db_scalar($conn, "SELECT COUNT(*) FROM `{$d_gar}` WHERE (LOWER(COALESCE(estado, '')) LIKE '%activ%' OR (CURDATE() BETWEEN fecha_inicio AND fecha_fin))")
         : 0;
 
     $trend = $ingresos_ayer > 0 ? (($ingresos_hoy - $ingresos_ayer) / $ingresos_ayer) * 100 : ($ingresos_hoy > 0 ? 100 : 0);
-    $trend_color = $trend >= 0 ? '#00AA44' : '#B83232';
+    $trend_color = $trend >= 0 ? '#00AA44' : '#2b7abc';
     $trend_icon = $trend >= 0 ? 'ti-trending-up' : 'ti-trending-down';
 
     $kpis = [
-        ['clave' => 'en_proceso', 'label' => 'En proceso', 'valor' => $en_proceso, 'sub' => 'órdenes activas', 'icono' => 'ti-loader', 'color' => '#0052CC', 'bg' => '#E3F2FD', 'texto' => '#0052CC'],
+        ['clave' => 'en_proceso', 'label' => 'En proceso', 'valor' => $en_proceso, 'sub' => 'órdenes activas', 'icono' => 'ti-loader', 'color' => '#2b7abc', 'bg' => '#E3F2FD', 'texto' => '#2b7abc'],
         ['clave' => 'pendientes', 'label' => 'Pendientes', 'valor' => $pendientes, 'sub' => 'sin completar', 'icono' => 'ti-clock', 'color' => '#FF9500', 'bg' => '#FFF3E0', 'texto' => '#FF9500'],
         ['clave' => 'ingresos', 'label' => 'Ingresos hoy', 'valor' => '$' . number_format($ingresos_hoy, 2), 'sub' => '<span style="color:' . $trend_color . ';display:flex;align-items:center;gap:3px;"><i class="ti ' . $trend_icon . '" style="font-size:11px;"></i>' . number_format(abs($trend), 0) . '% vs ayer</span>', 'icono' => 'ti-cash', 'color' => '#00AA44', 'bg' => '#E8F5E9', 'texto' => '#00AA44'],
         ['clave' => 'garantias', 'label' => 'Garantías', 'valor' => $garantias_activas, 'sub' => 'activas ahora', 'icono' => 'ti-shield', 'color' => '#7B4EC4', 'bg' => '#F3E5F5', 'texto' => '#7B4EC4'],
@@ -526,7 +470,7 @@ if ($has_dashboard_core) {
     ];
 
     $ordenes_recientes = [];
-    $ordenes_sql = "SELECT o.id_orden, COALESCE(c.nombre, 'Cliente no asignado') AS cliente, COALESCE(e.tipo, '') AS tipo, COALESCE(e.marca, '') AS marca, COALESCE(e.modelo, '') AS modelo, COALESCE(t.nombre, 'Sin técnico') AS tecnico, COALESCE(s.nombre_estado, 'Sin estado') AS estado, COALESCE(o.costo_total, 0) AS costo_total FROM `{$orden_table}` o LEFT JOIN `{$equipo_table}` e ON e.id_equipo = o.id_equipo LEFT JOIN `{$cliente_table_dashboard}` c ON c.id_cliente = e.id_cliente LEFT JOIN `{$tecnico_table}` t ON t.id_tecnico = o.id_tecnico LEFT JOIN `{$estado_table}` s ON s.id_estado = o.id_estado_actual ORDER BY COALESCE(o.fecha_actualizacion, o.fecha_creacion, o.fecha_ingreso) DESC, o.id_orden DESC LIMIT 6";
+    $ordenes_sql = "SELECT o.id_orden, COALESCE(c.nombre, 'Cliente no asignado') AS cliente, COALESCE(e.tipo, '') AS tipo, COALESCE(e.marca, '') AS marca, COALESCE(e.modelo, '') AS modelo, COALESCE(t.nombre, 'Sin técnico') AS tecnico, COALESCE(s.nombre_estado, 'Sin estado') AS estado, COALESCE(o.costo_total, 0) AS costo_total FROM `{$d_ord}` o LEFT JOIN `{$d_eq}` e ON e.id_equipo = o.id_equipo LEFT JOIN `{$cliente_table_dashboard}` c ON c.id_cliente = e.id_cliente LEFT JOIN `{$d_tec}` t ON t.id_tecnico = o.id_tecnico LEFT JOIN `{$d_est}` s ON s.id_estado = o.id_estado_actual ORDER BY COALESCE(o.fecha_actualizacion, o.fecha_creacion, o.fecha_ingreso) DESC, o.id_orden DESC LIMIT 6";
     foreach (db_rows($conn, $ordenes_sql) as $row) {
         $status = (string)$row['estado'];
         $palette = status_palette($status);
@@ -535,9 +479,9 @@ if ($has_dashboard_core) {
         $ordenes_recientes[] = ['id' => (string)$row['id_orden'], 'cliente' => (string)$row['cliente'], 'equipo' => $equipo_label !== '' ? $equipo_label : 'Equipo sin detalle', 'icono_eq' => device_icon($tipo), 'tecnico' => (string)$row['tecnico'], 'estado' => $status, 'est_bg' => $palette['bg'], 'est_color'=> $palette['color'], 'est_borde'=> $palette['border'], 'est_dot' => $palette['dot'], 'valor' => '$' . number_format((float)$row['costo_total'], 2)];
     }
 
-    $device_rows = db_rows($conn, "SELECT COALESCE(NULLIF(TRIM(tipo), ''), 'Sin tipo') AS tipo, COUNT(*) AS total FROM `{$equipo_table}` GROUP BY COALESCE(NULLIF(TRIM(tipo), ''), 'Sin tipo') ORDER BY total DESC LIMIT 5");
+    $device_rows = db_rows($conn, "SELECT COALESCE(NULLIF(TRIM(tipo), ''), 'Sin tipo') AS tipo, COUNT(*) AS total FROM `{$d_eq}` GROUP BY COALESCE(NULLIF(TRIM(tipo), ''), 'Sin tipo') ORDER BY total DESC LIMIT 5");
     $device_total = array_sum(array_map(fn($row) => (int)$row['total'], $device_rows));
-    $device_colors = ['#0052CC', '#00AA44', '#FF9500', '#7B4EC4', '#424242'];
+    $device_colors = ['#2b7abc', '#00AA44', '#FF9500', '#7B4EC4', '#424242'];
     $device_bgs = ['#E3F2FD', '#E8F5E9', '#FFF3E0', '#F3E5F5', '#F5F5F5'];
     $dispositivos = [];
     foreach ($device_rows as $idx => $row) {
@@ -545,7 +489,7 @@ if ($has_dashboard_core) {
         $dispositivos[] = ['tipo' => (string)$row['tipo'], 'icono' => device_icon((string)$row['tipo']), 'pct' => $device_total > 0 ? (int)round(((int)$row['total'] / $device_total) * 100) : 0, 'color' => $color, 'bg' => $device_bgs[$idx % count($device_bgs)], 'tc' => $color];
     }
 
-    foreach (db_rows($conn, "SELECT COALESCE(t.nombre, 'Sin técnico') AS tecnico, COUNT(o.id_orden) AS reparaciones, COALESCE(SUM(o.costo_total), 0) AS ingresos FROM `{$orden_table}` o LEFT JOIN `{$tecnico_table}` t ON t.id_tecnico = o.id_tecnico WHERE MONTH(COALESCE(o.fecha_entrega_real, o.fecha_actualizacion, o.fecha_ingreso)) = MONTH(CURDATE()) AND YEAR(COALESCE(o.fecha_entrega_real, o.fecha_actualizacion, o.fecha_ingreso)) = YEAR(CURDATE()) GROUP BY COALESCE(t.nombre, 'Sin técnico') ORDER BY reparaciones DESC LIMIT 6") as $row) {
+    foreach (db_rows($conn, "SELECT COALESCE(t.nombre, 'Sin técnico') AS tecnico, COUNT(o.id_orden) AS reparaciones, COALESCE(SUM(o.costo_total), 0) AS ingresos FROM `{$d_ord}` o LEFT JOIN `{$d_tec}` t ON t.id_tecnico = o.id_tecnico WHERE MONTH(COALESCE(o.fecha_entrega_real, o.fecha_actualizacion, o.fecha_ingreso)) = MONTH(CURDATE()) AND YEAR(COALESCE(o.fecha_entrega_real, o.fecha_actualizacion, o.fecha_ingreso)) = YEAR(CURDATE()) GROUP BY COALESCE(t.nombre, 'Sin técnico') ORDER BY reparaciones DESC LIMIT 6") as $row) {
         $chart_tecnico_labels[] = (string)$row['tecnico'];
         $chart_tecnico_reparaciones[] = (int)$row['reparaciones'];
         $chart_tecnico_ingresos[] = round(((float)$row['ingresos']) / 100, 2);
@@ -559,6 +503,15 @@ if ($has_dashboard_core) {
         $chart_estado_values[] = $estado_total > 0 ? (int)round(((int)$row['total'] / $estado_total) * 100) : 0;
         $chart_estado_colors[] = $palette['color'];
     }
+} else {
+    $kpis = [
+        ['clave' => 'en_proceso', 'label' => 'En proceso', 'valor' => 0, 'sub' => 'sin tablas base', 'icono' => 'ti-loader', 'color' => '#2b7abc', 'bg' => '#E3F2FD', 'texto' => '#2b7abc'],
+        ['clave' => 'pendientes', 'label' => 'Pendientes', 'valor' => 0, 'sub' => 'sin datos', 'icono' => 'ti-clock', 'color' => '#FF9500', 'bg' => '#FFF3E0', 'texto' => '#FF9500'],
+        ['clave' => 'ingresos', 'label' => 'Ingresos hoy', 'valor' => '$0.00', 'sub' => '—', 'icono' => 'ti-cash', 'color' => '#00AA44', 'bg' => '#E8F5E9', 'texto' => '#00AA44'],
+        ['clave' => 'garantias', 'label' => 'Garantías', 'valor' => 0, 'sub' => 'activas', 'icono' => 'ti-shield', 'color' => '#7B4EC4', 'bg' => '#F3E5F5', 'texto' => '#7B4EC4'],
+        ['clave' => 'completadas', 'label' => 'Completadas', 'valor' => 0, 'sub' => 'este mes', 'icono' => 'ti-checks', 'color' => '#424242', 'bg' => '#F5F5F5', 'texto' => '#424242'],
+        ['clave' => 'con_falla', 'label' => 'Con falla', 'valor' => 0, 'sub' => '—', 'icono' => 'ti-alert-triangle', 'color' => '#FF4444', 'bg' => '#FFEBEE', 'texto' => '#FF4444'],
+    ];
 }
 
 $fallas_urgentes = array_filter($ordenes_recientes, fn($o) => strtolower($o['estado']) === 'con falla' || str_contains(strtolower($o['estado']), 'falla'));
@@ -570,6 +523,17 @@ foreach ($nav_items as &$nav_item) {
     }
 }
 unset($nav_item);
+
+$notif_table_ui = pick_table($conn, ['notificacion', 'Notificacion']);
+$notificaciones_top = [];
+if ($notif_table_ui !== '') {
+    $ncol = table_columns($conn, $notif_table_ui);
+    $orderNotif = isset($ncol['fecha_envio']) ? 'fecha_envio' : (isset($ncol['id_notificacion']) ? 'id_notificacion' : '');
+    if ($orderNotif !== '') {
+        $notificaciones_top = db_rows($conn, "SELECT * FROM `{$notif_table_ui}` ORDER BY `{$orderNotif}` DESC LIMIT 8");
+    }
+}
+$global_ord_search_q = isset($_GET['ord_q']) && is_string($_GET['ord_q']) ? trim($_GET['ord_q']) : '';
 
 $fecha_es = null;
 if (class_exists('IntlDateFormatter')) {
@@ -591,31 +555,56 @@ if (!$fecha_es) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" id="repairly-root">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ReparlyRD — Dashboard</title>
+<link rel="shortcut icon" href="logo.ico" type="image/x-icon">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
 <style>
 /* ── Reset ── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{font-size:14px}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#F8F7F5;color:#1C1A17;height:100vh;display:flex;overflow:hidden;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--rl-bg,#F8F7F5);color:var(--rl-text,#1C1A17);height:100vh;display:flex;overflow:hidden;transition:background .2s,color .2s}
+.theme-dark{--rl-bg:#121417;--rl-text:#E8E6E3;--rl-card:#1a1f26;--rl-border:#333840;--rl-muted:#9a9590;--rl-sub:#b8b3ad}
+.theme-dark .sidebar{background:#050810}
+.theme-dark .topbar{background:var(--rl-card);border-color:var(--rl-border)}
+.theme-dark .topbar-title,.theme-dark .card-title{color:var(--rl-text)}
+.theme-dark .topbar-sub{color:var(--rl-muted)}
+.theme-dark .topbar-search,.theme-dark .topbar-btn,.theme-dark .topbar-date{background:var(--rl-bg);border-color:var(--rl-border)}
+.theme-dark .card,.theme-dark .charts-card,.theme-dark .ordenes-card,.theme-dark .dispositivos-card{background:var(--rl-card);border-color:var(--rl-border)}
+.theme-dark .table-head{background:#252b34;color:#a8a39e}
+.theme-dark .table-row{border-color:var(--rl-border)}
+.night-overlay{pointer-events:none;position:fixed;inset:0;background:rgba(255,180,70,.14);z-index:99998;display:none;mix-blend-mode:multiply}
+.night-overlay.on{display:block}
+.notif-dd-wrap{position:relative}
+.notif-dropdown{position:absolute;right:0;top:calc(100% + 8px);width:min(340px,calc(100vw - 40px));max-height:360px;overflow:auto;background:#fff;border:0.5px solid #D0CCC6;border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.14);display:none;padding:8px 0;z-index:250}
+.theme-dark .notif-dropdown{background:var(--rl-card);border-color:var(--rl-border)}
+.notif-dropdown.open{display:block}
+.notif-item{padding:10px 14px;border-bottom:0.5px solid #EDECEA;font-size:12px;color:#322F2A}
+.theme-dark .notif-item{border-color:var(--rl-border);color:var(--rl-text)}
+.notif-item:last-child{border-bottom:none}
+.notif-item small{display:block;font-size:10px;color:#8C8479;margin-top:4px}
+.topbar-search input{border:0;background:transparent;outline:none;font:inherit;color:inherit;width:160px;min-width:0}
+.topbar-link{font-size:11.5px;padding:8px 12px;border-radius:7px;border:0.5px solid #D0CCC6;background:#F8F7F5;color:#2b7abc;text-decoration:none;font-weight:600;white-space:nowrap}
+.topbar-link:hover{background:#EDECEA}
+.theme-dark .topbar-link{background:var(--rl-bg);border-color:var(--rl-border);color:#3489d4}
 
 /* ── Sidebar ── */
-.sidebar{width:190px;min-height:100vh;background:#0A2540;display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto}
-.sidebar-logo{padding:16px 14px 12px;border-bottom:0.5px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:9px}
-.sidebar-logo-icon{width:30px;height:30px;background:#1F5C8B;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.sidebar-logo-icon i{color:#fff;font-size:14px}
-.sidebar-logo-text{color:#fff;font-size:14px;font-weight:500;line-height:1.2}
+.sidebar{width:190px;min-height:100vh;background:#163f6e;display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sidebar-logo{padding:18px 14px 14px;border-bottom:0.5px solid rgba(255,255,255,0.08);display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.sidebar-logo-img{width:56px;height:56px;border-radius:50%;object-fit:cover;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,0.25);flex-shrink:0}
+.sidebar-logo-fallback{width:56px;height:56px;border-radius:50%;background:#2b7abc;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sidebar-logo-fallback i{color:#fff;font-size:22px}
+.sidebar-logo-text{color:#fff;font-size:13px;font-weight:600;line-height:1.2;letter-spacing:0.01em}
 .sidebar-logo-ver{color:rgba(255,255,255,0.35);font-size:9px;letter-spacing:0.05em}
 .sidebar-nav{padding:10px 8px;flex:1}
 .nav-section{font-size:8.5px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.1em;padding:10px 8px 6px}
 .nav-section:first-child{padding-top:2px}
 .nav-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;transition:background 0.15s;text-decoration:none;margin-bottom:1px}
 .nav-item:hover{background:rgba(255,255,255,0.07)}
-.nav-item.active{background:#1F5C8B}
+.nav-item.active{background:#2b7abc}
 .nav-item i{color:rgba(255,255,255,0.55);font-size:16px;flex-shrink:0}
 .nav-item.active i{color:#fff}
 .nav-item span{color:rgba(255,255,255,0.65);font-size:12.5px}
@@ -623,7 +612,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 .nav-badge{margin-left:auto;font-size:9px;font-weight:600;padding:2px 6px;border-radius:10px;line-height:1.4}
 .nav-dot{margin-left:auto;width:7px;height:7px;border-radius:50%}
 .sidebar-user{padding:12px 14px;border-top:0.5px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:8px}
-.user-avatar{width:28px;height:28px;border-radius:50%;background:#1F5C8B;display:flex;align-items:center;justify-content:center;font-size:10.5px;color:#fff;font-weight:600;flex-shrink:0}
+.user-avatar{width:28px;height:28px;border-radius:50%;background:#2b7abc;display:flex;align-items:center;justify-content:center;font-size:10.5px;color:#fff;font-weight:600;flex-shrink:0}
 .user-nombre{color:rgba(255,255,255,0.82);font-size:11.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .user-rol{color:rgba(255,255,255,0.38);font-size:9.5px}
 .user-logout{margin-left:auto;color:rgba(255,255,255,0.3);font-size:15px;cursor:pointer;transition:color 0.15s;flex-shrink:0}
@@ -650,7 +639,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 .topbar-btn{background:#F8F7F5;border:0.5px solid #D0CCC6;border-radius:7px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:background 0.15s}
 .topbar-btn:hover{background:#EDECEA}
 .topbar-btn i{font-size:16px;color:#4D4841}
-.notif-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:#B83232;border:1.5px solid #fff}
+.notif-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:#2b7abc;border:1.5px solid #fff}
 .topbar-date{font-size:11px;color:#6B6560;background:#F8F7F5;border:0.5px solid #D0CCC6;border-radius:7px;padding:6px 9px;white-space:nowrap;display:flex;align-items:center;gap:5px}
 .topbar-date i{font-size:12px}
 
@@ -658,17 +647,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 .content{padding:16px 20px;flex:1}
 
 /* ── Alerta urgente ── */
-.alert-falla{background:#FDF0F0;border:0.5px solid #B83232;border-radius:8px;padding:9px 14px;display:flex;align-items:center;gap:9px;margin-bottom:16px}
-.alert-falla i{font-size:16px;color:#B83232;flex-shrink:0}
-.alert-falla-txt{font-size:12px;color:#5C1414;font-weight:500}
-.alert-falla-btn{margin-left:auto;font-size:11px;padding:4px 10px;border-radius:5px;background:#fff;border:0.5px solid #B83232;color:#B83232;cursor:pointer;transition:background 0.15s;text-decoration:none;white-space:nowrap}
-.alert-falla-btn:hover{background:#FDF0F0}
+.alert-falla{background:#e8f2fb;border:0.5px solid #2b7abc;border-radius:8px;padding:9px 14px;display:flex;align-items:center;gap:9px;margin-bottom:16px}
+.alert-falla i{font-size:16px;color:#2b7abc;flex-shrink:0}
+.alert-falla-txt{font-size:12px;color:#163f6e;font-weight:500}
+.alert-falla-btn{margin-left:auto;font-size:11px;padding:4px 10px;border-radius:5px;background:#fff;border:0.5px solid #2b7abc;color:#2b7abc;cursor:pointer;transition:background 0.15s;text-decoration:none;white-space:nowrap}
+.alert-falla-btn:hover{background:#e8f2fb}
 
 /* ── KPI Grid ── */
 .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
 .kpi-grid:last-of-type{margin-bottom:18px}
 .kpi-card{border-radius:10px;border:none;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.08);transition:transform 0.2s,box-shadow 0.2s;position:relative;overflow:hidden}
-.kpi-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px;background:var(--kpi-color,#0052CC);opacity:0.8}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px;background:var(--kpi-color,#2b7abc);opacity:0.8}
 .kpi-label{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;display:flex;align-items:center;gap:4px}
 .kpi-label i{font-size:12px}
 .kpi-valor{font-size:32px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;font-family:'Courier New',Courier,monospace;margin-bottom:3px}
@@ -725,7 +714,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 @media(max-width:960px){
     .sidebar{width:56px}
     .sidebar-logo-text,.sidebar-logo-ver,.nav-item span,.nav-section,.user-nombre,.user-rol,.nav-badge{display:none}
-    .sidebar-logo{padding:14px;justify-content:center}
+    .sidebar-logo{padding:12px 6px;flex-direction:column;justify-content:center}
+    .sidebar-logo-img,.sidebar-logo-fallback{width:38px;height:38px}
+    .sidebar-logo-fallback i{font-size:16px}
     .nav-item{justify-content:center;padding:10px}
     .sidebar-user{justify-content:center;padding:10px}
     .user-logout{display:none}
@@ -782,7 +773,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 }
 
 .btn-save{
-    background:#1F5C8B;
+    background:#2b7abc;
     color:#fff;
     border:none;
     border-radius:10px;
@@ -832,8 +823,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 }
 
 .btn-edit{
-    background:#E8F1FB;
-    color:#1F5C8B;
+    background:#e8f2fb;
+    color:#2b7abc;
     padding:8px 12px;
     border-radius:9px;
     text-decoration:none;
@@ -848,9 +839,99 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
     cursor:pointer;
 }
 
+
+
+/* ===== CRUD MODERNO ===== */
+
+.form-card,
+.crud-card,
+.module-card{
+    background:#fff;
+    border-radius:18px;
+    padding:22px;
+    margin-top:18px;
+    box-shadow:0 4px 18px rgba(0,0,0,.05);
+}
+
+.crud-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px;
+}
+
+.crud-grid .full{
+    grid-column:1/-1;
+}
+
+.crud-grid input,
+.crud-grid select,
+.crud-grid textarea{
+    height:46px;
+    border:1px solid #D8D5D0;
+    border-radius:12px;
+    padding:0 14px;
+    font-size:14px;
+    width:100%;
+}
+
+.crud-grid textarea{
+    min-height:120px;
+    padding-top:12px;
+}
+
+.btn-primary-modern{
+    background:#2b7abc;
+    color:#fff;
+    border:none;
+    border-radius:10px;
+    padding:12px 18px;
+    cursor:pointer;
+}
+
+.table-modern{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:20px;
+    overflow:hidden;
+    border-radius:16px;
+    background:#fff;
+}
+
+.table-modern th{
+    background:#F6F8FB;
+    text-align:left;
+    padding:14px;
+    font-size:12px;
+    text-transform:uppercase;
+}
+
+.table-modern td{
+    padding:14px;
+    border-top:1px solid #eee;
+}
+
+.btn-edit{
+    background:#e8f2fb;
+    color:#2b7abc;
+    padding:8px 12px;
+    border-radius:8px;
+    text-decoration:none;
+}
+
+.btn-delete{
+    background:#FCEBEC;
+    color:#C0392B;
+    border:none;
+    border-radius:8px;
+    padding:8px 12px;
+    cursor:pointer;
+}
+
 </style>
 </head>
 <body>
+
+<div id="night-overlay" class="night-overlay" aria-hidden="true"></div>
 
 <!-- ════════════════════════════════════════════════
      SIDEBAR
@@ -858,12 +939,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 <aside class="sidebar" role="navigation" aria-label="Navegación principal">
 
     <div class="sidebar-logo">
-        <div class="sidebar-logo-icon" aria-hidden="true">
+        <img src="assets/logo redondo.ico" alt="RepairlyRD" class="sidebar-logo-img"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+        <div class="sidebar-logo-fallback" style="display:none;" aria-hidden="true">
             <i class="ti ti-tool"></i>
         </div>
         <div>
             <div class="sidebar-logo-text">RepairlyRD</div>
-            <div class="sidebar-logo-ver">ERP</div>
+            <div class="sidebar-logo-ver">ERP · Sistema de Gestión</div>
         </div>
     </div>
 
@@ -900,7 +983,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
             <div class="user-nombre"><?= htmlspecialchars($usuario['nombre']) ?></div>
             <div class="user-rol"><?= htmlspecialchars($usuario['rol']) ?></div>
         </div>
-        <i class="ti ti-logout user-logout" title="Cerrar sesión" aria-label="Cerrar sesión"></i>
+        <span style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+            <a href="portal.php" class="ti ti-user" style="color:rgba(255,255,255,0.38);font-size:15px;text-decoration:none;" title="Mi cuenta"></a>
+            <a href="?logout=1" class="ti ti-logout" style="color:rgba(255,255,255,0.3);font-size:15px;text-decoration:none;" title="Cerrar sesión"></a>
+        </span>
     </div>
 </aside>
 
@@ -917,15 +1003,37 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
             <div class="topbar-sub"><?= h($page['desc']) ?></div>
         </div>
         <div class="topbar-actions">
-            <div class="topbar-search" role="search">
+            <a class="topbar-link" href="portal.php" title="Área de cuenta">Mi cuenta</a>
+            <form class="topbar-search" method="get" action="index.php" role="search" style="cursor:default;">
+                <input type="hidden" name="page" value="ordenes">
                 <i class="ti ti-search" aria-hidden="true"></i>
-                Buscar orden...
-            </div>
-            <div class="topbar-btn" title="Notificaciones" role="button" aria-label="Notificaciones">
-                <i class="ti ti-bell" aria-hidden="true"></i>
-                <?php if ($total_fallas > 0): ?>
-                    <span class="notif-dot" aria-label="Hay notificaciones nuevas"></span>
-                <?php endif; ?>
+                <input type="search" name="ord_q" value="<?= h($global_ord_search_q) ?>" placeholder="Buscar por código o ID…" aria-label="Buscar orden">
+                <button type="submit" class="ordenes-ver-btn" style="padding:4px 10px;">Ir</button>
+            </form>
+            <div class="notif-dd-wrap">
+                <button type="button" class="topbar-btn" id="notif-toggle" title="Notificaciones" aria-expanded="false" aria-controls="notif-menu">
+                    <i class="ti ti-bell" aria-hidden="true"></i>
+                    <?php if (!empty($notificaciones_top)): ?>
+                        <span class="notif-dot" aria-hidden="true"></span>
+                    <?php elseif ($total_fallas > 0): ?>
+                        <span class="notif-dot" aria-hidden="true"></span>
+                    <?php endif; ?>
+                </button>
+                <div class="notif-dropdown" id="notif-menu" role="menu">
+                    <?php if (empty($notificaciones_top)): ?>
+                        <div class="notif-item">No hay notificaciones recientes.</div>
+                    <?php else: ?>
+                        <?php foreach ($notificaciones_top as $n): ?>
+                            <div class="notif-item">
+                                <?= h((string)($n['mensaje'] ?? $n['MENSAJE'] ?? $n['tipo'] ?? 'Notificación')) ?>
+                                <small><?= h((string)($n['fecha_envio'] ?? $n['fecha'] ?? '')) ?> · <?= h((string)($n['tipo'] ?? '')) ?></small>
+                            </div>
+                        <?php endforeach; ?>
+                        <div style="padding:8px 14px;">
+                            <a class="ordenes-ver-btn" href="?page=notificaciones" style="display:inline-block;width:100%;text-align:center;">Ver todas</a>
+                        </div>
+                    <?php endif; ?>
+                </div>
             </div>
             <div class="topbar-date">
                 <i class="ti ti-calendar" aria-hidden="true"></i>
@@ -937,18 +1045,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 
     <!-- ── Contenido ── -->
     <div class="content">
-        <?php
-            $page_file = __DIR__ . '/src/pages/' . $current_page . '.php';
-
-            // Evita duplicar módulos renderizados inline
-            $inline_pages = ['dashboard', 'clientes'];
-
-            if (!in_array($current_page, $inline_pages, true) && file_exists($page_file)) {
-                include $page_file;
-            } elseif (!in_array($current_page, $inline_pages, true)) {
-                echo '<div class="charts-card">Módulo en construcción</div>';
-            }
-        ?>
+        <?php if ($flash['type'] === 'ok' && $flash['msg']): ?>
+            <div class="alert-falla" style="background:#E8F5E9;border-color:#00AA44;margin-bottom:12px;">
+                <i class="ti ti-check" style="color:#00AA44;"></i>
+                <span class="alert-falla-txt" style="color:#1B5E20;"><?= h((string)$flash['msg']) ?></span>
+            </div>
+        <?php elseif ($flash['type'] === 'err' && $flash['msg']): ?>
+            <div class="alert-falla" style="margin-bottom:12px;">
+                <i class="ti ti-alert-circle"></i>
+                <span class="alert-falla-txt"><?= h((string)$flash['msg']) ?></span>
+            </div>
+        <?php endif; ?>
 
         <?php if ($current_page === 'clientes'): ?>
 
@@ -1008,7 +1115,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
                 <div class="charts-card">
                     <div class="card-header">
                         <div style="display:flex;align-items:center;gap:8px;min-width:0;">
-                            <div class="kpi-ico" style="width:28px;height:28px;border-radius:8px;background:#F0F6FC;color:#1F5C8B;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                            <div class="kpi-ico" style="width:28px;height:28px;border-radius:8px;background:#F0F6FC;color:#2b7abc;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                                 <i class="ti ti-users" aria-hidden="true"></i>
                             </div>
                             <div style="min-width:0;">
@@ -1036,7 +1143,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
                     </div>
 
                     <?php if ($clientes_error): ?>
-                        <div style="margin-top:12px;color:#B83232;font-size:12px;"><?= h($clientes_error) ?></div>
+                        <div style="margin-top:12px;color:#2b7abc;font-size:12px;"><?= h($clientes_error) ?></div>
                     <?php endif; ?>
 
                     <?php if ($clientes_action === 'new' || $clientes_action === 'edit'): ?>
@@ -1075,7 +1182,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
                                 </div>
 
                                 <div style="grid-column:span 2;display:flex;gap:8px;justify-content:flex-end;">
-                                    <button class="ordenes-ver-btn" type="submit" style="background:#1F5C8B;border-color:#1F5C8B;color:#fff;">Guardar</button>
+                                    <button class="ordenes-ver-btn" type="submit" style="background:#2b7abc;border-color:#2b7abc;color:#fff;">Guardar</button>
                                 </div>
                             </form>
                         </div>
@@ -1114,7 +1221,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
                                         <input type="hidden" name="csrf" value="<?= h($_SESSION['csrf']) ?>">
                                         <input type="hidden" name="clientes_action" value="delete">
                                         <input type="hidden" name="id_cliente" value="<?= (int)$c['id'] ?>">
-                                        <button class="ordenes-ver-btn" type="submit" style="background:#FDF0F0;border-color:#F5C2C2;color:#B83232;">Eliminar</button>
+                                        <button class="ordenes-ver-btn" type="submit" style="background:#e8f2fb;border-color:#a8cef0;color:#2b7abc;">Eliminar</button>
                                     </form>
                                 </div>
                             </div>
@@ -1126,20 +1233,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
             </div>
 
         <?php else: ?>
-
-        <?php
+            <?php
             $page_file = __DIR__ . '/src/pages/' . $current_page . '.php';
-
-            // Evita duplicar módulos renderizados inline
-            $inline_pages = ['clientes'];
-
-            if (!in_array($current_page, $inline_pages, true) && file_exists($page_file)) {
+            if (is_file($page_file)) {
                 include $page_file;
-            } elseif (!in_array($current_page, $inline_pages, true)) {
+            } else {
                 echo '<div class="charts-card">Módulo en construcción</div>';
             }
-        ?>
-
+            ?>
         <?php endif; ?>
     </div><!-- /content -->
 </main><!-- /main -->
@@ -1170,7 +1271,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
                 {
                     label: 'Reparaciones',
                     data: tecnicoReparaciones,
-                    backgroundColor: '#0052CC',
+                    backgroundColor: '#2b7abc',
                     borderRadius: 4,
                     barPercentage: 0.55,
                     categoryPercentage: 0.8,
@@ -1243,6 +1344,35 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
             },
         },
     });
+})();
+</script>
+<script>
+(function () {
+    'use strict';
+    var root = document.documentElement;
+    if (localStorage.getItem('repairly_dark') === '1') {
+        root.classList.add('theme-dark');
+    }
+    var no = document.getElementById('night-overlay');
+    if (no && localStorage.getItem('repairly_night') === '1') {
+        no.classList.add('on');
+    }
+    var btn = document.getElementById('notif-toggle');
+    var menu = document.getElementById('notif-menu');
+    if (btn && menu) {
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var open = menu.classList.toggle('open');
+            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+        document.addEventListener('click', function () {
+            menu.classList.remove('open');
+            btn.setAttribute('aria-expanded', 'false');
+        });
+        menu.addEventListener('click', function (e) {
+            e.stopPropagation();
+        });
+    }
 })();
 </script>
 </body>

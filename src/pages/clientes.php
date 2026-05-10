@@ -10,7 +10,7 @@ $res = $conn->query("
 
 ?>
 
-<table border="1" width="100%">
+<table class="table-modern">
 
 <tr>
     <th>ID</th>
