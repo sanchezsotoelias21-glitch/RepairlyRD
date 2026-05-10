@@ -25,92 +25,162 @@ if ($current_page === 'tecnicos' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    $nombre = trim((string)($_POST['nombre'] ?? ''));
-    $telefono = trim((string)($_POST['telefono'] ?? ''));
-    $especialidad = trim((string)($_POST['especialidad'] ?? ''));
-    $email = trim((string)($_POST['email'] ?? ''));
-    $fecha_contrato = trim((string)($_POST['fecha_contrato'] ?? ''));
-    $estado = trim((string)($_POST['estado'] ?? 'activo'));
+    $nombre = isset($_POST['nombre']) && is_string($_POST['nombre']) ? trim($_POST['nombre']) : '';
+    $telefono = isset($_POST['telefono']) && is_string($_POST['telefono']) ? trim($_POST['telefono']) : '';
+    $especialidad = isset($_POST['especialidad']) && is_string($_POST['especialidad']) ? trim($_POST['especialidad']) : '';
+    $email = isset($_POST['email']) && is_string($_POST['email']) ? trim($_POST['email']) : '';
+    $fecha_contrato = isset($_POST['fecha_contrato']) && is_string($_POST['fecha_contrato']) ? trim($_POST['fecha_contrato']) : '';
+    $estado = isset($_POST['estado']) && is_string($_POST['estado']) ? trim($_POST['estado']) : 'activo';
 
-    if ($post_action === 'create' || $post_action === 'update') {
-        $map = [
-            'nombre' => $nombre,
-            'telefono' => $telefono,
-            'especialidad' => $especialidad,
-            'email' => $email,
-            'fecha_contrato' => $fecha_contrato,
-            'estado' => $estado,
-        ];
-
-        if ($post_action === 'create') {
-            $fields = [];
-            $types = '';
-            $vals = [];
-            foreach ($map as $col => $val) {
-                if (!isset($tecnico_cols[$col])) {
-                    continue;
-                }
-                $fields[] = "`{$col}`";
-                $types .= 's';
-                $vals[] = (string)$val;
-            }
-            if (empty($fields)) {
-                header('Location: ?page=tecnicos&t=err&m=Sin+columnas');
-                exit;
-            }
-            $sql = "INSERT INTO `{$tecnico_table}` (" . implode(',', $fields) . ') VALUES (' . implode(',', array_fill(0, count($fields), '?')) . ')';
-            $stmt = $conn->prepare($sql);
-            if ($stmt && $types !== '') {
-                $stmt->bind_param($types, ...$vals);
-                $stmt->execute();
-                $stmt->close();
-            }
-            header('Location: ?page=tecnicos&t=' . ($stmt ? 'ok' : 'err') . '&m=' . ($stmt ? 'Tecnico+creado' : 'Error'));
+    if ($post_action === 'create') {
+        if (isset($tecnico_cols['nombre']) && $nombre === '') {
+            header('Location: ?page=tecnicos&action=new&t=err&m=El+nombre+es+obligatorio');
             exit;
         }
 
-        $id = (int)($_POST['id_tecnico'] ?? 0);
-        if ($id <= 0 || $nombre === '') {
-            header('Location: ?page=tecnicos&t=err&m=Datos+inv%C3%A1lidos');
+        $fields = [];
+        $placeholders = [];
+        $types = '';
+        $values = [];
+
+        if (isset($tecnico_cols['nombre'])) {
+            $fields[] = 'nombre';
+            $placeholders[] = '?';
+            $types .= 's';
+            $values[] = $nombre;
+        }
+        if (isset($tecnico_cols['telefono'])) {
+            $fields[] = 'telefono';
+            $placeholders[] = '?';
+            $types .= 's';
+            $values[] = $telefono;
+        }
+        if (isset($tecnico_cols['especialidad'])) {
+            $fields[] = 'especialidad';
+            $placeholders[] = '?';
+            $types .= 's';
+            $values[] = $especialidad;
+        }
+        if (isset($tecnico_cols['email'])) {
+            $fields[] = 'email';
+            $placeholders[] = '?';
+            $types .= 's';
+            $values[] = $email;
+        }
+        if (isset($tecnico_cols['fecha_contrato'])) {
+            $fields[] = 'fecha_contrato';
+            $placeholders[] = '?';
+            $types .= 's';
+            $values[] = $fecha_contrato;
+        }
+        if (isset($tecnico_cols['estado'])) {
+            $fields[] = 'estado';
+            $placeholders[] = '?';
+            $types .= 's';
+            $values[] = $estado;
+        }
+
+        if (empty($fields)) {
+            header('Location: ?page=tecnicos&action=new&t=err&m=Sin+columnas+v%C3%A1lidas');
             exit;
         }
+
+        $sql = 'INSERT INTO `' . $tecnico_table . '` (' . implode(',', array_map(static fn ($f) => "`{$f}`", $fields)) . ') VALUES (' . implode(',', $placeholders) . ')';
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            header('Location: ?page=tecnicos&t=err&m=No+se+pudo+crear+el+t%C3%A9cnico');
+            exit;
+        }
+        if ($types !== '') {
+            $stmt->bind_param($types, ...$values);
+        }
+        $ok = $stmt->execute();
+        $stmt->close();
+        header('Location: ?page=tecnicos&t=' . ($ok ? 'ok' : 'err') . '&m=' . ($ok ? 'T%C3%A9cnico+creado' : 'Error+al+crear'));
+        exit;
+    }
+
+    if ($post_action === 'update') {
+        $id = isset($_POST['id_tecnico']) ? (int)$_POST['id_tecnico'] : 0;
+        if ($id <= 0) {
+            header('Location: ?page=tecnicos&t=err&m=ID+inv%C3%A1lido');
+            exit;
+        }
+        if (isset($tecnico_cols['nombre']) && $nombre === '') {
+            header('Location: ?page=tecnicos&action=edit&id=' . $id . '&t=err&m=El+nombre+es+obligatorio');
+            exit;
+        }
+
         $sets = [];
-        $typesU = '';
-        $valsU = [];
-        foreach ($map as $col => $val) {
-            if (!isset($tecnico_cols[$col])) {
-                continue;
-            }
-            $sets[] = "`{$col}`=?";
-            $typesU .= 's';
-            $valsU[] = (string)$val;
+        $types = '';
+        $values = [];
+
+        if (isset($tecnico_cols['nombre'])) {
+            $sets[] = '`nombre`=?';
+            $types .= 's';
+            $values[] = $nombre;
         }
+        if (isset($tecnico_cols['telefono'])) {
+            $sets[] = '`telefono`=?';
+            $types .= 's';
+            $values[] = $telefono;
+        }
+        if (isset($tecnico_cols['especialidad'])) {
+            $sets[] = '`especialidad`=?';
+            $types .= 's';
+            $values[] = $especialidad;
+        }
+        if (isset($tecnico_cols['email'])) {
+            $sets[] = '`email`=?';
+            $types .= 's';
+            $values[] = $email;
+        }
+        if (isset($tecnico_cols['fecha_contrato'])) {
+            $sets[] = '`fecha_contrato`=?';
+            $types .= 's';
+            $values[] = $fecha_contrato;
+        }
+        if (isset($tecnico_cols['estado'])) {
+            $sets[] = '`estado`=?';
+            $types .= 's';
+            $values[] = $estado;
+        }
+
+        if (empty($sets)) {
+            header('Location: ?page=tecnicos&t=err&m=Nada+que+actualizar');
+            exit;
+        }
+
         $sql = "UPDATE `{$tecnico_table}` SET " . implode(',', $sets) . " WHERE `{$idField}`=? LIMIT 1";
         $stmt = $conn->prepare($sql);
-        if ($stmt) {
-            $typesU .= 'i';
-            $valsU[] = $id;
-            $stmt->bind_param($typesU, ...$valsU);
-            $stmt->execute();
-            $stmt->close();
+        if (!$stmt) {
+            header('Location: ?page=tecnicos&t=err&m=No+se+pudo+actualizar');
+            exit;
         }
-        header('Location: ?page=tecnicos&t=ok&m=Tecnico+actualizado');
+        $types2 = $types . 'i';
+        $values[] = $id;
+        $stmt->bind_param($types2, ...$values);
+        $ok = $stmt->execute();
+        $stmt->close();
+        header('Location: ?page=tecnicos&t=' . ($ok ? 'ok' : 'err') . '&m=' . ($ok ? 'T%C3%A9cnico+actualizado' : 'Error+al+actualizar'));
         exit;
     }
 
     if ($post_action === 'delete') {
-        $id = (int)($_POST['id_tecnico'] ?? 0);
+        $id = isset($_POST['id_tecnico']) ? (int)$_POST['id_tecnico'] : 0;
         if ($id <= 0) {
             header('Location: ?page=tecnicos&t=err&m=ID+inv%C3%A1lido');
             exit;
         }
         $stmt = $conn->prepare("DELETE FROM `{$tecnico_table}` WHERE `{$idField}`=? LIMIT 1");
-        if ($stmt) {
-            $stmt->bind_param('i', $id);
-            $stmt->execute();
-            $stmt->close();
+        if (!$stmt) {
+            header('Location: ?page=tecnicos&t=err&m=No+se+pudo+eliminar');
+            exit;
         }
-        header('Location: ?page=tecnicos&t=ok&m=Tecnico+eliminado');
+        $stmt->bind_param('i', $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        header('Location: ?page=tecnicos&t=' . ($ok ? 'ok' : 'err') . '&m=' . ($ok ? 'T%C3%A9cnico+eliminado' : 'Error+al+eliminar'));
         exit;
     }
 }

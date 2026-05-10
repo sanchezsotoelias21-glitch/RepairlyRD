@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 /** @var mysqli $conn */
 
-$t = $_GET['t'] ?? '';
-$m = $_GET['m'] ?? '';
 $action = $_GET['action'] ?? '';
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
@@ -44,10 +42,6 @@ if ($action === 'edit' && $id > 0) {
             </div>
             <a class="ordenes-ver-btn" href="?page=tecnicos&action=new">Nuevo técnico</a>
         </div>
-        <?php if ($t === 'ok' && is_string($m) && $m !== ''): ?>
-            <div style="margin-top:10px;font-size:12px;color:#1B5E20;"><?= h($m) ?></div>
-        <?php endif; ?>
-
         <?php if ($action === 'new' || $action === 'edit'): ?>
             <form method="post" style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:640px;">
                 <input type="hidden" name="csrf" value="<?= h($_SESSION['csrf']) ?>">
