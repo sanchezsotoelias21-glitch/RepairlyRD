@@ -60,29 +60,95 @@ if ($current_page === 'ordenes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    $codigoCol = null;
+    $equipoCol = null;
+    $tecnicoCol = null;
+    $estadoCol = null;
+    $manoObraCol = null;
+    $costoTotalCol = null;
+    $fechaIngresoCol = null;
+    $fechaEstCol = null;
+    $fechaEntCol = null;
+    foreach (array_keys($orden_cols) as $k) {
+        if ($codigoCol === null && strcasecmp((string)$k, 'codigo_seguimiento') === 0) {
+            $codigoCol = $k;
+            continue;
+        }
+        if ($equipoCol === null && strcasecmp((string)$k, 'id_equipo') === 0) {
+            $equipoCol = $k;
+            continue;
+        }
+        if ($tecnicoCol === null && strcasecmp((string)$k, 'id_tecnico') === 0) {
+            $tecnicoCol = $k;
+            continue;
+        }
+        if ($estadoCol === null && strcasecmp((string)$k, 'id_estado_actual') === 0) {
+            $estadoCol = $k;
+            continue;
+        }
+        if ($manoObraCol === null && strcasecmp((string)$k, 'mano_obra') === 0) {
+            $manoObraCol = $k;
+            continue;
+        }
+        if ($costoTotalCol === null && strcasecmp((string)$k, 'costo_total') === 0) {
+            $costoTotalCol = $k;
+            continue;
+        }
+        if ($fechaIngresoCol === null && strcasecmp((string)$k, 'fecha_ingreso') === 0) {
+            $fechaIngresoCol = $k;
+            continue;
+        }
+        if ($fechaEstCol === null && strcasecmp((string)$k, 'fecha_estimada_entrega') === 0) {
+            $fechaEstCol = $k;
+            continue;
+        }
+        if ($fechaEntCol === null && strcasecmp((string)$k, 'fecha_entrega_real') === 0) {
+            $fechaEntCol = $k;
+            continue;
+        }
+    }
+
     $codigo = trim((string)($_POST['codigo_seguimiento'] ?? ''));
     $id_equipo = (int)($_POST['id_equipo'] ?? 0);
     $id_tecnico = (int)($_POST['id_tecnico'] ?? 0);
     $id_estado = (int)($_POST['id_estado_actual'] ?? 0);
-    $mano_obra = (float)str_replace(',', '.', (string)($_POST['mano_obra'] ?? '0'));
-    $costo_total = (float)str_replace(',', '.', (string)($_POST['costo_total'] ?? '0'));
+    $mano_obra_raw = trim((string)($_POST['mano_obra'] ?? ''));
+    $costo_total_raw = trim((string)($_POST['costo_total'] ?? ''));
+    $mano_obra = (float)str_replace(',', '.', ($mano_obra_raw !== '' ? $mano_obra_raw : '0'));
+    $costo_total = (float)str_replace(',', '.', ($costo_total_raw !== '' ? $costo_total_raw : '0'));
     $fecha_ingreso = trim((string)($_POST['fecha_ingreso'] ?? ''));
     $fecha_est = trim((string)($_POST['fecha_estimada_entrega'] ?? ''));
     $fecha_ent_real = trim((string)($_POST['fecha_entrega_real'] ?? ''));
 
     if ($post_action === 'create' || $post_action === 'update') {
+        $back = $post_action === 'update'
+            ? ('?page=ordenes&action=edit&id=' . (int)($_POST['id_orden'] ?? 0))
+            : '?page=ordenes&action=new';
+
+        // Avisar si hay textbox vacío.
+        if ($codigoCol !== null && $codigo === '') {
+            header('Location: ' . $back . '&t=err&m=El+c%C3%B3digo+de+seguimiento+es+obligatorio');
+            exit;
+        }
+        if ($manoObraCol !== null && $mano_obra_raw === '') {
+            header('Location: ' . $back . '&t=err&m=Mano+de+obra+obligatoria');
+            exit;
+        }
+        if ($costoTotalCol !== null && $costo_total_raw === '') {
+            header('Location: ' . $back . '&t=err&m=Costo+total+obligatorio');
+            exit;
+        }
+        if ($fechaIngresoCol !== null && $fecha_ingreso === '') {
+            header('Location: ' . $back . '&t=err&m=Fecha+de+ingreso+obligatoria');
+            exit;
+        }
+
         // Validaciones mínimas (alineado con otros CRUDs)
         if (isset($orden_cols['id_equipo']) && $id_equipo <= 0) {
-            $back = $post_action === 'update'
-                ? ('?page=ordenes&action=edit&id=' . (int)($_POST['id_orden'] ?? 0))
-                : '?page=ordenes&action=new';
             header('Location: ' . $back . '&t=err&m=Debes+seleccionar+un+equipo');
             exit;
         }
         if (isset($orden_cols['id_estado_actual']) && $id_estado <= 0) {
-            $back = $post_action === 'update'
-                ? ('?page=ordenes&action=edit&id=' . (int)($_POST['id_orden'] ?? 0))
-                : '?page=ordenes&action=new';
             header('Location: ' . $back . '&t=err&m=Debes+seleccionar+un+estado');
             exit;
         }
@@ -107,8 +173,7 @@ if ($current_page === 'ordenes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $data['costo_total'] = $costo_total;
         }
         if (isset($orden_cols['fecha_ingreso'])) {
-            // Si existe la columna y no envían fecha, usar la de hoy.
-            $data['fecha_ingreso'] = $fecha_ingreso !== '' ? $fecha_ingreso : date('Y-m-d');
+            $data['fecha_ingreso'] = $fecha_ingreso;
         }
         if (isset($orden_cols['fecha_estimada_entrega']) && $fecha_est !== '') {
             $data['fecha_estimada_entrega'] = $fecha_est;
@@ -118,6 +183,23 @@ if ($current_page === 'ordenes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($post_action === 'create') {
+            // Evitar duplicados: no permitir crear otra orden con el mismo equipo.
+            if ($equipoCol !== null && $id_equipo > 0) {
+                $eqColSafe = str_replace('`', '``', (string)$equipoCol);
+                $stDup = $conn->prepare("SELECT COUNT(*) FROM `{$orden_table_name}` WHERE `{$eqColSafe}`=?");
+                if ($stDup) {
+                    $stDup->bind_param('i', $id_equipo);
+                    $stDup->execute();
+                    $stDup->bind_result($dupCount);
+                    $stDup->fetch();
+                    $stDup->close();
+                    if ((int)$dupCount > 0) {
+                        header('Location: ?page=ordenes&action=new&t=err&m=Ya+existe+una+orden+registrada+para+ese+equipo');
+                        exit;
+                    }
+                }
+            }
+
             $fields = [];
             $types = '';
             $vals = [];
