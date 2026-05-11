@@ -126,7 +126,7 @@ if ($current_page === 'ordenes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             : '?page=ordenes&action=new';
 
         // Avisar si hay textbox vacío.
-        if ($codigoCol !== null && $codigo === '') {
+        if ($post_action === 'update' && $codigoCol !== null && $codigo === '') {
             header('Location: ' . $back . '&t=err&m=El+c%C3%B3digo+de+seguimiento+es+obligatorio');
             exit;
         }
@@ -153,9 +153,25 @@ if ($current_page === 'ordenes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
+        // CÃ³digo de seguimiento automÃ¡tico (FC-001, FC-002, ...).
+        if ($post_action === 'create' && $codigoCol !== null && $codigo === '') {
+            $colSafe = str_replace('`', '``', (string)$codigoCol);
+            $sqlMax = "SELECT MAX(CAST(SUBSTRING(`{$colSafe}`, 4) AS UNSIGNED)) AS mx
+                       FROM `{$orden_table_name}`
+                       WHERE `{$colSafe}` LIKE 'FC-%'";
+            $resMax = $conn->query($sqlMax);
+            $mx = 0;
+            if ($resMax) {
+                $row = $resMax->fetch_assoc();
+                $mx = (int)($row['mx'] ?? 0);
+                $resMax->free();
+            }
+            $codigo = 'FC-' . str_pad((string)($mx + 1), 3, '0', STR_PAD_LEFT);
+        }
+
         $data = [];
         if (isset($orden_cols['codigo_seguimiento'])) {
-            $data['codigo_seguimiento'] = $codigo !== '' ? $codigo : ('ORD-' . strtoupper(bin2hex(random_bytes(3))));
+            $data['codigo_seguimiento'] = $codigo;
         }
         if (isset($orden_cols['id_equipo'])) {
             $data['id_equipo'] = $id_equipo;
@@ -183,23 +199,6 @@ if ($current_page === 'ordenes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($post_action === 'create') {
-            // Evitar duplicados: no permitir crear otra orden con el mismo equipo.
-            if ($equipoCol !== null && $id_equipo > 0) {
-                $eqColSafe = str_replace('`', '``', (string)$equipoCol);
-                $stDup = $conn->prepare("SELECT COUNT(*) FROM `{$orden_table_name}` WHERE `{$eqColSafe}`=?");
-                if ($stDup) {
-                    $stDup->bind_param('i', $id_equipo);
-                    $stDup->execute();
-                    $stDup->bind_result($dupCount);
-                    $stDup->fetch();
-                    $stDup->close();
-                    if ((int)$dupCount > 0) {
-                        header('Location: ?page=ordenes&action=new&t=err&m=Ya+existe+una+orden+registrada+para+ese+equipo');
-                        exit;
-                    }
-                }
-            }
-
             $fields = [];
             $types = '';
             $vals = [];
