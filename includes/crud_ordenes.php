@@ -338,7 +338,7 @@ if ($current_page === 'ordenes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 $context = stream_context_create($options);
 
                 @file_get_contents(
-                    'https://simple-n8n-production-edc5.up.railway.app/webhook-test/nueva-reparacion',
+                    'https://simple-n8n-production-edc5.up.railway.app/webhook/nueva-reparacion',
                     false,
                     $context
                 );
@@ -354,6 +354,30 @@ if ($current_page === 'ordenes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: ?page=ordenes&t=err&m=ID+inv%C3%A1lido');
             exit;
         }
+
+        // Cargar estado previo para detectar cambios (y notificar vÃ­a n8n).
+        $before = null;
+        $stBefore = $conn->prepare("SELECT * FROM `{$orden_table_name}` WHERE `{$idField}`=? LIMIT 1");
+        if ($stBefore) {
+            $stBefore->bind_param('i', $id);
+            $stBefore->execute();
+            $rsBefore = $stBefore->get_result();
+            $before = $rsBefore ? ($rsBefore->fetch_assoc() ?: null) : null;
+            $stBefore->close();
+        }
+
+        $changes = [];
+        if (is_array($before)) {
+            foreach ($data as $col => $val) {
+                $beforeVal = $before[$col] ?? null;
+                $afterVal = $val;
+                // ComparaciÃ³n flexible (string) para evitar falsos negativos por tipos.
+                if ((string)$beforeVal !== (string)$afterVal) {
+                    $changes[$col] = ['before' => $beforeVal, 'after' => $afterVal];
+                }
+            }
+        }
+
         $sets = [];
         $typesU = '';
         $valsU = [];
@@ -390,6 +414,112 @@ if ($current_page === 'ordenes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param($typesU, ...$valsU);
         $ok = $stmt->execute();
         $stmt->close();
+
+        // Notificar cambios a n8n (p. ej. cambio de estado) para email al cliente.
+        if ($ok && $changes !== []) {
+            $codigoWebhook = '';
+            if (isset($data['codigo_seguimiento']) && is_string($data['codigo_seguimiento'])) {
+                $codigoWebhook = $data['codigo_seguimiento'];
+            } elseif (is_array($before) && isset($before['codigo_seguimiento'])) {
+                $codigoWebhook = (string)$before['codigo_seguimiento'];
+            } else {
+                $codigoWebhook = (string)$id;
+            }
+
+            $equipoForLookup = $id_equipo > 0 ? $id_equipo : (int)($before['id_equipo'] ?? 0);
+            $clienteEmail = '';
+            $clienteNombre = '';
+            $clienteId = 0;
+            if ($equipoForLookup > 0) {
+                $eqTbl = pick_table($conn, ['equipo', 'Equipo']);
+                $cliTbl = pick_table($conn, ['cliente', 'Cliente']);
+                if ($eqTbl !== '' && $cliTbl !== '') {
+                    $eqCols = table_columns($conn, $eqTbl);
+                    $cliCols = table_columns($conn, $cliTbl);
+
+                    $eqIdCol = 'id_equipo';
+                    foreach (array_keys($eqCols) as $k) {
+                        if (strcasecmp((string)$k, 'id_equipo') === 0) {
+                            $eqIdCol = $k;
+                            break;
+                        }
+                    }
+                    $cliIdCol = 'id_cliente';
+                    foreach (array_keys($cliCols) as $k) {
+                        if (strcasecmp((string)$k, 'id_cliente') === 0) {
+                            $cliIdCol = $k;
+                            break;
+                        }
+                    }
+
+                    $eqCliCol = null;
+                    foreach (array_keys($eqCols) as $k) {
+                        if (strcasecmp((string)$k, 'id_cliente') === 0) {
+                            $eqCliCol = $k;
+                            break;
+                        }
+                    }
+
+                    $cliEmailCol = repairly_pick_column($cliCols, ['email', 'correo', 'correo_electronico', 'mail']);
+                    $cliNombreCol = repairly_pick_column($cliCols, ['nombre', 'name', 'nombre_cliente']);
+
+                    if ($eqCliCol !== null && $cliEmailCol !== null) {
+                        $sqlCli = "SELECT c.`{$cliIdCol}` AS id_cliente"
+                            . ($cliNombreCol !== null ? ", c.`{$cliNombreCol}` AS nombre" : ", '' AS nombre")
+                            . ", c.`{$cliEmailCol}` AS email"
+                            . " FROM `{$eqTbl}` e"
+                            . " JOIN `{$cliTbl}` c ON c.`{$cliIdCol}` = e.`{$eqCliCol}`"
+                            . " WHERE e.`{$eqIdCol}`=? LIMIT 1";
+                        $stCli = $conn->prepare($sqlCli);
+                        if ($stCli) {
+                            $stCli->bind_param('i', $equipoForLookup);
+                            $stCli->execute();
+                            $resCli = $stCli->get_result();
+                            $rowCli = $resCli ? ($resCli->fetch_assoc() ?: null) : null;
+                            $stCli->close();
+                            if ($rowCli) {
+                                $clienteId = (int)($rowCli['id_cliente'] ?? 0);
+                                $clienteNombre = (string)($rowCli['nombre'] ?? '');
+                                $clienteEmail = (string)($rowCli['email'] ?? '');
+                            }
+                        }
+                    }
+                }
+            }
+
+            $beforeEstado = is_array($before) ? (int)($before['id_estado_actual'] ?? 0) : 0;
+            $afterEstado = $id_estado;
+
+            $webhookData = [
+                'event' => 'orden_actualizada',
+                'id_orden' => $id,
+                'codigo' => $codigoWebhook,
+                'equipo' => $equipoForLookup,
+                'tecnico' => $id_tecnico > 0 ? $id_tecnico : (int)($before['id_tecnico'] ?? 0),
+                'estado_before' => $beforeEstado,
+                'estado_after' => $afterEstado,
+                'changes' => $changes,
+                'id_cliente' => $clienteId,
+                'cliente_nombre' => $clienteNombre,
+                'cliente_email' => $clienteEmail,
+            ];
+
+            $options = [
+                'http' => [
+                    'header'  => "Content-type: application/json",
+                    'method'  => 'POST',
+                    'content' => json_encode($webhookData),
+                    'ignore_errors' => true,
+                ],
+            ];
+            $context = stream_context_create($options);
+            @file_get_contents(
+                'https://simple-n8n-production-edc5.up.railway.app/webhook/nueva-reparacion',
+                false,
+                $context
+            );
+        }
+
         header('Location: ?page=ordenes&t=' . ($ok ? 'ok' : 'err') . '&m=' . ($ok ? 'Orden+actualizada' : 'Error+al+actualizar'));
         exit;
     }
