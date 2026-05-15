@@ -110,7 +110,104 @@ if ($action === 'edit' && $id > 0) {
                 <?php endif; ?>
             </form>
         </div>
-        <?php if ($action === 'new' || $action === 'edit'): ?>
+        
+<?php require_once __DIR__ . '/../../includes/ai_helper.php'; ?>
+
+<div id="ia-panel" style="display:none;margin-top:14px;padding:18px;border-radius:16px;background:linear-gradient(135deg,#10233d,#1F5C8B);color:white;box-shadow:0 10px 25px rgba(0,0,0,.15);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div>
+            <div style="font-size:18px;font-weight:700;">Asistente IA RepairlyRD</div>
+            <div style="font-size:12px;opacity:.8;">Análisis inteligente de fallas electrónicas</div>
+        </div>
+        <div id="ia-status" style="padding:6px 10px;background:rgba(255,255,255,.15);border-radius:999px;font-size:11px;">
+            Analizando...
+        </div>
+    </div>
+
+    <textarea id="ia-input" placeholder="Describe la falla del equipo..." style="width:100%;min-height:90px;border:none;border-radius:12px;padding:12px;resize:vertical;"></textarea>
+
+    <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;">
+        <button type="button" onclick="analizarIA()" class="ordenes-ver-btn" style="background:#22c55e;color:white;border:none;">
+            Analizar con IA
+        </button>
+
+        <button type="button" onclick="copiarResultadoIA()" class="ordenes-ver-btn">
+            Copiar resultado
+        </button>
+    </div>
+
+    <div id="ia-result" style="margin-top:16px;display:none;background:rgba(255,255,255,.08);padding:14px;border-radius:14px;">
+        <div id="ia-html"></div>
+    </div>
+</div>
+
+<script>
+async function analizarIA() {
+    const texto = document.getElementById('ia-input').value.trim();
+
+    if(!texto){
+        alert('Escribe una descripción del problema.');
+        return;
+    }
+
+    document.getElementById('ia-panel').style.display = 'block';
+    document.getElementById('ia-result').style.display = 'block';
+    document.getElementById('ia-status').innerText = 'Procesando...';
+
+    const fallas = [
+        {key:'pantalla',tipo:'Pantalla / Display',sol:['Revisar flex','Cambiar display','Probar touch']},
+        {key:'bateria',tipo:'Batería',sol:['Cambiar batería','Revisar pin de carga','Verificar consumo']},
+        {key:'no enciende',tipo:'Encendido',sol:['Medir voltajes','Revisar motherboard','Probar fuente']},
+        {key:'calienta',tipo:'Sobrecalentamiento',sol:['Limpieza interna','Cambiar pasta térmica','Revisar cortos']},
+        {key:'mojado',tipo:'Daño por líquido',sol:['Limpieza ultrasónica','Eliminar sulfato','Revisar pistas']}
+    ];
+
+    let encontrado = {
+        tipo:'Falla general',
+        sol:['Realizar diagnóstico técnico','Probar componentes','Verificar alimentación']
+    };
+
+    fallas.forEach(f => {
+        if(texto.toLowerCase().includes(f.key)){
+            encontrado = f;
+        }
+    });
+
+    setTimeout(() => {
+        document.getElementById('ia-status').innerText = 'Diagnóstico listo';
+
+        document.getElementById('ia-html').innerHTML = `
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+                <div style="background:rgba(255,255,255,.06);padding:12px;border-radius:12px;">
+                    <div style="font-size:11px;opacity:.7;">TIPO DE FALLA</div>
+                    <div style="font-size:18px;font-weight:700;">${encontrado.tipo}</div>
+                </div>
+
+                <div style="background:rgba(255,255,255,.06);padding:12px;border-radius:12px;">
+                    <div style="font-size:11px;opacity:.7;">NIVEL</div>
+                    <div style="font-size:18px;font-weight:700;">${texto.length > 100 ? 'ALTO' : 'MEDIO'}</div>
+                </div>
+            </div>
+
+            <div style="margin-top:16px;">
+                <div style="font-weight:700;margin-bottom:10px;">Posibles soluciones</div>
+                ${encontrado.sol.map(s => `
+                    <div style="padding:10px;margin-bottom:8px;background:rgba(255,255,255,.05);border-radius:10px;">
+                        ✔ ${s}
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }, 1000);
+}
+
+function copiarResultadoIA(){
+    const texto = document.getElementById('ia-html').innerText;
+    navigator.clipboard.writeText(texto);
+}
+</script>
+
+<?php if ($action === 'new' || $action === 'edit'): ?>
             <form method="post" style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:720px;">
                 <input type="hidden" name="csrf" value="<?= h($_SESSION['csrf']) ?>">
                 <input type="hidden" name="equipos_action" value="<?= $action === 'edit' ? 'update' : 'create' ?>">
