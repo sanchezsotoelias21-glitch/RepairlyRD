@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 /** @var mysqli $conn */
+require_once __DIR__ . '/../../includes/ui_helper.php';
 
 $action = $_GET['action'] ?? '';
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -85,6 +86,12 @@ $estado_name = function (int $eid) use ($estados): string {
 };
 ?>
 <div class="charts-row">
+<?php render_stats_cards([[
+'label'=>'Panel activo','value'=>count($rows ?? []),'sub'=>'Registros cargados','icon'=>'ti-chart-bar','bg'=>'linear-gradient(135deg,#111827,#1f2937)','color'=>'#93C5FD'],
+['label'=>'Estado','value'=>'Online','sub'=>'Sistema sincronizado','icon'=>'ti-activity-heartbeat','bg'=>'linear-gradient(135deg,#14532d,#166534)','color'=>'#86EFAC'],
+['label'=>'RepairlyRD','value'=>'IA','sub'=>'Automatización habilitada','icon'=>'ti-cpu','bg'=>'linear-gradient(135deg,#4c1d95,#5b21b6)','color'=>'#C4B5FD'],
+]); ?>
+
     <div class="charts-card">
         <div class="card-header">
             <div>
