@@ -297,3 +297,32 @@ $ev_desc = $diag_col_desc !== null && $edit ? (string)($edit[$diag_col_desc] ?? 
 })();
 </script>
 <?php endif; ?>
+
+
+<script>
+document.addEventListener('click',function(e){
+   const row = e.target.closest('tr');
+   if(!row) return;
+
+   const cells = row.querySelectorAll('td');
+   let descripcion = '';
+
+   cells.forEach(td=>{
+      const t = td.innerText.toLowerCase();
+      if(
+        t.includes('pantalla') ||
+        t.includes('bateria') ||
+        t.includes('no enciende') ||
+        t.includes('mojado') ||
+        t.includes('carga') ||
+        t.length > descripcion.length
+      ){
+        descripcion = td.innerText;
+      }
+   });
+
+   if(typeof analizarRegistroIA === 'function'){
+      analizarRegistroIA(descripcion);
+   }
+});
+</script>
