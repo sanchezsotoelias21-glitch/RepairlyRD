@@ -148,12 +148,41 @@ $ev_cost = $diag_col_cost !== null && $edit ? (string)($edit[$diag_col_cost] ?? 
 $ev_fecha = $diag_col_fecha !== null && $edit ? substr((string)($edit[$diag_col_fecha] ?? date('Y-m-d')), 0, 10) : substr(date('Y-m-d'), 0, 10);
 $ev_desc = $diag_col_desc !== null && $edit ? (string)($edit[$diag_col_desc] ?? '') : '';
 ?>
-<div class="charts-row">
-<?php render_stats_cards([
- ["label"=>"Diagnósticos","value"=>count($rows),"sub"=>"Registros encontrados","icon"=>"ti-stethoscope","bg"=>"linear-gradient(135deg,#0f172a,#1e293b)","color"=>"#60A5FA"],
- ["label"=>"Órdenes","value"=>count($ordenes_opts),"sub"=>"Órdenes disponibles","icon"=>"ti-clipboard-data","bg"=>"linear-gradient(135deg,#134e4a,#115e59)","color"=>"#5EEAD4"],
- ["label"=>"Filtro","value"=>$search_q !== '' ? 'Activo' : 'General',"sub"=>"Estado de búsqueda","icon"=>"ti-filter","bg"=>"linear-gradient(135deg,#581c87,#6b21a8)","color"=>"#D8B4FE"],
-]); ?>
+<!-- Tarjetas de estadísticas - Estilo Dashboard -->
+<div class="kpi-grid">
+    <div class="kpi-card" style="background:#E3F2FD;--kpi-color:#2b7abc;">
+        <div class="kpi-label" style="color:#2b7abc;">
+            <i class="ti ti-stethoscope" aria-hidden="true"></i>
+            Total diagnósticos
+        </div>
+        <div class="kpi-valor" style="color:#2b7abc;">
+            <?= count($rows) ?>
+        </div>
+        <div class="kpi-sub">Registros encontrados</div>
+    </div>
+    <div class="kpi-card" style="background:#E8F5E9;--kpi-color:#00AA44;">
+        <div class="kpi-label" style="color:#00AA44;">
+            <i class="ti ti-clipboard-data" aria-hidden="true"></i>
+            Órdenes
+        </div>
+        <div class="kpi-valor" style="color:#00AA44;">
+            <?= count($ordenes_opts) ?>
+        </div>
+        <div class="kpi-sub">Órdenes disponibles</div>
+    </div>
+    <div class="kpi-card" style="background:#F3E5F5;--kpi-color:#7B4EC4;">
+        <div class="kpi-label" style="color:#7B4EC4;">
+            <i class="ti ti-filter" aria-hidden="true"></i>
+            Búsqueda
+        </div>
+        <div class="kpi-valor" style="color:#7B4EC4;">
+            <?= $search_q !== '' ? 'Activa' : 'General' ?>
+        </div>
+        <div class="kpi-sub">Estado de filtro</div>
+    </div>
+</div>
+
+<div class="charts-row" style="margin-top:18px;">
     <div class="charts-card">
         <div class="card-header">
             <div>

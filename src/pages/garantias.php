@@ -107,13 +107,41 @@ $ecob = $gar_col_cob !== null && $edit ? (string)($edit[$gar_col_cob] ?? '0') : 
 $etipo = $gar_col_tipo !== null && $edit ? (string)($edit[$gar_col_tipo] ?? '') : '';
 $eest = $gar_col_est !== null && $edit ? (string)($edit[$gar_col_est] ?? 'activa') : 'activa';
 ?>
-<div class="charts-row">
-<?php render_stats_cards([[
-'label'=>'Panel activo','value'=>count($rows ?? []),'sub'=>'Registros cargados','icon'=>'ti-chart-bar','bg'=>'linear-gradient(135deg,#111827,#1f2937)','color'=>'#93C5FD'],
-['label'=>'Estado','value'=>'Online','sub'=>'Sistema sincronizado','icon'=>'ti-activity-heartbeat','bg'=>'linear-gradient(135deg,#14532d,#166534)','color'=>'#86EFAC'],
-['label'=>'RepairlyRD','value'=>'IA','sub'=>'Automatización habilitada','icon'=>'ti-cpu','bg'=>'linear-gradient(135deg,#4c1d95,#5b21b6)','color'=>'#C4B5FD'],
-]); ?>
+<!-- Tarjetas de estadísticas - Estilo Dashboard -->
+<div class="kpi-grid">
+    <div class="kpi-card" style="background:#E3F2FD;--kpi-color:#2b7abc;">
+        <div class="kpi-label" style="color:#2b7abc;">
+            <i class="ti ti-shield" aria-hidden="true"></i>
+            Total garantías
+        </div>
+        <div class="kpi-valor" style="color:#2b7abc;">
+            <?= count($rows ?? []) ?>
+        </div>
+        <div class="kpi-sub">Cobertura de seguros</div>
+    </div>
+    <div class="kpi-card" style="background:#E8F5E9;--kpi-color:#00AA44;">
+        <div class="kpi-label" style="color:#00AA44;">
+            <i class="ti ti-check-circle" aria-hidden="true"></i>
+            Activas
+        </div>
+        <div class="kpi-valor" style="color:#00AA44;">
+            0
+        </div>
+        <div class="kpi-sub">Garantías vigentes</div>
+    </div>
+    <div class="kpi-card" style="background:#FFF3E0;--kpi-color:#FF9500;">
+        <div class="kpi-label" style="color:#FF9500;">
+            <i class="ti ti-alert-circle" aria-hidden="true"></i>
+            Por vencer
+        </div>
+        <div class="kpi-valor" style="color:#FF9500;">
+            0
+        </div>
+        <div class="kpi-sub">Próximas a expirar</div>
+    </div>
+</div>
 
+<div class="charts-row" style="margin-top:18px;">
     <div class="charts-card">
         <div class="card-header">
             <div>

@@ -21,27 +21,39 @@ $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
 
 ?>
 
-<!-- Tarjetas de estadísticas -->
-<?php render_stats_cards([
-    [
-        'label' => 'Total de clientes',
-        'value' => $total_clientes,
-        'sub' => 'Clientes registrados',
-        'icon' => 'ti-users',
-    ],
-    [
-        'label' => 'Activos hoy',
-        'value' => count($rows),
-        'sub' => 'Clientes cargados',
-        'icon' => 'ti-activity-heartbeat',
-    ],
-    [
-        'label' => 'Estado',
-        'value' => 'Sincronizado',
-        'sub' => 'Base de datos actualizada',
-        'icon' => 'ti-database',
-    ]
-]); ?>
+<!-- Tarjetas de estadísticas - Estilo Dashboard -->
+<div class="kpi-grid">
+    <div class="kpi-card" style="background:#E3F2FD;--kpi-color:#2b7abc;">
+        <div class="kpi-label" style="color:#2b7abc;">
+            <i class="ti ti-users" aria-hidden="true"></i>
+            Total de clientes
+        </div>
+        <div class="kpi-valor" style="color:#2b7abc;">
+            <?= $total_clientes ?>
+        </div>
+        <div class="kpi-sub">Clientes registrados</div>
+    </div>
+    <div class="kpi-card" style="background:#FFF3E0;--kpi-color:#FF9500;">
+        <div class="kpi-label" style="color:#FF9500;">
+            <i class="ti ti-activity-heartbeat" aria-hidden="true"></i>
+            Cargados hoy
+        </div>
+        <div class="kpi-valor" style="color:#FF9500;">
+            <?= count($rows) ?>
+        </div>
+        <div class="kpi-sub">Registros en sesión</div>
+    </div>
+    <div class="kpi-card" style="background:#E8F5E9;--kpi-color:#00AA44;">
+        <div class="kpi-label" style="color:#00AA44;">
+            <i class="ti ti-database" aria-hidden="true"></i>
+            Base de datos
+        </div>
+        <div class="kpi-valor" style="color:#00AA44;">
+            100%
+        </div>
+        <div class="kpi-sub">Sincronización correcta</div>
+    </div>
+</div>
 
 <!-- Tabla de clientes -->
 <div class="card" style="margin-top:18px;">

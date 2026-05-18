@@ -30,27 +30,39 @@ foreach ($deliveries as $d) {
 
 ?>
 
-<!-- Tarjetas de estadísticas -->
-<?php render_stats_cards([
-    [
-        'label' => 'Total deliveries',
-        'value' => $total_deliveries,
-        'sub' => 'Entregas registradas',
-        'icon' => 'ti-truck',
-    ],
-    [
-        'label' => 'En tránsito',
-        'value' => $en_transito,
-        'sub' => 'Entregas activas',
-        'icon' => 'ti-activity-heartbeat',
-    ],
-    [
-        'label' => 'Completados',
-        'value' => $completados,
-        'sub' => 'Entregas exitosas',
-        'icon' => 'ti-check-circle',
-    ]
-]); ?>
+<!-- Tarjetas de estadísticas - Estilo Dashboard -->
+<div class="kpi-grid">
+    <div class="kpi-card" style="background:#E3F2FD;--kpi-color:#2b7abc;">
+        <div class="kpi-label" style="color:#2b7abc;">
+            <i class="ti ti-truck" aria-hidden="true"></i>
+            Total deliveries
+        </div>
+        <div class="kpi-valor" style="color:#2b7abc;">
+            <?= $total_deliveries ?>
+        </div>
+        <div class="kpi-sub">Entregas registradas</div>
+    </div>
+    <div class="kpi-card" style="background:#FFF3E0;--kpi-color:#FF9500;">
+        <div class="kpi-label" style="color:#FF9500;">
+            <i class="ti ti-activity-heartbeat" aria-hidden="true"></i>
+            En tránsito
+        </div>
+        <div class="kpi-valor" style="color:#FF9500;">
+            <?= $en_transito ?>
+        </div>
+        <div class="kpi-sub">Entregas activas</div>
+    </div>
+    <div class="kpi-card" style="background:#E8F5E9;--kpi-color:#00AA44;">
+        <div class="kpi-label" style="color:#00AA44;">
+            <i class="ti ti-check-circle" aria-hidden="true"></i>
+            Completadas
+        </div>
+        <div class="kpi-valor" style="color:#00AA44;">
+            <?= $completados ?>
+        </div>
+        <div class="kpi-sub">Entregas exitosas</div>
+    </div>
+</div>
 
 <!-- Tabla de deliveries -->
 <div class="card" style="margin-top:18px;">

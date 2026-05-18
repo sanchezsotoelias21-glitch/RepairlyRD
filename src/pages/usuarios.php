@@ -61,13 +61,41 @@ if ($ut !== '') {
     }
 }
 ?>
-<div class="charts-row">
-<?php render_stats_cards([[
-'label'=>'Panel activo','value'=>count($rows ?? []),'sub'=>'Registros cargados','icon'=>'ti-chart-bar','bg'=>'linear-gradient(135deg,#111827,#1f2937)','color'=>'#93C5FD'],
-['label'=>'Estado','value'=>'Online','sub'=>'Sistema sincronizado','icon'=>'ti-activity-heartbeat','bg'=>'linear-gradient(135deg,#14532d,#166534)','color'=>'#86EFAC'],
-['label'=>'RepairlyRD','value'=>'IA','sub'=>'Automatización habilitada','icon'=>'ti-cpu','bg'=>'linear-gradient(135deg,#4c1d95,#5b21b6)','color'=>'#C4B5FD'],
-]); ?>
+<!-- Tarjetas de estadísticas - Estilo Dashboard -->
+<div class="kpi-grid">
+    <div class="kpi-card" style="background:#E3F2FD;--kpi-color:#2b7abc;">
+        <div class="kpi-label" style="color:#2b7abc;">
+            <i class="ti ti-users" aria-hidden="true"></i>
+            Total usuarios
+        </div>
+        <div class="kpi-valor" style="color:#2b7abc;">
+            <?= count($rows ?? []) ?>
+        </div>
+        <div class="kpi-sub">Cuentas del sistema</div>
+    </div>
+    <div class="kpi-card" style="background:#F3E5F5;--kpi-color:#7B4EC4;">
+        <div class="kpi-label" style="color:#7B4EC4;">
+            <i class="ti ti-shield-check" aria-hidden="true"></i>
+            Administradores
+        </div>
+        <div class="kpi-valor" style="color:#7B4EC4;">
+            1
+        </div>
+        <div class="kpi-sub">Acceso total</div>
+    </div>
+    <div class="kpi-card" style="background:#E8F5E9;--kpi-color:#00AA44;">
+        <div class="kpi-label" style="color:#00AA44;">
+            <i class="ti ti-activity-heartbeat" aria-hidden="true"></i>
+            Activos
+        </div>
+        <div class="kpi-valor" style="color:#00AA44;">
+            <?= count($rows ?? []) ?>
+        </div>
+        <div class="kpi-sub">Usuarios en línea</div>
+    </div>
+</div>
 
+<div class="charts-row" style="margin-top:18px;">
     <div class="charts-card">
         <div class="card-header">
             <div>

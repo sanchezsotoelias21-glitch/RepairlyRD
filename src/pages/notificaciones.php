@@ -71,28 +71,40 @@ if ($nt !== '') {
     }
 }
 
-// Tarjetas de estadísticas
+// Tarjetas de estadísticas - Estilo Dashboard
 ?>
-<?php render_stats_cards([
-    [
-        'label' => 'Total notificaciones',
-        'value' => $total_notif,
-        'sub' => 'Registros en el sistema',
-        'icon' => 'ti-bell',
-    ],
-    [
-        'label' => 'Pendientes',
-        'value' => $pending_notif,
-        'sub' => 'Requieren atención',
-        'icon' => 'ti-alert-circle',
-    ],
-    [
-        'label' => 'Estado',
-        'value' => 'Activo',
-        'sub' => 'Sistema monitoreando',
-        'icon' => 'ti-activity-heartbeat',
-    ]
-]); ?>
+<div class="kpi-grid">
+    <div class="kpi-card" style="background:#FFF3E0;--kpi-color:#FF9500;">
+        <div class="kpi-label" style="color:#FF9500;">
+            <i class="ti ti-bell" aria-hidden="true"></i>
+            Total notificaciones
+        </div>
+        <div class="kpi-valor" style="color:#FF9500;">
+            <?= $total_notif ?>
+        </div>
+        <div class="kpi-sub">Registros en el sistema</div>
+    </div>
+    <div class="kpi-card" style="background:#FFEBEE;--kpi-color:#FF4444;">
+        <div class="kpi-label" style="color:#FF4444;">
+            <i class="ti ti-alert-circle" aria-hidden="true"></i>
+            Pendientes
+        </div>
+        <div class="kpi-valor" style="color:#FF4444;">
+            <?= $pending_notif ?>
+        </div>
+        <div class="kpi-sub">Requieren atención</div>
+    </div>
+    <div class="kpi-card" style="background:#E8F5E9;--kpi-color:#00AA44;">
+        <div class="kpi-label" style="color:#00AA44;">
+            <i class="ti ti-activity-heartbeat" aria-hidden="true"></i>
+            Estado sistema
+        </div>
+        <div class="kpi-valor" style="color:#00AA44;">
+            Activo
+        </div>
+        <div class="kpi-sub">Monitoreando activamente</div>
+    </div>
+</div>
 
 <!-- Listado de notificaciones -->
 <div class="charts-row" style="margin-top:0;">
