@@ -3,166 +3,49 @@
 function render_stats_cards(array $stats): void {
 
 $palettes = [
-
-    [
-        'bg' => '#EEF5FC',
-        'border' => '#4A90E2',
-        'text' => '#2B74C7'
-    ],
-
-    [
-        'bg' => '#FFF5E8',
-        'border' => '#F59E0B',
-        'text' => '#F59E0B'
-    ],
-
-    [
-        'bg' => '#EEF8F1',
-        'border' => '#22C55E',
-        'text' => '#16A34A'
-    ],
-
-    [
-        'bg' => '#F4EEFA',
-        'border' => '#8B5CF6',
-        'text' => '#7C3AED'
-    ],
-
-    [
-        'bg' => '#F4F4F5',
-        'border' => '#71717A',
-        'text' => '#3F3F46'
-    ],
-
-    [
-        'bg' => '#FDEEEF',
-        'border' => '#FF5A5F',
-        'text' => '#FF4D4F'
-    ]
-
+    // Orden oficial (como dashboard): Proceso, Pendientes, Ingresos, Garantías, Completadas, Con falla
+    ['bg' => '#E3F2FD', 'line' => '#2b7abc', 'text' => '#2b7abc'],
+    ['bg' => '#FFF3E0', 'line' => '#FF9500', 'text' => '#FF9500'],
+    ['bg' => '#E8F5E9', 'line' => '#00AA44', 'text' => '#00AA44'],
+    ['bg' => '#F3E5F5', 'line' => '#7B4EC4', 'text' => '#7B4EC4'],
+    ['bg' => '#F5F5F5', 'line' => '#424242', 'text' => '#424242'],
+    ['bg' => '#FFEBEE', 'line' => '#FF4444', 'text' => '#FF4444'],
 ];
 
-echo '
+$render_row = function (array $row, int $offset) use ($palettes): void {
+    echo '<div class="kpi-grid">';
+    foreach ($row as $idx => $s) {
+        if (!is_array($s)) {
+            continue;
+        }
+        $p = $palettes[($offset + $idx) % count($palettes)];
+        $icon = (string)($s['icon'] ?? $s['icono'] ?? 'ti-chart-bar');
+        $label = (string)($s['label'] ?? '');
+        $value = (string)($s['value'] ?? $s['valor'] ?? '');
+        $sub = (string)($s['sub'] ?? '');
 
-<style>
+        echo '<div class="kpi-card" style="background:' . $p['bg'] . ';--kpi-color:' . $p['line'] . ';">';
+        echo '<div class="kpi-label" style="color:' . $p['text'] . ';">';
+        echo '<i class="ti ' . htmlspecialchars($icon) . '" aria-hidden="true"></i>';
+        echo htmlspecialchars($label);
+        echo '</div>';
+        echo '<div class="kpi-valor" style="color:' . $p['text'] . ';">' . htmlspecialchars($value) . '</div>';
+        echo '<div class="kpi-sub">' . $sub . '</div>';
+        echo '</div>';
+    }
+    echo '</div>';
+};
 
-.kpi-grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-    gap:18px;
-    margin-bottom:25px;
+$total = count($stats);
+if ($total === 0) {
+    return;
 }
 
-.kpi-card{
-    position:relative;
-    overflow:hidden;
-
-    border-radius:16px;
-    padding:22px;
-    min-height:135px;
-
-    border-top:4px solid transparent;
-
-    box-shadow:
-        0 4px 10px rgba(0,0,0,.05),
-        0 1px 2px rgba(0,0,0,.04);
-
-    transition:.25s ease;
-
-    display:flex;
-    flex-direction:column;
-    justify-content:space-between;
+// Misma distribución visual del dashboard: 2 filas de 3 cuando aplica.
+$render_row(array_slice($stats, 0, 3), 0);
+if ($total > 3) {
+    $render_row(array_slice($stats, 3, 3), 3);
 }
-
-.kpi-card:hover{
-    transform:translateY(-3px);
-
-    box-shadow:
-        0 12px 24px rgba(0,0,0,.08),
-        0 2px 6px rgba(0,0,0,.05);
-}
-
-.kpi-label{
-    font-size:12px;
-    font-weight:700;
-    text-transform:uppercase;
-    letter-spacing:.8px;
-
-    display:flex;
-    align-items:center;
-    gap:8px;
-}
-
-.kpi-valor{
-    font-size:44px;
-    font-weight:800;
-    line-height:1;
-
-    margin:10px 0;
-}
-
-.kpi-sub{
-    font-size:14px;
-    opacity:.8;
-}
-
-</style>
-
-';
-
-echo '<div class="kpi-grid">';
-
-$i = 0;
-
-foreach($stats as $s){
-
-    $p = $palettes[$i % count($palettes)];
-
-    echo '
-
-    <div class="kpi-card"
-
-        style="
-            background:'.$p['bg'].';
-            border-top-color:'.$p['border'].';
-        "
-
-    >
-
-        <div
-            class="kpi-label"
-            style="color:'.$p['text'].';"
-        >
-
-            <i class="ti '.$s['icon'].'"></i>
-
-            '.$s['label'].'
-
-        </div>
-
-        <div
-            class="kpi-valor"
-            style="color:'.$p['text'].';"
-        >
-
-            '.$s['value'].'
-
-        </div>
-
-        <div class="kpi-sub">
-
-            '.$s['sub'].'
-
-        </div>
-
-    </div>
-
-    ';
-
-    $i++;
-}
-
-echo '</div>';
 
 }
 

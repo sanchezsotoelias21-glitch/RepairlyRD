@@ -293,6 +293,7 @@ $nav_items = [
 
     ['seccion' => true, 'label' => 'Operaciones'],
     ['key' => 'ordenes', 'label' => $page_meta['ordenes']['label'], 'desc' => $page_meta['ordenes']['desc'], 'href' => '?page=ordenes', 'icono' => $page_meta['ordenes']['icono'], 'activo' => $current_page === 'ordenes', 'badge' => null],
+    ['key' => 'deliverys', 'label' => $page_meta['deliverys']['label'], 'desc' => $page_meta['deliverys']['desc'], 'href' => '?page=deliverys', 'icono' => $page_meta['deliverys']['icono'], 'activo' => $current_page === 'deliverys', 'badge' => null],
     ['key' => 'diagnosticos', 'label' => $page_meta['diagnosticos']['label'], 'desc' => $page_meta['diagnosticos']['desc'], 'href' => '?page=diagnosticos', 'icono' => $page_meta['diagnosticos']['icono'], 'activo' => $current_page === 'diagnosticos', 'badge' => null],
     ['key' => 'inventario', 'label' => $page_meta['inventario']['label'], 'desc' => $page_meta['inventario']['desc'], 'href' => '?page=inventario', 'icono' => $page_meta['inventario']['icono'], 'activo' => $current_page === 'inventario', 'badge' => null],
     ['key' => 'garantias', 'label' => $page_meta['garantias']['label'], 'desc' => $page_meta['garantias']['desc'], 'href' => '?page=garantias', 'icono' => $page_meta['garantias']['icono'], 'activo' => $current_page === 'garantias', 'badge' => ['valor'=>0, 'bg'=>'#7B4EC4','color'=>'#fff']],
@@ -942,7 +943,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 <aside class="sidebar" role="navigation" aria-label="Navegación principal">
 
     <div class="sidebar-logo">
-        <img src="assets/logo redondo.ico" alt="RepairlyRD" class="sidebar-logo-img"
+        <img src="logo.png" alt="RepairlyRD" class="sidebar-logo-img"
              onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
         <div class="sidebar-logo-fallback" style="display:none;" aria-hidden="true">
             <i class="ti ti-tool"></i>
