@@ -91,6 +91,7 @@ $allowed_pages = [
     'reportes',
     'usuarios',
     'configuracion',
+    'deliverys',
 ];
 if (!in_array($current_page, $allowed_pages, true)) {
     $current_page = 'dashboard';
@@ -110,6 +111,7 @@ $page_meta = [
     'reportes' => ['label' => 'Reportes', 'desc' => 'Ingresos, productividad y estadísticas', 'icono' => 'ti-chart-bar'],
     'usuarios' => ['label' => 'Usuarios', 'desc' => 'Gestión de accesos y roles', 'icono' => 'ti-user-shield'],
     'configuracion' => ['label' => 'Configuración', 'desc' => 'Ajustes generales del sistema', 'icono' => 'ti-settings'],
+    'deliverys' => ['label' => 'Deliveries', 'desc' => 'Gestión de deliveries y tracking', 'icono' => 'ti-truck-delivery'],
 ];
 $page = $page_meta[$current_page] ?? $page_meta['dashboard'];
 
