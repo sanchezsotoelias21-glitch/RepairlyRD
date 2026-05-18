@@ -3,10 +3,14 @@
 declare(strict_types=1);
 
 /** @var mysqli $conn */
+require_once __DIR__ . '/../../includes/ui_helper.php';
 
 $nt = pick_table($conn, ['notificacion', 'Notificacion']);
 $search_q = isset($_GET['q']) && is_string($_GET['q']) ? trim($_GET['q']) : '';
 $rows = [];
+$total_notif = 0;
+$pending_notif = 0;
+
 if ($nt !== '') {
     $nc = table_columns($conn, $nt);
     $ord = isset($nc['fecha_envio']) ? 'fecha_envio' : 'id_notificacion';
@@ -56,9 +60,42 @@ if ($nt !== '') {
     } else {
         $rows = db_rows($conn, $sql);
     }
+    
+    // Contar totales
+    $total_notif = count($rows);
+    $pending_notif = 0;
+    foreach ($rows as $r) {
+        if (isset($r['estado']) && strtolower($r['estado']) === 'pendiente') {
+            $pending_notif++;
+        }
+    }
 }
+
+// Tarjetas de estadísticas
 ?>
-<div class="charts-row">
+<?php render_stats_cards([
+    [
+        'label' => 'Total notificaciones',
+        'value' => $total_notif,
+        'sub' => 'Registros en el sistema',
+        'icon' => 'ti-bell',
+    ],
+    [
+        'label' => 'Pendientes',
+        'value' => $pending_notif,
+        'sub' => 'Requieren atención',
+        'icon' => 'ti-alert-circle',
+    ],
+    [
+        'label' => 'Estado',
+        'value' => 'Activo',
+        'sub' => 'Sistema monitoreando',
+        'icon' => 'ti-activity-heartbeat',
+    ]
+]); ?>
+
+<!-- Listado de notificaciones -->
+<div class="charts-row" style="margin-top:0;">
     <div class="charts-card">
         <div class="card-header">
             <div>
