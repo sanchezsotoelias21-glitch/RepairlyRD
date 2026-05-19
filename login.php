@@ -221,7 +221,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$logoPath = 'assets/logo.png';
+$logoPath = 'assets/logo_sidebar.png';
 $logoFs   = __DIR__ . '/' . $logoPath;
 $hasLogo  = is_file($logoFs);
 ?>
