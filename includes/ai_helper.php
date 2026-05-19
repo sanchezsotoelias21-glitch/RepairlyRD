@@ -4,7 +4,7 @@ function repairly_ai_analyze(string $text): array {
     $base = ia_diagnostico_local($text);
     $tipo = (string)($base['tipo'] ?? 'Falla general');
     return [
-        'error' => $tipo,
+        'problema' => $tipo,
         'tipo' => $tipo,
         'prioridad' => (string)($base['prioridad'] ?? 'Media'),
         'soluciones' => array_values(array_filter($base['soluciones'] ?? [], function ($s): bool {

@@ -249,7 +249,7 @@ function analizarRegistroIA(descripcion=''){
         .then(function (data) {
             if (!data || data.error) throw new Error((data && data.error) ? data.error : 'Error');
 
-            const tipo = data.error || data.tipo || 'Falla general';
+            const tipo = data.problema || data.tipo || 'Falla general';
             const prioridad = data.prioridad || 'Media';
             const soluciones = Array.isArray(data.soluciones) ? data.soluciones : [];
             const resumen = data.resumen || '—';
