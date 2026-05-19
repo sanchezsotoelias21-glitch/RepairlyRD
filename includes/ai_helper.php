@@ -1,4 +1,17 @@
 <?php
+
+function repairly_ai_analyze(string $text): array {
+    $base = ia_diagnostico_local($text);
+    return [
+        'tipo' => (string)($base['tipo'] ?? 'Falla general'),
+        'prioridad' => (string)($base['prioridad'] ?? 'Media'),
+        'soluciones' => array_values(array_filter($base['soluciones'] ?? [], function ($s): bool {
+            return is_string($s) && trim($s) !== '';
+        })),
+        'resumen' => 'Análisis generado a partir de los diagnósticos seleccionados.',
+    ];
+}
+
 function ia_diagnostico_local($texto) {
     $texto = strtolower(trim($texto));
     $tipo = "Falla general";

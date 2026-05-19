@@ -172,8 +172,8 @@ function render_ai_widget(): void {
             >
 
                 Análisis automático basado
-                en la descripción del
-                diagnóstico seleccionado
+                en los diagnósticos
+                seleccionados
 
             </div>
 
@@ -194,9 +194,9 @@ function render_ai_widget(): void {
             style="opacity:.7"
         >
 
-            Selecciona un registro
-            para generar automáticamente
-            el análisis inteligente.
+            Selecciona uno o varios registros
+            y pulsa <strong>Analizar con IA</strong>
+            para generar el análisis.
 
         </div>
 
@@ -212,246 +212,71 @@ function render_ai_widget(): void {
 <script>
 
 function analizarRegistroIA(descripcion=''){
+    const statusEl = document.getElementById('ia-status');
+    const placeholderEl = document.getElementById('ia-placeholder');
+    const resultEl = document.getElementById('ia-result');
 
-    if(!descripcion || descripcion.trim()===''){
-
-        document.getElementById(
-            'ia-status'
-        ).innerHTML='Sin datos';
-
+    const text = String(descripcion || '').trim();
+    if (!text) {
+        if (statusEl) statusEl.textContent = 'Sin datos';
+        if (placeholderEl) placeholderEl.style.display = 'block';
+        if (resultEl) resultEl.style.display = 'none';
         return;
     }
 
-    const texto =
-    descripcion.toLowerCase();
-
-    let resultado = {
-
-        problema:'Diagnóstico general',
-
-        prioridad:'Media',
-
-        probabilidad:'68%',
-
-        acciones:[
-
-            'Realizar revisión técnica completa',
-
-            'Verificar componentes principales',
-
-            'Ejecutar pruebas eléctricas'
-
-        ]
-    };
-
-    if(texto.includes('no enciende')){
-
-        resultado = {
-
-            problema:'Falla de encendido',
-
-            prioridad:'Crítica',
-
-            probabilidad:'92%',
-
-            acciones:[
-
-                'Revisar línea principal de voltaje',
-
-                'Comprobar PMIC y consumo',
-
-                'Probar fuente DC'
-
-            ]
-        };
+    if (statusEl) statusEl.textContent = 'Analizando...';
+    if (placeholderEl) placeholderEl.style.display = 'none';
+    if (resultEl) {
+        resultEl.style.display = 'block';
+        resultEl.innerHTML = '<div style="opacity:.75;">Procesando diagnósticos seleccionados...</div>';
     }
 
-    if(
-        texto.includes('mojado') ||
-        texto.includes('liquido')
-    ){
-
-        resultado = {
-
-            problema:'Daño por líquido',
-
-            prioridad:'Alta',
-
-            probabilidad:'95%',
-
-            acciones:[
-
-                'Aplicar limpieza ultrasónica',
-
-                'Eliminar sulfato',
-
-                'Medir cortos en motherboard'
-
-            ]
-        };
-    }
-
-    if(texto.includes('pantalla')){
-
-        resultado = {
-
-            problema:'Daño de display',
-
-            prioridad:'Media',
-
-            probabilidad:'88%',
-
-            acciones:[
-
-                'Probar otra pantalla',
-
-                'Revisar flex',
-
-                'Verificar IC de imagen'
-
-            ]
-        };
-    }
-
-    if(
-        texto.includes('bateria') ||
-        texto.includes('carga')
-    ){
-
-        resultado = {
-
-            problema:'Sistema de carga',
-
-            prioridad:'Media',
-
-            probabilidad:'84%',
-
-            acciones:[
-
-                'Comprobar batería',
-
-                'Revisar pin de carga',
-
-                'Medir amperaje'
-
-            ]
-        };
-    }
-
-    document.getElementById(
-        'ia-status'
-    ).innerHTML='Análisis completado';
-
-    document.getElementById(
-        'ia-placeholder'
-    ).style.display='none';
-
-    document.getElementById(
-        'ia-result'
-    ).style.display='block';
-
-    document.getElementById(
-        'ia-result'
-    ).innerHTML = `
-
-    <div class="ai-analysis">
-
-        <div class="ai-card">
-
-            <div class="ai-title">
-
-                Problema detectado
-
-            </div>
-
-            <div class="ai-value">
-
-                ${resultado.problema}
-
-            </div>
-
-        </div>
-
-        <div class="ai-card">
-
-            <div class="ai-title">
-
-                Nivel de prioridad
-
-            </div>
-
-            <div class="ai-value">
-
-                ${resultado.prioridad}
-
-            </div>
-
-        </div>
-
-        <div class="ai-card">
-
-            <div class="ai-title">
-
-                Probabilidad IA
-
-            </div>
-
-            <div class="ai-value">
-
-                ${resultado.probabilidad}
-
-            </div>
-
-        </div>
-
-        <div
-            class="ai-card"
-            style="grid-column:1/-1"
-        >
-
-            <div class="ai-title">
-
-                Acciones recomendadas
-
-            </div>
-
-            <ul class="ai-list">
-
-                ${resultado.acciones
-                    .map(a=>`<li>${a}</li>`)
-                    .join('')}
-
-            </ul>
-
-        </div>
-
-        <div
-            class="ai-card"
-            style="grid-column:1/-1"
-        >
-
-            <div class="ai-title">
-
-                Descripción analizada
-
-            </div>
-
-            <div
-                style="
-                    opacity:.8;
-                    line-height:1.7;
-                "
-            >
-
-                ${descripcion}
-
-            </div>
-
-        </div>
-
-    </div>
-
-    `;
+    fetch('ai_assistant.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        body: new URLSearchParams({ text: text }).toString()
+    })
+        .then(function (r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        })
+        .then(function (data) {
+            if (!data || data.error) throw new Error((data && data.error) ? data.error : 'Error');
+
+            const tipo = data.tipo || 'Falla general';
+            const prioridad = data.prioridad || 'Media';
+            const soluciones = Array.isArray(data.soluciones) ? data.soluciones : [];
+            const resumen = data.resumen || '—';
+
+            if (statusEl) statusEl.textContent = 'Análisis completado';
+
+            const esc = function (s) {
+                return String(s).replace(/[&<>"]/g, function (c) {
+                    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] || c;
+                });
+            };
+
+            const list = soluciones.length
+                ? ('<ul class="ai-list">' + soluciones.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>')
+                : '<div style="opacity:.8;">Sin recomendaciones.</div>';
+
+            if (resultEl) {
+                resultEl.innerHTML =
+                    '<div class="ai-analysis">' +
+                    '<div class="ai-card"><div class="ai-title">Problema detectado</div><div class="ai-value">' + esc(tipo) + '</div></div>' +
+                    '<div class="ai-card"><div class="ai-title">Nivel de prioridad</div><div class="ai-value">' + esc(prioridad) + '</div></div>' +
+                    '<div class="ai-card"><div class="ai-title">Resumen</div><div class="ai-value" style="font-size:13px;line-height:1.3;">' + esc(resumen) + '</div></div>' +
+                    '<div class="ai-card" style="grid-column:1/-1"><div class="ai-title">Recomendaciones de solución</div>' + list + '</div>' +
+                    '<div class="ai-card" style="grid-column:1/-1"><div class="ai-title">Datos analizados</div><div style="opacity:.8;line-height:1.7;white-space:pre-wrap;">' + esc(text) + '</div></div>' +
+                    '</div>';
+            }
+        })
+        .catch(function (err) {
+            if (statusEl) statusEl.textContent = 'Error IA';
+            if (resultEl) {
+                resultEl.innerHTML = '<div style="opacity:.85;">No se pudo generar el análisis: ' + String(err && err.message ? err.message : err) + '</div>';
+            }
+        });
 }
 
 </script>

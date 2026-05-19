@@ -264,8 +264,17 @@ $ev_desc = $diag_col_desc !== null && $edit ? (string)($edit[$diag_col_desc] ?? 
         <?php endif; ?>
 
         <div style="margin-top:14px;border-top:0.5px solid #EDECEA;padding-top:12px;">
-            <div class="table-head" style="grid-template-columns:52px 80px 1fr 100px 120px;">
-                <div>ID</div><div>Orden</div><div>Tipo / Descripción</div><div>Fecha</div><div style="text-align:right;">Acciones</div>
+            <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px;">
+                <label style="display:flex;align-items:center;gap:8px;font-size:11px;color:#6B6560;user-select:none;">
+                    <input id="diag-select-all" type="checkbox">
+                    Seleccionar todo (<span id="diag-selected-count">0</span>)
+                </label>
+                <button id="diag-ai-analyze" type="button" class="ordenes-ver-btn" style="background:#1F5C8B;color:#fff;border-color:#1F5C8B;">
+                    Analizar con IA
+                </button>
+            </div>
+            <div class="table-head" style="grid-template-columns:34px 52px 80px 1fr 100px 120px;">
+                <div></div><div>ID</div><div>Orden</div><div>Tipo / Descripción</div><div>Fecha</div><div style="text-align:right;">Acciones</div>
             </div>
             <?php foreach ($rows as $r): ?>
                 <?php
@@ -273,9 +282,22 @@ $ev_desc = $diag_col_desc !== null && $edit ? (string)($edit[$diag_col_desc] ?? 
                 $rtipo = $diag_col_tipo !== null ? (string)($r[$diag_col_tipo] ?? '') : '';
                 $rdesc = $diag_col_desc !== null ? (string)($r[$diag_col_desc] ?? '') : '';
                 $rfecha = $diag_col_fecha !== null ? (string)($r[$diag_col_fecha] ?? '') : '';
+                $rid = (int)($r[$idField] ?? 0);
                 ?>
-                <div class="table-row" style="grid-template-columns:52px 80px 1fr 100px 120px;">
-                    <div class="order-id"><?= (int)($r[$idField] ?? 0) ?></div>
+                <div class="table-row diag-row" style="grid-template-columns:34px 52px 80px 1fr 100px 120px;" data-diag-id="<?= $rid ?>">
+                    <div style="display:flex;align-items:center;">
+                        <input
+                            class="diag-select"
+                            type="checkbox"
+                            aria-label="Seleccionar diagnóstico <?= $rid ?>"
+                            data-id="<?= $rid ?>"
+                            data-orden="<?= $rid_ord ?>"
+                            data-tipo="<?= h($rtipo) ?>"
+                            data-desc="<?= h($rdesc) ?>"
+                            data-fecha="<?= h(substr($rfecha, 0, 10)) ?>"
+                        >
+                    </div>
+                    <div class="order-id"><?= $rid ?></div>
                     <div><?= $rid_ord ?></div>
                     <div class="order-tecnico" style="font-size:11px;"><?= h($rtipo) ?> — <?= h(mb_substr($rdesc, 0, 80)) ?></div>
                     <div style="font-size:11px;"><?= h(substr($rfecha, 0, 10)) ?></div>
@@ -329,29 +351,87 @@ $ev_desc = $diag_col_desc !== null && $edit ? (string)($edit[$diag_col_desc] ?? 
 
 
 <script>
-document.addEventListener('click',function(e){
-   const row = e.target.closest('tr');
-   if(!row) return;
+(function () {
+    'use strict';
 
-   const cells = row.querySelectorAll('td');
-   let descripcion = '';
+    function $(sel, root) { return (root || document).querySelector(sel); }
+    function $all(sel, root) { return Array.from((root || document).querySelectorAll(sel)); }
 
-   cells.forEach(td=>{
-      const t = td.innerText.toLowerCase();
-      if(
-        t.includes('pantalla') ||
-        t.includes('bateria') ||
-        t.includes('no enciende') ||
-        t.includes('mojado') ||
-        t.includes('carga') ||
-        t.length > descripcion.length
-      ){
-        descripcion = td.innerText;
-      }
-   });
+    var selectAll = $('#diag-select-all');
+    var countEl = $('#diag-selected-count');
+    var analyzeBtn = $('#diag-ai-analyze');
 
-   if(typeof analizarRegistroIA === 'function'){
-      analizarRegistroIA(descripcion);
-   }
-});
+    function selectedBoxes() {
+        return $all('.diag-select').filter(function (b) { return b.checked; });
+    }
+
+    function updateCount() {
+        var n = selectedBoxes().length;
+        if (countEl) countEl.textContent = String(n);
+        if (analyzeBtn) analyzeBtn.disabled = (n === 0);
+        if (analyzeBtn) analyzeBtn.style.opacity = (n === 0) ? '0.55' : '1';
+    }
+
+    function buildTextFromBoxes(boxes) {
+        var blocks = boxes.map(function (b) {
+            var id = b.getAttribute('data-id') || '';
+            var orden = b.getAttribute('data-orden') || '';
+            var tipo = b.getAttribute('data-tipo') || '';
+            var fecha = b.getAttribute('data-fecha') || '';
+            var desc = b.getAttribute('data-desc') || '';
+            return [
+                'Diagnóstico ID: ' + id,
+                'Orden: ' + orden,
+                'Tipo: ' + tipo,
+                'Fecha: ' + fecha,
+                'Descripción: ' + desc
+            ].join('\\n');
+        });
+        return blocks.join('\\n\\n---\\n\\n');
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function () {
+            var checked = !!selectAll.checked;
+            $all('.diag-select').forEach(function (b) { b.checked = checked; });
+            updateCount();
+        });
+    }
+
+    document.addEventListener('change', function (e) {
+        if (!e.target || !e.target.classList || !e.target.classList.contains('diag-select')) return;
+        if (selectAll) {
+            var all = $all('.diag-select');
+            var sel = selectedBoxes();
+            selectAll.checked = (all.length > 0 && sel.length === all.length);
+            selectAll.indeterminate = (sel.length > 0 && sel.length < all.length);
+        }
+        updateCount();
+    });
+
+    document.addEventListener('click', function (e) {
+        var t = e.target;
+        if (!t) return;
+        if (t.closest('a') || t.closest('button') || t.closest('form') || t.tagName === 'INPUT') return;
+        var row = t.closest('.diag-row');
+        if (!row) return;
+        var box = $('.diag-select', row);
+        if (!box) return;
+        box.checked = !box.checked;
+        box.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    if (analyzeBtn) {
+        analyzeBtn.addEventListener('click', function () {
+            var boxes = selectedBoxes();
+            if (boxes.length === 0) return;
+            var text = buildTextFromBoxes(boxes);
+            if (typeof analizarRegistroIA === 'function') {
+                analizarRegistroIA(text);
+            }
+        });
+    }
+
+    updateCount();
+})();
 </script>
