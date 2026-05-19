@@ -212,6 +212,7 @@ function render_ai_widget(): void {
 </div>
 
 <script>
+window.REPAIRLY_AI_ENDPOINT = <?= json_encode(rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '')), '/') . '/ai_assistant.php') ?>;
 
 function analizarRegistroIA(descripcion=''){
     var widget = document.getElementById('repairly-ai-widget');
@@ -235,7 +236,8 @@ function analizarRegistroIA(descripcion=''){
         resultEl.innerHTML = '<div style="opacity:.75;">Procesando diagnósticos seleccionados...</div>';
     }
 
-    fetch('ai_assistant.php', {
+    var endpoint = (window.REPAIRLY_AI_ENDPOINT || 'ai_assistant.php');
+    fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
         body: new URLSearchParams({ text: text }).toString()
