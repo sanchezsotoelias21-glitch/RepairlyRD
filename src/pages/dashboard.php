@@ -152,7 +152,7 @@
                     <div>Estado</div>
                     <div style="text-align:right;">Valor</div>
                 </div>
-                <div role="list" aria-label="Órdenes recientes">
+                <div role="list" aria-label="Órdenes recientes" style="max-height:400px;overflow-y:auto;">
                 <?php foreach ($ordenes_recientes as $orden): ?>
                 <div class="table-row" role="listitem">
                     <div class="order-id"><?= htmlspecialchars($orden['id']) ?></div>

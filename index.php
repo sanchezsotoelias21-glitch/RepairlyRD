@@ -708,8 +708,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 .ordenes-header{padding:12px 15px;border-bottom:0.5px solid #EDECEA;display:flex;align-items:center;justify-content:space-between;background:#FAFAF9}
 .ordenes-ver-btn{font-size:11px;padding:5px 10px;border-radius:5px;background:#fff;border:0.5px solid #D0CCC6;color:#4D4841;cursor:pointer;text-decoration:none;transition:background 0.15s}
 .ordenes-ver-btn:hover{background:#F8F7F5}
-.table-head{display:grid;grid-template-columns:42px 1fr 75px 80px 65px;gap:8px;padding:7px 15px;background:#EDECEA;font-size:9.5px;font-weight:500;color:#6B6560;text-transform:uppercase;letter-spacing:0.07em}
-.table-row{display:grid;grid-template-columns:42px 1fr 75px 80px 65px;gap:8px;padding:9px 15px;border-bottom:0.5px solid #EDECEA;align-items:center;transition:background 0.1s}
+.table-head{display:grid;grid-template-columns:42px 1fr 110px 120px 85px;gap:8px;padding:7px 15px;background:#EDECEA;font-size:9.5px;font-weight:500;color:#6B6560;text-transform:uppercase;letter-spacing:0.07em}
+.table-row{display:grid;grid-template-columns:42px 1fr 110px 120px 85px;gap:8px;padding:9px 15px;border-bottom:0.5px solid #EDECEA;align-items:center;transition:background 0.1s}
 .table-row:last-child{border-bottom:none}
 .table-row:hover{background:#FAFAF9}
 .order-id{font-size:10.5px;color:#8C8479;font-family:'Courier New',Courier,monospace}
@@ -739,6 +739,35 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
     .kpi-grid{grid-template-columns:1fr}
     .table-head,.table-row{grid-template-columns:36px 1fr 65px 55px}
     .col-tecnico{display:none}
+}
+
+/* ── Contenedor de registros con scroll ── */
+.records-scroll-container{
+    max-height:400px;
+    overflow-y:auto;
+    border:0.5px solid #EDECEA;
+    border-radius:8px;
+    background:#fff;
+}
+.records-scroll-container .table-head{
+    position:sticky;
+    top:0;
+    z-index:10;
+}
+
+/* ── Filtro de búsqueda ── */
+.search-input-filtro{
+    width:100%;
+    padding:10px 12px;
+    border:0.5px solid #D0CCC6;
+    border-radius:8px;
+    font-size:13px;
+    transition:border-color 0.15s;
+}
+.search-input-filtro:focus{
+    outline:none;
+    border-color:#2b7abc;
+    box-shadow:0 0 0 3px rgba(43,122,188,0.08);
 }
 
 /* ===== Clientes Moderno ===== */
@@ -1384,6 +1413,57 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
             e.stopPropagation();
         });
     }
+})();
+</script>
+
+<!-- Filtrado en vivo de búsqueda -->
+<script>
+(function(){
+    // Esperar a que el DOM esté listo
+    document.addEventListener('DOMContentLoaded', function(){
+        // Encontrar todos los inputs de búsqueda que contengan "search" o "filtro" en su name
+        var searchInputs = document.querySelectorAll('input[name*="q"], input[name*="search"], input[name*="filtro"], .topbar-search input');
+        
+        searchInputs.forEach(function(input){
+            // Agregar evento de entrada para filtrar en tiempo real
+            input.addEventListener('input', function(e){
+                var query = e.target.value.toLowerCase();
+                var form = e.target.closest('form');
+                
+                if(!form) return;
+                
+                // Buscar tabla de registros en el mismo contenedor
+                var container = form.closest('.charts-card') || form.closest('div[class*="card"]') || document.body;
+                var rows = container.querySelectorAll('.table-row');
+                var noResultsMsg = container.querySelector('.no-results-msg');
+                var visibleCount = 0;
+                
+                rows.forEach(function(row){
+                    var text = row.textContent.toLowerCase();
+                    if(text.includes(query)){
+                        row.style.display = '';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                
+                // Mostrar mensaje si no hay resultados
+                if(visibleCount === 0 && rows.length > 0){
+                    if(!noResultsMsg){
+                        noResultsMsg = document.createElement('div');
+                        noResultsMsg.className = 'no-results-msg';
+                        noResultsMsg.style.cssText = 'padding:20px;text-align:center;color:#6B6560;font-size:12px;';
+                        noResultsMsg.textContent = 'No se encontraron resultados';
+                        rows[0].parentNode.appendChild(noResultsMsg);
+                    }
+                    noResultsMsg.style.display = 'block';
+                } else if(noResultsMsg){
+                    noResultsMsg.style.display = 'none';
+                }
+            });
+        });
+    });
 })();
 </script>
 </body>

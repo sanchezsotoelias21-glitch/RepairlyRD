@@ -166,6 +166,7 @@ if ($action === 'edit' && $id > 0) {
             <div class="table-head" style="grid-template-columns:48px 1fr 1fr 120px;">
                 <div>ID</div><div>Nombre</div><div>Especialidad</div><div style="text-align:right;">Acciones</div>
             </div>
+            <div style="max-height:400px;overflow-y:auto;">
             <?php foreach ($rows as $r): ?>
                 <div class="table-row" style="grid-template-columns:48px 1fr 1fr 120px;">
                     <div class="order-id"><?= (int)($r[$idField] ?? 0) ?></div>
@@ -182,6 +183,7 @@ if ($action === 'edit' && $id > 0) {
                     </div>
                 </div>
             <?php endforeach; ?>
+            </div>
         </div>
     </div>
 </div>

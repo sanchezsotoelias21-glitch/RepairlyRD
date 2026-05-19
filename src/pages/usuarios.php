@@ -127,6 +127,7 @@ if ($ut !== '') {
                 <div class="table-head" style="grid-template-columns:56px 1fr 120px 100px;">
                     <div>ID</div><div>Usuario</div><div>Rol</div><div>Estado</div>
                 </div>
+                <div style="max-height:400px;overflow-y:auto;">
                 <?php foreach ($rows as $r): ?>
                     <?php
                     $rrol = '';
@@ -151,6 +152,7 @@ if ($ut !== '') {
                         <div><?= h($rest) ?></div>
                     </div>
                 <?php endforeach; ?>
+                </div>
             </div>
         <?php else: ?>
             <?php
@@ -161,6 +163,7 @@ if ($ut !== '') {
                 <div class="table-head" style="grid-template-columns:56px 1fr 160px 100px 100px;margin-bottom:0;">
                     <div>ID</div><div>Usuario</div><div>Rol</div><div>Estado</div><div></div>
                 </div>
+                <div style="max-height:400px;overflow-y:auto;">
                 <?php foreach ($rows as $r): ?>
                     <?php
                     $rrol = '';
@@ -200,6 +203,7 @@ if ($ut !== '') {
                 <?php if (empty($rows)): ?>
                     <p style="font-size:12px;color:#6B6560;padding:10px;">No hay usuarios en la tabla.</p>
                 <?php endif; ?>
+                </div>
             </div>
         <?php endif; ?>
     </div>

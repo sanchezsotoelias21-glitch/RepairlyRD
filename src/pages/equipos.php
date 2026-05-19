@@ -298,6 +298,7 @@ function copiarResultadoIA(){
             <div class="table-head" style="grid-template-columns:56px 1fr 1fr 100px 140px;">
                 <div>ID</div><div>Tipo / Marca</div><div>Modelo</div><div>Cliente</div><div style="text-align:right;">Acciones</div>
             </div>
+            <div style="max-height:400px;overflow-y:auto;">
             <?php foreach ($rows as $r): ?>
                 <?php
                 $idc = (int)($r['id_cliente'] ?? 0);
@@ -328,6 +329,7 @@ function copiarResultadoIA(){
             <?php if (empty($rows)): ?>
                 <div style="padding:14px;color:#6B6560;font-size:12px;">Sin equipos registrados.</div>
             <?php endif; ?>
+            </div>
         </div>
     </div>
 </div>

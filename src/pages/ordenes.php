@@ -224,6 +224,7 @@ $estado_name = function (int $eid) use ($estados): string {
             <div class="table-head" style="grid-template-columns:52px 1fr 90px 90px 120px;">
                 <div>ID</div><div>Código</div><div>Estado</div><div>Total</div><div style="text-align:right;">Acciones</div>
             </div>
+            <div style="max-height:400px;overflow-y:auto;">
             <?php foreach ($ordenes_list as $o): ?>
                 <?php $eid = (int)($o['id_estado_actual'] ?? 0); ?>
                 <div class="table-row" style="grid-template-columns:52px 1fr 90px 90px 120px;">
@@ -242,6 +243,7 @@ $estado_name = function (int $eid) use ($estados): string {
                     </div>
                 </div>
             <?php endforeach; ?>
+            </div>
         </div>
     </div>
 </div>

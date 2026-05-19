@@ -85,6 +85,7 @@ $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
         <div>Email</div>
     </div>
 
+    <div style="max-height:400px;overflow-y:auto;">
     <?php foreach ($rows as $row): ?>
     <div class="table-row" style="grid-template-columns:60px 1.2fr 1fr 1fr;gap:12px;">
         <div style="font-size:11px;color:#8C8479;font-family:'Courier New';"><?= (int)$row['id_cliente'] ?></div>
@@ -99,4 +100,5 @@ $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
         No hay clientes registrados
     </div>
     <?php endif; ?>
+    </div>
 </div>

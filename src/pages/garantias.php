@@ -216,6 +216,7 @@ $eest = $gar_col_est !== null && $edit ? (string)($edit[$gar_col_est] ?? 'activa
             <div class="table-head" style="grid-template-columns:52px 72px 1fr 100px 120px;">
                 <div>ID</div><div>Orden</div><div>Tipo / Estado</div><div>Vencimiento</div><div style="text-align:right;">Acciones</div>
             </div>
+            <div style="max-height:400px;overflow-y:auto;">
             <?php foreach ($rows as $r): ?>
                 <?php
                 $roid = $gar_col_orden !== null ? (int)($r[$gar_col_orden] ?? 0) : 0;
