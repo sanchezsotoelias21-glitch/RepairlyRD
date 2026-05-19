@@ -4,7 +4,13 @@ declare(strict_types=1);
 
 function table_exists(mysqli $conn, string $name): bool
 {
+    static $cache = [];
+    $cid = function_exists('spl_object_id') ? spl_object_id($conn) : spl_object_hash($conn);
     $name = trim($name);
+    $key = strtolower($name);
+    if ($key !== '' && isset($cache[$cid][$key])) {
+        return $cache[$cid][$key];
+    }
     $sql = '
         SELECT COUNT(*)
         FROM information_schema.tables
@@ -13,32 +19,39 @@ function table_exists(mysqli $conn, string $name): bool
     ';
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
-        return false;
+        $cache[$cid][$key] = false;
+        return $cache[$cid][$key];
     }
     $stmt->bind_param('s', $name);
     $stmt->execute();
     $stmt->bind_result($count);
     $stmt->fetch();
     $stmt->close();
-    return (int)$count > 0;
+    $cache[$cid][$key] = (int)$count > 0;
+    return $cache[$cid][$key];
 }
 
 function pick_table(mysqli $conn, array $candidates): string
 {
-    $tables = [];
-    $res = $conn->query('SHOW TABLES');
-    if ($res) {
-        while ($row = $res->fetch_array()) {
-            $tables[] = strtolower((string)$row[0]);
+    static $tablesCache = [];
+    $cid = function_exists('spl_object_id') ? spl_object_id($conn) : spl_object_hash($conn);
+    if (!isset($tablesCache[$cid])) {
+        $tables = [];
+        $originalByLower = [];
+        $res = $conn->query('SHOW TABLES');
+        if ($res) {
+            while ($row = $res->fetch_array()) {
+                $orig = (string)$row[0];
+                $low = strtolower($orig);
+                $tables[] = $low;
+                $originalByLower[$low] = $orig;
+            }
+            $res->free();
         }
+        $tablesCache[$cid] = [$tables, $originalByLower];
     }
-    $originalByLower = [];
-    $res2 = $conn->query('SHOW TABLES');
-    if ($res2) {
-        while ($row = $res2->fetch_array()) {
-            $originalByLower[strtolower((string)$row[0])] = (string)$row[0];
-        }
-    }
+
+    [$tables, $originalByLower] = $tablesCache[$cid];
     foreach ($candidates as $candidate) {
         $candidate = strtolower(trim((string)$candidate));
         if ($candidate === '') {
@@ -65,10 +78,16 @@ function pick_table(mysqli $conn, array $candidates): string
 
 function table_columns(mysqli $conn, string $table): array
 {
+    static $cache = [];
+    $cid = function_exists('spl_object_id') ? spl_object_id($conn) : spl_object_hash($conn);
+    if (isset($cache[$cid][$table])) {
+        return $cache[$cid][$table];
+    }
     $cols = [];
     $res = $conn->query("SHOW COLUMNS FROM `{$table}`");
     if (!$res) {
-        return $cols;
+        $cache[$cid][$table] = $cols;
+        return $cache[$cid][$table];
     }
     while ($row = $res->fetch_assoc()) {
         if (!empty($row['Field'])) {
@@ -76,21 +95,29 @@ function table_columns(mysqli $conn, string $table): array
         }
     }
     $res->free();
-    return $cols;
+    $cache[$cid][$table] = $cols;
+    return $cache[$cid][$table];
 }
 
 /** Tipo MySQL de la columna (p. ej. varchar(40), enum('a','b')). */
 function column_mysql_type(mysqli $conn, string $table, string $column): ?string
 {
+    static $cache = [];
+    $cid = function_exists('spl_object_id') ? spl_object_id($conn) : spl_object_hash($conn);
+    if (isset($cache[$cid][$table][$column])) {
+        return $cache[$cid][$table][$column];
+    }
     $safeTable = str_replace('`', '``', $table);
     $esc = str_replace(['\\', "'"], ['\\\\', "\\'"], $column);
     $res = $conn->query("SHOW COLUMNS FROM `{$safeTable}` LIKE '{$esc}'");
     if (!$res || $res->num_rows === 0) {
+        $cache[$cid][$table][$column] = null;
         return null;
     }
     $row = $res->fetch_assoc();
     $res->free();
-    return isset($row['Type']) ? (string)$row['Type'] : null;
+    $cache[$cid][$table][$column] = isset($row['Type']) ? (string)$row['Type'] : null;
+    return $cache[$cid][$table][$column];
 }
 
 /**
