@@ -115,16 +115,23 @@ $page_meta = [
 ];
 $page = $page_meta[$current_page] ?? $page_meta['dashboard'];
 
-require_once __DIR__ . '/includes/crud_clientes.php';
-require_once __DIR__ . '/includes/crud_equipos.php';
-require_once __DIR__ . '/includes/crud_ordenes.php';
-require_once __DIR__ . '/includes/crud_tecnicos.php';
-require_once __DIR__ . '/includes/crud_configuracion.php';
-require_once __DIR__ . '/includes/crud_usuarios.php';
-require_once __DIR__ . '/includes/crud_piezas.php';
-require_once __DIR__ . '/includes/crud_diagnosticos.php';
-require_once __DIR__ . '/includes/crud_garantias.php';
-require_once __DIR__ . '/includes/crud_notificaciones.php';
+// Carga solo el CRUD necesario para el apartado actual (reduce tiempo de carga).
+$crud_by_page = [
+    'clientes' => 'crud_clientes.php',
+    'equipos' => 'crud_equipos.php',
+    'ordenes' => 'crud_ordenes.php',
+    'tecnicos' => 'crud_tecnicos.php',
+    'configuracion' => 'crud_configuracion.php',
+    'usuarios' => 'crud_usuarios.php',
+    'inventario' => 'crud_piezas.php',
+    'piezas' => 'crud_piezas.php',
+    'diagnosticos' => 'crud_diagnosticos.php',
+    'garantias' => 'crud_garantias.php',
+    'notificaciones' => 'crud_notificaciones.php',
+];
+if (isset($crud_by_page[$current_page])) {
+    require_once __DIR__ . '/includes/' . $crud_by_page[$current_page];
+}
 
 function status_palette(string $status): array {
     $name = strtolower($status);
@@ -943,7 +950,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 <aside class="sidebar" role="navigation" aria-label="Navegación principal">
 
     <div class="sidebar-logo">
-        <img src="logo.png" alt="RepairlyRD" class="sidebar-logo-img"
+        <img src="assets/logo_sidebar.png" alt="RepairlyRD" class="sidebar-logo-img"
              onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
         <div class="sidebar-logo-fallback" style="display:none;" aria-hidden="true">
             <i class="ti ti-tool"></i>
