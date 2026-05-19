@@ -55,6 +55,7 @@ function render_ai_widget(): void {
 <style>
 
 .repairly-ai{
+    display:none;
     margin-top:24px;
     border-radius:24px;
     overflow:hidden;
@@ -71,6 +72,7 @@ function render_ai_widget(): void {
 
     color:#fff;
 }
+.repairly-ai.open{display:block;}
 
 .ai-header{
     padding:24px;
@@ -147,7 +149,7 @@ function render_ai_widget(): void {
 
 </style>
 
-<div class="repairly-ai">
+<div class="repairly-ai" id="repairly-ai-widget">
 
     <div class="ai-header">
 
@@ -212,6 +214,8 @@ function render_ai_widget(): void {
 <script>
 
 function analizarRegistroIA(descripcion=''){
+    var widget = document.getElementById('repairly-ai-widget');
+    if (widget) widget.classList.add('open');
     const statusEl = document.getElementById('ia-status');
     const placeholderEl = document.getElementById('ia-placeholder');
     const resultEl = document.getElementById('ia-result');
@@ -243,7 +247,7 @@ function analizarRegistroIA(descripcion=''){
         .then(function (data) {
             if (!data || data.error) throw new Error((data && data.error) ? data.error : 'Error');
 
-            const tipo = data.tipo || 'Falla general';
+            const tipo = data.error || data.tipo || 'Falla general';
             const prioridad = data.prioridad || 'Media';
             const soluciones = Array.isArray(data.soluciones) ? data.soluciones : [];
             const resumen = data.resumen || '—';
@@ -263,7 +267,7 @@ function analizarRegistroIA(descripcion=''){
             if (resultEl) {
                 resultEl.innerHTML =
                     '<div class="ai-analysis">' +
-                    '<div class="ai-card"><div class="ai-title">Problema detectado</div><div class="ai-value">' + esc(tipo) + '</div></div>' +
+                    '<div class="ai-card"><div class="ai-title">Error detectado</div><div class="ai-value">' + esc(tipo) + '</div></div>' +
                     '<div class="ai-card"><div class="ai-title">Nivel de prioridad</div><div class="ai-value">' + esc(prioridad) + '</div></div>' +
                     '<div class="ai-card"><div class="ai-title">Resumen</div><div class="ai-value" style="font-size:13px;line-height:1.3;">' + esc(resumen) + '</div></div>' +
                     '<div class="ai-card" style="grid-column:1/-1"><div class="ai-title">Recomendaciones de solución</div>' + list + '</div>' +
@@ -277,6 +281,10 @@ function analizarRegistroIA(descripcion=''){
                 resultEl.innerHTML = '<div style="opacity:.85;">No se pudo generar el análisis: ' + String(err && err.message ? err.message : err) + '</div>';
             }
         });
+
+    if (widget && typeof widget.scrollIntoView === 'function') {
+        widget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 }
 
 </script>

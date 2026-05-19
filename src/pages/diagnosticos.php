@@ -33,6 +33,23 @@ foreach (array_keys($orden_cols_for_join) as $ok) {
     }
 }
 
+$eq_cols_for_join = $eq_tbl_diag !== '' ? table_columns($conn, $eq_tbl_diag) : [];
+$eq_id_col = 'id_equipo';
+foreach (array_keys($eq_cols_for_join) as $ek) {
+    if (strcasecmp((string)$ek, 'id_equipo') === 0) {
+        $eq_id_col = $ek;
+        break;
+    }
+}
+$orden_eq_col = null;
+foreach (array_keys($orden_cols_for_join) as $ok) {
+    if (strcasecmp((string)$ok, 'id_equipo') === 0) {
+        $orden_eq_col = $ok;
+        break;
+    }
+}
+$eq_obs_col = $eq_tbl_diag !== '' ? repairly_pick_column($eq_cols_for_join, ['observaciones_ingreso', 'observacion_ingreso', 'observaciones', 'observacion']) : null;
+
 $ordenes_opts = [];
 if ($orden_tbl !== '') {
     $sel = ["o.`{$orden_id_col}` AS id_orden"];
@@ -80,41 +97,50 @@ if ($orden_tbl !== '') {
 }
 
 $rows = [];
-$sql = "SELECT * FROM `{$diag_table}`";
+$sql = "SELECT d.*";
+$from = " FROM `{$diag_table}` d";
+$join = '';
+if ($diag_col_orden !== null && $orden_tbl !== '' && $orden_eq_col !== null && $eq_tbl_diag !== '' && $eq_obs_col !== null) {
+    $sql .= ", e.`{$eq_obs_col}` AS equipo_obs_ingreso";
+    $join = " LEFT JOIN `{$orden_tbl}` o ON o.`{$orden_id_col}` = d.`{$diag_col_orden}`"
+        . " LEFT JOIN `{$eq_tbl_diag}` e ON e.`{$eq_id_col}` = o.`{$orden_eq_col}`";
+}
 $types = '';
 $params = [];
 if ($search_q !== '') {
     $like = '%' . $search_q . '%';
     $ors = [];
-    $ors[] = "CAST(`{$idField}` AS CHAR) = ?";
+    $ors[] = "CAST(d.`{$idField}` AS CHAR) = ?";
     $types .= 's';
     $params[] = $search_q;
     if ($diag_col_orden !== null) {
         if (ctype_digit($search_q)) {
-            $ors[] = "`{$diag_col_orden}` = ?";
+            $ors[] = "d.`{$diag_col_orden}` = ?";
             $types .= 'i';
             $params[] = (int)$search_q;
         } else {
-            $ors[] = "CAST(`{$diag_col_orden}` AS CHAR) LIKE ?";
+            $ors[] = "CAST(d.`{$diag_col_orden}` AS CHAR) LIKE ?";
             $types .= 's';
             $params[] = $like;
         }
     }
     if ($diag_col_tipo !== null) {
-        $ors[] = "`{$diag_col_tipo}` LIKE ?";
+        $ors[] = "d.`{$diag_col_tipo}` LIKE ?";
         $types .= 's';
         $params[] = $like;
     }
     if ($diag_col_desc !== null) {
-        $ors[] = "`{$diag_col_desc}` LIKE ?";
+        $ors[] = "d.`{$diag_col_desc}` LIKE ?";
         $types .= 's';
         $params[] = $like;
     }
     if ($ors !== []) {
-        $sql .= ' WHERE ' . implode(' OR ', $ors);
+        $sql .= $from . $join . ' WHERE ' . implode(' OR ', $ors);
+        $from = '';
+        $join = '';
     }
 }
-$sql .= " ORDER BY `{$idField}` DESC LIMIT 200";
+$sql .= $from . $join . " ORDER BY d.`{$idField}` DESC LIMIT 200";
 if ($types !== '') {
     $st = $conn->prepare($sql);
     if ($st) {
@@ -283,6 +309,7 @@ $ev_desc = $diag_col_desc !== null && $edit ? (string)($edit[$diag_col_desc] ?? 
                 $rdesc = $diag_col_desc !== null ? (string)($r[$diag_col_desc] ?? '') : '';
                 $rfecha = $diag_col_fecha !== null ? (string)($r[$diag_col_fecha] ?? '') : '';
                 $rid = (int)($r[$idField] ?? 0);
+                $robs = isset($r['equipo_obs_ingreso']) ? (string)$r['equipo_obs_ingreso'] : '';
                 ?>
                 <div class="table-row diag-row" style="grid-template-columns:34px 52px 80px 1fr 100px 120px;" data-diag-id="<?= $rid ?>">
                     <div style="display:flex;align-items:center;">
@@ -295,6 +322,7 @@ $ev_desc = $diag_col_desc !== null && $edit ? (string)($edit[$diag_col_desc] ?? 
                             data-tipo="<?= h($rtipo) ?>"
                             data-desc="<?= h($rdesc) ?>"
                             data-fecha="<?= h(substr($rfecha, 0, 10)) ?>"
+                            data-obs="<?= h($robs) ?>"
                         >
                     </div>
                     <div class="order-id"><?= $rid ?></div>
@@ -376,15 +404,13 @@ $ev_desc = $diag_col_desc !== null && $edit ? (string)($edit[$diag_col_desc] ?? 
         var blocks = boxes.map(function (b) {
             var id = b.getAttribute('data-id') || '';
             var orden = b.getAttribute('data-orden') || '';
-            var tipo = b.getAttribute('data-tipo') || '';
             var fecha = b.getAttribute('data-fecha') || '';
-            var desc = b.getAttribute('data-desc') || '';
+            var obs = b.getAttribute('data-obs') || '';
             return [
                 'Diagnóstico ID: ' + id,
                 'Orden: ' + orden,
-                'Tipo: ' + tipo,
                 'Fecha: ' + fecha,
-                'Descripción: ' + desc
+                'Observaciones de ingreso: ' + obs
             ].join('\\n');
         });
         return blocks.join('\\n\\n---\\n\\n');
