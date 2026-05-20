@@ -93,12 +93,15 @@ function repairly_session_start(): void
         $secure = true;
     }
 
-    $lifetime = (int)(getenv('SESSION_COOKIE_LIFETIME') ?: 0);
+    ini_set('session.gc_maxlifetime', '86400');
+    ini_set('session.cookie_lifetime', '86400');
+
+    $lifetime = (int)(getenv('SESSION_COOKIE_LIFETIME') ?: 86400);
 
     session_set_cookie_params([
         'lifetime' => $lifetime,
         'path' => '/',
-        'domain' => '',
+        'domain' => $_SERVER['HTTP_HOST'] ?? '',
         'secure' => $secure,
         'httponly' => true,
         'samesite' => 'Lax',
@@ -117,7 +120,11 @@ function repairly_session_start(): void
 
 
 
-    session_start();
+    if (!headers_sent()) {
+        session_start([
+            'read_and_close' => false,
+        ]);
+    }
 }
 
 function repairly_enable_mysql_sessions(mysqli $conn): bool
