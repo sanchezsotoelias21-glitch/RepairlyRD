@@ -10,7 +10,8 @@
     { "src": "/includes/(.*)", "status": 404 },
     { "src": "/sql/(.*)", "status": 404 },
     { "src": "/data/(.*)", "status": 404 },
-    { "src": "/(assets|public|src)/(.*)", "dest": "/$1/$2" },
+    { "src": "/src/(.*)", "status": 404 },
+    { "src": "/(assets|public)/(.*)", "dest": "/$1/$2" },
     { "src": "/(.*)", "dest": "/api/index.php" }
   ]
 }

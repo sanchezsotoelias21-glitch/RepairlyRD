@@ -39,19 +39,28 @@ function repairly_session_start(): void
     }
 
     // Optional: store sessions in MySQL to make them stable on serverless platforms (Vercel).
-    // Enable by setting SESSION_HANDLER=mysql in env vars.
-    $handler = strtolower((string)(getenv('SESSION_HANDLER') ?: ''));
+    // Enable by setting SESSION_HANDLER=mysql (or legacy SESSION_STORE=mysql) in env vars.
+    $handler = strtolower((string)(getenv('SESSION_HANDLER') ?: getenv('SESSION_STORE') ?: ''));
     if ($handler === 'mysql') {
         $maybeConn = $GLOBALS['conn'] ?? null;
-        if ($maybeConn instanceof mysqli) {
+        if (!($maybeConn instanceof mysqli)) {
+            http_response_code(500);
+            die('Sesiones en MySQL habilitadas (SESSION_HANDLER/SESSION_STORE=mysql) pero no hay conexiÃ³n ($conn) disponible.');
+        }
+
+        // Prefer the dedicated handler implementation if present.
+        $handlerFile = __DIR__ . '/session_handler_mysql.php';
+        if (is_file($handlerFile)) {
+            require_once $handlerFile;
+            $h = new RepairlyMysqliSessionHandler($maybeConn);
+            session_set_save_handler($h, true);
+            ini_set('session.save_handler', 'user');
+        } else {
             $ok = repairly_enable_mysql_sessions($maybeConn);
             if (!$ok) {
                 http_response_code(500);
-                die('Sesiones en MySQL no disponibles. Crea la tabla `php_sessions` y verifica permisos de lectura/escritura en la base de datos.');
+                die('Sesiones en MySQL no disponibles. Crea la tabla de sesiones y verifica permisos de lectura/escritura en la base de datos.');
             }
-        } else {
-            http_response_code(500);
-            die('Sesiones en MySQL habilitadas (SESSION_HANDLER=mysql) pero no hay conexiÃ³n ($conn) disponible.');
         }
     }
 

@@ -10,10 +10,10 @@
    - `DB_PASS`
    - `DB_NAME`
    - `DB_PORT` (opcional, por defecto `3306`)
-   - `SESSION_HANDLER` = `mysql` (recomendado en Vercel para evitar cierres de sesiÃ³n/CSRF)
+   - `SESSION_HANDLER` = `mysql` (o `SESSION_STORE=mysql`, recomendado en Vercel para evitar cierres de sesiÃ³n/CSRF)
 4. Deploy y abre el dominio.
 
-Si habilitas `SESSION_HANDLER=mysql`, crea la tabla de sesiones ejecutando `sql/php_sessions.sql` en tu MySQL (o da permisos para que la app la cree automÃ¡ticamente).
+Si habilitas `SESSION_HANDLER=mysql` / `SESSION_STORE=mysql`, crea la tabla de sesiones ejecutando `sql/repairly_sessions.sql` en tu MySQL (o da permisos para que la app la cree automÃ¡ticamente).
 
 Nota: Vercel no incluye MySQL. Necesitas una base de datos externa (p. ej. PlanetScale, Aiven, DigitalOcean, etc.).
 
