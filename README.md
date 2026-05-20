@@ -10,6 +10,7 @@
    - `DB_PASS`
    - `DB_NAME`
    - `DB_PORT` (opcional, por defecto `3306`)
+   - `SESSION_HANDLER` = `mysql` (recomendado en Vercel para evitar cierres de sesión/CSRF)
 4. Deploy y abre el dominio.
 
 Nota: Vercel no incluye MySQL. Necesitas una base de datos externa (p. ej. PlanetScale, Aiven, DigitalOcean, etc.).
@@ -34,4 +35,3 @@ docker run --rm -p 8000:8000 -e PORT=8000 repairlyrd
 ```
 
 Luego abre `http://localhost:8000`.
-

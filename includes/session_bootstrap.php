@@ -8,6 +8,11 @@ declare(strict_types=1);
  */
 function repairly_request_is_https(): bool
 {
+    // Vercel always terminates TLS before the function; treat it as HTTPS to avoid
+    // inconsistent Secure cookie behavior across deployments/requests.
+    if (getenv('VERCEL') === '1' || getenv('VERCEL_URL') || getenv('VERCEL_ENV')) {
+        return true;
+    }
     if (!empty($_SERVER['HTTPS']) && (string)$_SERVER['HTTPS'] !== 'off') {
         return true;
     }
@@ -110,7 +115,7 @@ function repairly_enable_mysql_sessions(mysqli $conn): void
     $conn->query(
         "CREATE TABLE IF NOT EXISTS `php_sessions` (" .
         " `id` VARCHAR(128) NOT NULL," .
-        " `data` BLOB NOT NULL," .
+        " `data` LONGBLOB NOT NULL," .
         " `timestamp` INT NOT NULL," .
         " PRIMARY KEY (`id`)," .
         " INDEX (`timestamp`)" .
@@ -156,14 +161,14 @@ function repairly_enable_mysql_sessions(mysqli $conn): void
         public function write($id, $data): bool
         {
             $ts = time();
-            $sql = "REPLACE INTO `php_sessions` (`id`, `data`, `timestamp`) VALUES (?, ?, ?)";
+            $sql = "INSERT INTO `php_sessions` (`id`, `data`, `timestamp`) VALUES (?, ?, ?)" .
+                " ON DUPLICATE KEY UPDATE `data`=VALUES(`data`), `timestamp`=VALUES(`timestamp`)";
             $stmt = $this->conn->prepare($sql);
             if (!$stmt) {
                 return false;
             }
-            $null = null;
-            $stmt->bind_param('sbi', $id, $null, $ts);
-            $stmt->send_long_data(1, (string)$data);
+            $dataStr = (string)$data;
+            $stmt->bind_param('ssi', $id, $dataStr, $ts);
             $ok = $stmt->execute();
             $stmt->close();
             return (bool)$ok;
