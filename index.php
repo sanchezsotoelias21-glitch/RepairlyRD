@@ -45,9 +45,7 @@ function require_csrf(): void
         !hash_equals($sessionToken, $formToken)
     ) {
         http_response_code(400);
-
         error_log('CSRF FAIL | SESSION=' . session_id());
-
         die('Solicitud inválida (CSRF).');
     }
 }
@@ -57,25 +55,13 @@ require_once __DIR__ . '/includes/auth.php';
 
 if (isset($_GET['logout'])) {
     $_SESSION = [];
-
     if (ini_get('session.use_cookies')) {
         $params = session_get_cookie_params();
-
-        setcookie(
-            session_name(),
-            '',
-            time() - 42000,
-            $params['path'],
-            $params['domain'],
-            $params['secure'],
-            $params['httponly']
-        );
+        setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
     }
-
     if (session_status() === PHP_SESSION_ACTIVE) {
         session_destroy();
     }
-
     repairly_redirect('login.php');
 }
 

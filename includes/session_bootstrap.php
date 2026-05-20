@@ -120,11 +120,9 @@ function repairly_session_start(): void
 
 
 
-    if (!headers_sent()) {
-        session_start([
-            'read_and_close' => false,
-        ]);
-    }
+    session_start([
+        'read_and_close' => false,
+    ]);
 }
 
 function repairly_enable_mysql_sessions(mysqli $conn): bool
