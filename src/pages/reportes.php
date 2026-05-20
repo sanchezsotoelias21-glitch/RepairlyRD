@@ -3,39 +3,63 @@
 
 declare(strict_types=1);
 
-// Tabla de metadatos de reportes disponibles
+// Reportes disponibles (resuelve tablas/columnas segÃºn el esquema real en MySQL).
 $report_types = [
     'clientes' => [
         'label' => 'Reporte de Clientes',
         'desc' => 'Listado de clientes con información de contacto',
         'icon' => 'ti-users',
-        'table' => 'Cliente',
-        'columns' => ['id_cliente', 'nombre', 'telefono', 'email', 'fecha_registro'],
-        'display_cols' => ['ID', 'Nombre', 'Teléfono', 'Email', 'Fecha Registro'],
+        'table_candidates' => ['cliente', 'Cliente'],
+        'fields' => [
+            ['label' => 'ID', 'candidates' => ['id_cliente', 'id']],
+            ['label' => 'Nombre', 'candidates' => ['nombre', 'name']],
+            ['label' => 'TelÃ©fono', 'candidates' => ['telefono', 'tel', 'phone']],
+            ['label' => 'Email', 'candidates' => ['email', 'correo']],
+            ['label' => 'Fecha Registro', 'candidates' => ['fecha_registro', 'fecha_creacion', 'created_at']],
+        ],
     ],
     'tecnicos' => [
         'label' => 'Reporte de Técnicos',
         'desc' => 'Listado de técnicos con especialidades',
         'icon' => 'ti-user-check',
-        'table' => 'Tecnico',
-        'columns' => ['id_tecnico', 'nombre', 'especialidad', 'telefono', 'estado'],
-        'display_cols' => ['ID', 'Nombre', 'Especialidad', 'Teléfono', 'Estado'],
+        'table_candidates' => ['tecnico', 'Tecnico'],
+        'fields' => [
+            ['label' => 'ID', 'candidates' => ['id_tecnico', 'id']],
+            ['label' => 'Nombre', 'candidates' => ['nombre', 'name']],
+            ['label' => 'Especialidad', 'candidates' => ['especialidad', 'area']],
+            ['label' => 'Teléfono', 'candidates' => ['telefono', 'tel', 'phone']],
+            ['label' => 'Estado', 'candidates' => ['estado', 'status']],
+        ],
     ],
     'equipos' => [
         'label' => 'Reporte de Equipos',
         'desc' => 'Inventario de equipos ingresados',
         'icon' => 'ti-device-laptop',
-        'table' => 'Equipo',
-        'columns' => ['id_equipo', 'tipo', 'marca', 'modelo', 'cliente_id', 'estado'],
-        'display_cols' => ['ID', 'Tipo', 'Marca', 'Modelo', 'Cliente', 'Estado'],
+        'table_candidates' => ['equipo', 'Equipo'],
+        'fields' => [
+            ['label' => 'ID', 'candidates' => ['id_equipo', 'id']],
+            ['label' => 'Tipo', 'candidates' => ['tipo', 'type']],
+            ['label' => 'Marca', 'candidates' => ['marca', 'brand']],
+            ['label' => 'Modelo', 'candidates' => ['modelo', 'model']],
+            ['label' => 'Cliente', 'candidates' => ['id_cliente', 'cliente_id']],
+            ['label' => 'Estado', 'candidates' => ['estado', 'status']],
+        ],
     ],
     'ordenes' => [
         'label' => 'Reporte de Órdenes de Reparación',
         'desc' => 'Órdenes completadas, pendientes y en proceso',
         'icon' => 'ti-clipboard-list',
-        'table' => 'Reparacion',
-        'columns' => ['id_reparacion', 'codigo', 'cliente_id', 'equipo_id', 'estado', 'costo', 'fecha_ingreso', 'fecha_salida'],
-        'display_cols' => ['ID', 'Código', 'Cliente', 'Equipo', 'Estado', 'Costo', 'Ingreso', 'Salida'],
+        'table_candidates' => ['orden_reparacion', 'Orden_Reparacion', 'reparacion', 'Reparacion', 'orden'],
+        'fields' => [
+            ['label' => 'ID', 'candidates' => ['id_orden', 'id_reparacion', 'id']],
+            ['label' => 'Código', 'candidates' => ['codigo_seguimiento', 'codigo']],
+            ['label' => 'Equipo', 'candidates' => ['id_equipo', 'equipo_id']],
+            ['label' => 'Técnico', 'candidates' => ['id_tecnico', 'tecnico_id']],
+            ['label' => 'Estado', 'candidates' => ['estado', 'id_estado_actual', 'status']],
+            ['label' => 'Total', 'candidates' => ['costo_total', 'costo', 'total']],
+            ['label' => 'Ingreso', 'candidates' => ['fecha_ingreso', 'fecha_creacion', 'created_at']],
+            ['label' => 'Salida', 'candidates' => ['fecha_entrega_real', 'fecha_salida', 'fecha_actualizacion', 'updated_at']],
+        ],
         'has_date_range' => true,
         'has_status_filter' => true,
     ],
@@ -43,19 +67,103 @@ $report_types = [
         'label' => 'Reporte de Piezas e Inventario',
         'desc' => 'Movimientos y stock de piezas',
         'icon' => 'ti-package',
-        'table' => 'Pieza',
-        'columns' => ['id_pieza', 'nombre', 'referencia', 'stock', 'precio_compra', 'precio_venta'],
-        'display_cols' => ['ID', 'Nombre', 'Referencia', 'Stock', 'P. Compra', 'P. Venta'],
+        'table_candidates' => ['pieza', 'Pieza'],
+        'fields' => [
+            ['label' => 'ID', 'candidates' => ['id_pieza', 'id']],
+            ['label' => 'Nombre', 'candidates' => ['nombre', 'name']],
+            ['label' => 'Referencia', 'candidates' => ['referencia', 'ref', 'sku']],
+            ['label' => 'Stock', 'candidates' => ['stock', 'cantidad']],
+            ['label' => 'P. Compra', 'candidates' => ['precio_compra', 'costo_compra']],
+            ['label' => 'P. Venta', 'candidates' => ['precio_venta', 'precio']],
+        ],
     ],
     'garantias' => [
         'label' => 'Reporte de Garantías',
         'desc' => 'Garantías activas y vencidas',
         'icon' => 'ti-shield-check',
-        'table' => 'Garantia',
-        'columns' => ['id_garantia', 'id_reparacion', 'tipo', 'estado', 'fecha_inicio', 'fecha_vencimiento'],
-        'display_cols' => ['ID', 'Reparación', 'Tipo', 'Estado', 'Inicio', 'Vencimiento'],
+        'table_candidates' => ['garantia', 'Garantia'],
+        'fields' => [
+            ['label' => 'ID', 'candidates' => ['id_garantia', 'id']],
+            ['label' => 'Orden', 'candidates' => ['id_orden', 'id_reparacion', 'id_servicio']],
+            ['label' => 'Tipo', 'candidates' => ['tipo']],
+            ['label' => 'Estado', 'candidates' => ['estado', 'status']],
+            ['label' => 'Inicio', 'candidates' => ['fecha_inicio', 'inicio']],
+            ['label' => 'Vencimiento', 'candidates' => ['fecha_vencimiento', 'vencimiento', 'fin']],
+        ],
     ],
 ];
+
+/**
+ * Convierte un reporte "lógico" a un reporte "resuelto" (tabla + columnas reales).
+ *
+ * @return array{label:string,desc:string,icon:string,table:string,columns:list<string>,display_cols:list<string>,has_date_range?:bool,has_status_filter?:bool,date_col?:string|null,status_col?:string|null,status_mode?:string|null}|null
+ */
+function repairly_resolve_report(mysqli $conn, array $cfg): ?array
+{
+    $table = pick_table($conn, $cfg['table_candidates'] ?? []);
+    if ($table === '') {
+        return null;
+    }
+
+    $cols = table_columns($conn, $table);
+    $resolvedCols = [];
+    $displayCols = [];
+    foreach (($cfg['fields'] ?? []) as $f) {
+        if (!is_array($f)) {
+            continue;
+        }
+        $candidates = $f['candidates'] ?? [];
+        if (!is_array($candidates)) {
+            $candidates = [];
+        }
+        $col = repairly_pick_column($cols, array_values(array_map('strval', $candidates)));
+        if ($col) {
+            $resolvedCols[] = $col;
+            $displayCols[] = (string)($f['label'] ?? $col);
+        }
+    }
+
+    if (empty($resolvedCols)) {
+        return null;
+    }
+
+    $dateCol = null;
+    foreach (['fecha_ingreso', 'fecha_registro', 'fecha_creacion', 'fecha_inicio', 'created_at'] as $cand) {
+        $pick = repairly_pick_column($cols, [$cand]);
+        if ($pick) {
+            $dateCol = $pick;
+            break;
+        }
+    }
+
+    $statusCol = null;
+    $statusMode = null;
+    $statusText = repairly_pick_column($cols, ['estado', 'status']);
+    if ($statusText) {
+        $statusCol = $statusText;
+        $statusMode = 'text';
+    } else {
+        $statusId = repairly_pick_column($cols, ['id_estado_actual', 'estado_id', 'id_estado']);
+        if ($statusId) {
+            $statusCol = $statusId;
+            $statusMode = 'id';
+        }
+    }
+
+    return [
+        'label' => (string)($cfg['label'] ?? 'Reporte'),
+        'desc' => (string)($cfg['desc'] ?? ''),
+        'icon' => (string)($cfg['icon'] ?? 'ti-file'),
+        'table' => $table,
+        'columns' => $resolvedCols,
+        'display_cols' => $displayCols,
+        'has_date_range' => (bool)($cfg['has_date_range'] ?? false),
+        'has_status_filter' => (bool)($cfg['has_status_filter'] ?? false),
+        'date_col' => $dateCol,
+        'status_col' => $statusCol,
+        'status_mode' => $statusMode,
+    ];
+}
 
 // Obtener parámetros de la solicitud
 $report_type = isset($_GET['type']) && is_string($_GET['type']) ? trim($_GET['type']) : '';
@@ -67,7 +175,7 @@ $status_filter = isset($_GET['status']) && is_string($_GET['status']) ? trim($_G
 // Validar tipo de reporte
 $current_report = null;
 if ($report_type && isset($report_types[$report_type])) {
-    $current_report = $report_types[$report_type];
+    $current_report = repairly_resolve_report($conn, $report_types[$report_type]);
 }
 
 
@@ -82,97 +190,107 @@ $stats = [
 ];
 
 try {
-    $stats['ordenes'] = (int)$conn->query("SELECT COUNT(*) FROM Reparacion")->fetch_row()[0];
+    $ordenTbl = pick_table($conn, ['orden_reparacion', 'Orden_Reparacion', 'reparacion', 'Reparacion', 'orden']);
+    if ($ordenTbl !== '') {
+        $stats['ordenes'] = (int)db_scalar($conn, "SELECT COUNT(*) FROM `{$ordenTbl}`", 0);
 
-    $stats['completadas'] = (int)$conn->query(
-        "SELECT COUNT(*) FROM Reparacion WHERE estado='Completado'"
-    )->fetch_row()[0];
+        $ordenCols = table_columns($conn, $ordenTbl);
+        $estadoCol = repairly_pick_column($ordenCols, ['estado']);
+        if ($estadoCol) {
+            $estadoSafe = str_replace('`', '``', $estadoCol);
+            $stats['completadas'] = (int)db_scalar($conn, "SELECT COUNT(*) FROM `{$ordenTbl}` WHERE `{$estadoSafe}`='Completado'", 0);
+            $stats['pendientes'] = (int)db_scalar($conn, "SELECT COUNT(*) FROM `{$ordenTbl}` WHERE `{$estadoSafe}`='Pendiente'", 0);
+        }
 
-    $stats['pendientes'] = (int)$conn->query(
-        "SELECT COUNT(*) FROM Reparacion WHERE estado='Pendiente'"
-    )->fetch_row()[0];
-
-    $stats['ingresos'] = (float)$conn->query(
-        "SELECT COALESCE(SUM(costo),0) FROM Reparacion"
-    )->fetch_row()[0];
+        $totalCol = repairly_pick_column($ordenCols, ['costo_total', 'costo', 'total']);
+        if ($totalCol) {
+            $totalSafe = str_replace('`', '``', $totalCol);
+            $stats['ingresos'] = (float)db_scalar($conn, "SELECT COALESCE(SUM(`{$totalSafe}`),0) FROM `{$ordenTbl}`", 0);
+        }
+    }
 
 } catch (Throwable $e) {
 }
 
 
 // Función auxiliar para obtener datos del reporte
-function get_report_data($conn, $report_type_key, $report_config, $date_from, $date_to, $status_filter) {
+function get_report_data(mysqli $conn, array $report_config, string $date_from, string $date_to, string $status_filter): array {
     $table = $report_config['table'] ?? '';
-    if (!$table) return [];
+    if (!is_string($table) || $table === '') {
+        return [];
+    }
 
-    // Construir query SQL
-    $sql = "SELECT * FROM `{$table}` WHERE 1=1";
+    $cols = $report_config['columns'] ?? [];
+    if (!is_array($cols) || empty($cols)) {
+        return [];
+    }
+
+    $select = implode(', ', array_map(static function ($c): string {
+        $c = str_replace('`', '``', (string)$c);
+        return "`{$c}`";
+    }, $cols));
+
+    $sql = "SELECT {$select} FROM `{$table}` WHERE 1=1";
     $params = [];
     $types = '';
 
-    // Filtros de fecha
-    if ($date_from && $report_config['has_date_range'] ?? false) {
-        // Buscar columnas de fecha
-        $date_columns = ['fecha_ingreso', 'fecha_creacion', 'fecha_inicio', 'fecha_registro'];
-        $date_col = null;
-        foreach ($date_columns as $dc) {
-            if (in_array($dc, $report_config['columns'] ?? [])) {
-                $date_col = $dc;
-                break;
-            }
-        }
-        if ($date_col) {
-            $sql .= " AND `{$date_col}` >= ?";
+    $dateCol = $report_config['date_col'] ?? null;
+    if (($report_config['has_date_range'] ?? false) && is_string($dateCol) && $dateCol !== '') {
+        $dateSafe = str_replace('`', '``', $dateCol);
+        if ($date_from !== '') {
+            $sql .= " AND `{$dateSafe}` >= ?";
             $params[] = $date_from . ' 00:00:00';
             $types .= 's';
         }
-    }
-
-    if ($date_to && $report_config['has_date_range'] ?? false) {
-        $date_columns = ['fecha_ingreso', 'fecha_creacion', 'fecha_inicio', 'fecha_registro'];
-        $date_col = null;
-        foreach ($date_columns as $dc) {
-            if (in_array($dc, $report_config['columns'] ?? [])) {
-                $date_col = $dc;
-                break;
-            }
-        }
-        if ($date_col) {
-            $sql .= " AND `{$date_col}` <= ?";
+        if ($date_to !== '') {
+            $sql .= " AND `{$dateSafe}` <= ?";
             $params[] = $date_to . ' 23:59:59';
             $types .= 's';
         }
     }
 
-    // Filtro de estado
-    if ($status_filter && $report_config['has_status_filter'] ?? false) {
-        if (in_array('estado', $report_config['columns'] ?? [])) {
-            $sql .= " AND `estado` = ?";
+    $statusCol = $report_config['status_col'] ?? null;
+    $statusMode = $report_config['status_mode'] ?? null;
+    if (($report_config['has_status_filter'] ?? false) && $status_filter !== '' && is_string($statusCol) && $statusCol !== '') {
+        $statusSafe = str_replace('`', '``', $statusCol);
+        if ($statusMode === 'id') {
+            $sql .= " AND `{$statusSafe}` = ?";
+            $params[] = (int)$status_filter;
+            $types .= 'i';
+        } else {
+            $sql .= " AND `{$statusSafe}` = ?";
             $params[] = $status_filter;
             $types .= 's';
         }
     }
 
-    $sql .= " ORDER BY " . ($report_config['columns'][0] ?? 'id') . " DESC LIMIT 1000";
+    $orderBy = str_replace('`', '``', (string)$cols[0]);
+    $sql .= " ORDER BY `{$orderBy}` DESC LIMIT 1000";
+
+    if (empty($params)) {
+        return db_rows($conn, $sql);
+    }
 
     $stmt = $conn->prepare($sql);
-    if (!$stmt || !$params && $types === '') {
-        return $conn->query($sql)->fetch_all(MYSQLI_ASSOC) ?? [];
+    if (!$stmt) {
+        return [];
     }
-
-    if ($params) {
-        $stmt->bind_param($types, ...$params);
-    }
+    $stmt->bind_param($types, ...$params);
     $stmt->execute();
-    $result = $stmt->get_result();
-    $data = $result->fetch_all(MYSQLI_ASSOC);
+    $res = $stmt->get_result();
+    $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
     $stmt->close();
-    return $data ?? [];
+    return $rows;
 }
 
 // Procesar descarga de PDF
 if ($action === 'generate_pdf' && $current_report) {
-    $report_data = get_report_data($conn, $report_type, $current_report, $date_from, $date_to, $status_filter);
+    // Evita que se mezclen HTML+PDF (index.php puede haber escrito markup al buffer).
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+
+    $report_data = get_report_data($conn, $current_report, $date_from, $date_to, $status_filter);
     
     // Generar PDF simple
     require_once __DIR__ . '/../../includes/pdf_generator.php';
@@ -213,23 +331,44 @@ if ($action === 'generate_pdf' && $current_report) {
     }
     
     $filename = 'Reporte_' . $report_type . '_' . date('Ymd_His') . '.pdf';
+    $bytes = $pdf->output();
+
     header('Content-Type: application/pdf');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
-    echo $pdf->output();
+    header('Content-Length: ' . strlen($bytes));
+    header('X-Content-Type-Options: nosniff');
+    echo $bytes;
     exit;
 }
 
 // Obtener datos del reporte si está seleccionado
 $report_data = [];
 if ($current_report) {
-    $report_data = get_report_data($conn, $report_type, $current_report, $date_from, $date_to, $status_filter);
+    $report_data = get_report_data($conn, $current_report, $date_from, $date_to, $status_filter);
 }
 
-// Estados posibles para filtrado
-$status_options = [
-    'Pendiente', 'En proceso', 'Listo', 'Entregado', 'Completado',
-    'Cancelado', 'En espera', 'Diagnóstico', 'Activo', 'Inactivo'
-];
+// Estados posibles para filtrado (se resuelve si la tabla usa id_estado_actual).
+$status_options = [];
+$status_options_id_to_name = [];
+if ($current_report && ($current_report['has_status_filter'] ?? false)) {
+    if (($current_report['status_mode'] ?? null) === 'id') {
+        $estTbl = pick_table($conn, ['estado_servicio', 'estado', 'Estado_Servicio']);
+        if ($estTbl !== '') {
+            foreach (db_rows($conn, "SELECT * FROM `{$estTbl}` ORDER BY id_estado ASC LIMIT 500") as $r) {
+                $idv = (int)($r['id_estado'] ?? 0);
+                $nm = (string)($r['nombre_estado'] ?? $idv);
+                if ($idv > 0) {
+                    $status_options_id_to_name[(string)$idv] = $nm;
+                }
+            }
+        }
+    } else {
+        $status_options = [
+            'Pendiente', 'En proceso', 'Listo', 'Entregado', 'Completado',
+            'Cancelado', 'En espera', 'Diagnóstico', 'Activo', 'Inactivo'
+        ];
+    }
+}
 ?>
 
 <div class="topbar" style="background:#fff;border-bottom:0.5px solid #EDECEA;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
@@ -340,11 +479,19 @@ $status_options = [
                 <label style="display:block;font-size:12px;font-weight:600;color:#4D4841;margin-bottom:6px;">Estado:</label>
                 <select name="status" style="width:100%;padding:10px;border:0.5px solid #D0CCC6;border-radius:8px;font-size:13px;">
                     <option value="">-- Todos los estados --</option>
-                    <?php foreach ($status_options as $status): ?>
-                    <option value="<?= h($status) ?>" <?= ($status_filter === $status ? 'selected' : '') ?>>
-                        <?= h($status) ?>
-                    </option>
-                    <?php endforeach; ?>
+                    <?php if (($current_report['status_mode'] ?? null) === 'id'): ?>
+                        <?php foreach ($status_options_id_to_name as $sid => $sname): ?>
+                        <option value="<?= h((string)$sid) ?>" <?= ((string)$status_filter === (string)$sid ? 'selected' : '') ?>>
+                            <?= h((string)$sname) ?>
+                        </option>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <?php foreach ($status_options as $status): ?>
+                        <option value="<?= h($status) ?>" <?= ($status_filter === $status ? 'selected' : '') ?>>
+                            <?= h($status) ?>
+                        </option>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </select>
             </div>
             <?php endif; ?>

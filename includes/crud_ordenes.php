@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-$orden_table_name = pick_table($conn, ['orden_reparacion', 'Orden_Reparacion', 'orden']);
+$orden_table_name = pick_table($conn, ['orden_reparacion', 'Orden_Reparacion', 'reparacion', 'Reparacion', 'orden']);
 $orden_cols = $orden_table_name ? table_columns($conn, $orden_table_name) : [];
 
 if ($current_page === 'ordenes' && $_SERVER['REQUEST_METHOD'] === 'POST') {

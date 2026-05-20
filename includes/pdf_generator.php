@@ -1,95 +1,118 @@
 <?php
-class SimplePDF {
 
-    private string $title = 'Reporte';
-    private array $headers = [];
-    private array $rows = [];
+declare(strict_types=1);
 
-    public function setTitle(string $title): void {
-        $this->title = $title;
+/**
+ * Minimal PDF generator (no external dependencies).
+ *
+ * Implements a small subset of the classic FPDF-like API used by src/pages/reportes.php:
+ * - addPage(), setFont(), cell(), ln(), output()
+ *
+ * Output is a real PDF (text-only). Tables are rendered as monospaced lines.
+ */
+class SimplePDF
+{
+    private string $fontFamily = 'Helvetica';
+    private int $fontSize = 10;
+
+    /** @var list<string> */
+    private array $lines = [];
+
+    /** @var list<string> */
+    private array $currentRow = [];
+
+    public function addPage(): void
+    {
     }
 
-    public function setHeaders(array $headers): void {
-        $this->headers = $headers;
+    public function setFont(string $family, string $style = '', int $size = 10): void
+    {
+        $this->fontFamily = $family !== '' ? $family : 'Helvetica';
+        $this->fontSize = $size > 0 ? $size : 10;
     }
 
-    public function setRows(array $rows): void {
-        $this->rows = $rows;
+    public function cell(int|float $w, int|float $h, string $txt = '', int $border = 0, int $ln = 0): void
+    {
+        $t = trim($txt);
+        $this->currentRow[] = $t;
+        if ($ln > 0) {
+            $this->ln();
+        }
     }
 
-    public function output(): string {
+    public function ln(int|float $h = 0): void
+    {
+        if (!empty($this->currentRow)) {
+            $this->lines[] = implode(' | ', $this->currentRow);
+            $this->currentRow = [];
+        } else {
+            $this->lines[] = '';
+        }
+    }
 
-        ob_start();
-?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<title><?= htmlspecialchars($this->title) ?></title>
+    public function output(): string
+    {
+        if (!empty($this->currentRow)) {
+            $this->ln();
+        }
 
-<style>
-body{
-    font-family: Arial, sans-serif;
-    padding:30px;
-    color:#111827;
-}
+        $contentLines = [];
+        $y = 800;
+        $leading = max(12, (int)round($this->fontSize * 1.3));
 
-h1{
-    margin-bottom:20px;
-}
+        foreach ($this->lines as $line) {
+            if ($y < 60) {
+                $contentLines[] = 'ET';
+                break;
+            }
+            $escaped = $this->pdfEscape($line);
+            $contentLines[] = "72 {$y} Td ({$escaped}) Tj";
+            $contentLines[] = "0 -" . $leading . " Td";
+            $y -= $leading;
+        }
 
-table{
-    width:100%;
-    border-collapse:collapse;
-}
+        $contentStream = "BT\n/F1 {$this->fontSize} Tf\n" . implode("\n", $contentLines) . "\nET\n";
 
-th{
-    background:#111827;
-    color:white;
-    padding:10px;
-    text-align:left;
-    font-size:13px;
-}
+        // Build a minimal single-page PDF with one standard font.
+        $objects = [];
+        $objects[] = "<< /Type /Catalog /Pages 2 0 R >>"; // 1
+        $objects[] = "<< /Type /Pages /Kids [3 0 R] /Count 1 >>"; // 2
+        $objects[] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>"; // 3 (A4)
+        $objects[] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"; // 4
+        $objects[] = "<< /Length " . strlen($contentStream) . " >>\nstream\n{$contentStream}\nendstream"; // 5
 
-td{
-    border:1px solid #D1D5DB;
-    padding:8px;
-    font-size:12px;
-}
+        $pdf = "%PDF-1.4\n";
+        $offsets = [0];
+        for ($i = 0; $i < count($objects); $i++) {
+            $offsets[] = strlen($pdf);
+            $objNum = $i + 1;
+            $pdf .= "{$objNum} 0 obj\n{$objects[$i]}\nendobj\n";
+        }
 
-tr:nth-child(even){
-    background:#F9FAFB;
-}
-</style>
-</head>
+        $xrefPos = strlen($pdf);
+        $pdf .= "xref\n0 " . (count($objects) + 1) . "\n";
+        $pdf .= "0000000000 65535 f \n";
+        for ($i = 1; $i <= count($objects); $i++) {
+            $pdf .= sprintf("%010d 00000 n \n", $offsets[$i]);
+        }
+        $pdf .= "trailer\n<< /Size " . (count($objects) + 1) . " /Root 1 0 R >>\n";
+        $pdf .= "startxref\n{$xrefPos}\n%%EOF";
+        return $pdf;
+    }
 
-<body>
-
-<h1><?= htmlspecialchars($this->title) ?></h1>
-
-<table>
-    <thead>
-        <tr>
-            <?php foreach($this->headers as $header): ?>
-                <th><?= htmlspecialchars((string)$header) ?></th>
-            <?php endforeach; ?>
-        </tr>
-    </thead>
-
-    <tbody>
-        <?php foreach($this->rows as $row): ?>
-            <tr>
-                <?php foreach($row as $cell): ?>
-                    <td><?= htmlspecialchars((string)$cell) ?></td>
-                <?php endforeach; ?>
-            </tr>
-        <?php endforeach; ?>
-    </tbody>
-</table>
-
-</body>
-</html>
-<?php
-        return ob_get_clean();
+    private function pdfEscape(string $s): string
+    {
+        $s = str_replace("\\", "\\\\", $s);
+        $s = str_replace("(", "\\(", $s);
+        $s = str_replace(")", "\\)", $s);
+        $s = str_replace(["\r", "\n"], ' ', $s);
+        // Best-effort: use WinAnsi (cp1252) so accented Spanish characters render with Helvetica.
+        $converted = @iconv('UTF-8', 'Windows-1252//TRANSLIT//IGNORE', $s);
+        if (is_string($converted) && $converted !== '') {
+            $s = $converted;
+        } else {
+            $s = preg_replace('/[^\x20-\x7E]/', '?', $s) ?? $s;
+        }
+        return $s;
     }
 }

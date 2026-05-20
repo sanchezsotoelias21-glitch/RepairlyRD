@@ -93,7 +93,7 @@ $estado_name = function (int $eid) use ($estados): string {
             Total órdenes
         </div>
         <div class="kpi-valor" style="color:#2b7abc;">
-            <?= count($rows ?? []) ?>
+            <?= count($ordenes_list) ?>
         </div>
         <div class="kpi-sub">Órdenes en el sistema</div>
     </div>
