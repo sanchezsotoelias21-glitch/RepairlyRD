@@ -80,6 +80,7 @@ foreach ($deliveries as $d) {
         <div>Fecha Salida</div>
     </div>
 
+    <div style="max-height:400px;overflow-y:auto;">
     <?php foreach ($deliveries as $delivery): ?>
     <div class="table-row" style="grid-template-columns:70px 1.2fr 120px 100px;gap:12px;">
         <div style="font-size:11px;color:#8C8479;font-family:'Courier New';"><?= htmlspecialchars($delivery['IdDelivery']) ?></div>
@@ -112,4 +113,5 @@ foreach ($deliveries as $d) {
         No hay deliveries registrados
     </div>
     <?php endif; ?>
+    </div>
 </div>

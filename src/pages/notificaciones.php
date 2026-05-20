@@ -131,7 +131,7 @@ if ($nt !== '') {
         <?php if ($nt === ''): ?>
             <p style="padding:12px;color:#B83232;">Tabla Notificacion no encontrada.</p>
         <?php else: ?>
-            <div style="margin-top:12px;">
+            <div style="margin-top:12px;max-height:400px;overflow-y:auto;">
                 <?php foreach ($rows as $r): ?>
                     <div style="padding:12px 14px;border-bottom:0.5px solid #EDECEA;font-size:12px;">
                         <div style="font-weight:600;color:#1C1A17;"><?= h((string)($r['tipo'] ?? 'aviso')) ?></div>

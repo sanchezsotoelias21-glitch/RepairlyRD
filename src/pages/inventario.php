@@ -181,6 +181,7 @@ $es = $pz_col_stock !== null && $edit ? (string)($edit[$pz_col_stock] ?? '0') : 
             <div class="table-head" style="grid-template-columns:48px 1fr 100px 80px 80px 120px;">
                 <div>ID</div><div>Nombre</div><div>Ref.</div><div>Stock</div><div>P. venta</div><div style="text-align:right;">Acciones</div>
             </div>
+            <div style="max-height:400px;overflow-y:auto;">
             <?php foreach ($rows as $r): ?>
                 <?php
                 $rn = $pz_col_nombre !== null ? (string)($r[$pz_col_nombre] ?? '') : '';
@@ -205,6 +206,7 @@ $es = $pz_col_stock !== null && $edit ? (string)($edit[$pz_col_stock] ?? '0') : 
                     </div>
                 </div>
             <?php endforeach; ?>
+            </div>
         </div>
     </div>
 </div>

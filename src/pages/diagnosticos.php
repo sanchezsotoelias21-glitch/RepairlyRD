@@ -302,6 +302,7 @@ $ev_desc = $diag_col_desc !== null && $edit ? (string)($edit[$diag_col_desc] ?? 
             <div class="table-head" style="grid-template-columns:34px 52px 80px 1fr 100px 120px;">
                 <div></div><div>ID</div><div>Orden</div><div>Tipo / Descripción</div><div>Fecha</div><div style="text-align:right;">Acciones</div>
             </div>
+            <div style="max-height:400px;overflow-y:auto;">
             <?php foreach ($rows as $r): ?>
                 <?php
                 $rid_ord = $diag_col_orden !== null ? (int)($r[$diag_col_orden] ?? 0) : 0;
@@ -340,6 +341,7 @@ $ev_desc = $diag_col_desc !== null && $edit ? (string)($edit[$diag_col_desc] ?? 
                     </div>
                 </div>
             <?php endforeach; ?>
+            </div>
         </div>
     </div>
 </div>

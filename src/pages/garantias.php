@@ -240,6 +240,7 @@ $eest = $gar_col_est !== null && $edit ? (string)($edit[$gar_col_est] ?? 'activa
                     </div>
                 </div>
             <?php endforeach; ?>
+            </div>
         </div>
     </div>
 </div>

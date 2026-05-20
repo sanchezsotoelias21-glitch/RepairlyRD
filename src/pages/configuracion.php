@@ -101,6 +101,7 @@ $search_q = isset($_GET['q']) && is_string($_GET['q']) ? trim($_GET['q']) : '';
                 <div class="table-head" style="grid-template-columns:56px 1fr 160px 100px;margin-bottom:0;">
                     <div>ID</div><div>Usuario</div><div>Rol</div><div></div>
                 </div>
+                <div style="max-height:400px;overflow-y:auto;">
                 <?php foreach ($all_users as $urow): ?>
                     <form method="post" class="table-row" style="grid-template-columns:56px 1fr 160px 100px;align-items:center;margin:0;border-bottom:0.5px solid #EDECEA;">
                         <input type="hidden" name="csrf" value="<?= h($_SESSION['csrf']) ?>">
@@ -132,6 +133,7 @@ $search_q = isset($_GET['q']) && is_string($_GET['q']) ? trim($_GET['q']) : '';
                 <?php if (empty($all_users)): ?>
                     <p style="font-size:12px;color:#6B6560;padding:10px;">No hay usuarios en la tabla.</p>
                 <?php endif; ?>
+                </div>
             </div>
         <?php else: ?>
             <p style="margin-top:16px;font-size:12px;color:#6B6560;">Solo un administrador puede modificar roles desde esta pantalla.</p>
