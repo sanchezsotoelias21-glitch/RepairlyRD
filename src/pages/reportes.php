@@ -378,26 +378,473 @@ if ($current_report && ($current_report['has_status_filter'] ?? false)) {
     </div>
 </div>
 
-<div style="padding:20px;max-width:1400px;margin:0 auto;">
+<style>
+/* Variables de color y estilos globales */
+:root {
+    --primary: #1F5C8B;
+    --primary-light: #E3F2FD;
+    --primary-dark: #1a3f5f;
+    --success: #00AA44;
+    --warning: #FF9500;
+    --text-dark: #1C1A17;
+    --text-muted: #8C8479;
+    --border-light: #EDECEA;
+    --border-gray: #D0CCC6;
+    --bg-light: #F5F5F5;
+    --bg-lighter: #FAFAF8;
+}
+
+.charts-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--border-light);
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+
+.card-title {
+    color: var(--text-dark);
+    font-weight: 700;
+    font-size: 16px;
+    margin: 0;
+}
+
+.card-sub {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-top: 4px;
+}
+
+/* SELECTOR DE REPORTES */
+.report-selector {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    padding: 24px;
+}
+
+.report-item {
+    padding: 20px;
+    text-decoration: none;
+    background: #fff;
+    border: 2px solid var(--border-gray);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: relative;
+    overflow: hidden;
+}
+
+.report-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(31, 92, 139, 0.05) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.report-item:hover {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(31, 92, 139, 0.12);
+}
+
+.report-item:hover::before {
+    opacity: 1;
+}
+
+.report-item.active {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    box-shadow: 0 4px 20px rgba(31, 92, 139, 0.15);
+}
+
+.report-item-icon {
+    min-width: 48px;
+    width: 48px;
+    height: 48px;
+    background: var(--primary-light);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.report-item.active .report-item-icon {
+    background: var(--primary);
+    color: #fff;
+}
+
+.report-item-content {
+    flex: 1;
+}
+
+.report-item-label {
+    font-weight: 600;
+    color: var(--text-dark);
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.report-item-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+/* FILTROS */
+.filters-section {
+    padding: 24px;
+    background: linear-gradient(135deg, #f8f7f5 0%, #fafaf8 100%);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.filter-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    align-items: end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.filter-input, .filter-select {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1px solid var(--border-gray);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--text-dark);
+    background: #fff;
+    transition: all 0.2s ease;
+}
+
+.filter-input:focus, .filter-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(31, 92, 139, 0.1);
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 10px;
+    grid-column: 1 / -1;
+}
+
+.btn-primary {
+    padding: 11px 20px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+}
+
+.btn-primary:hover {
+    background: var(--primary-dark);
+    box-shadow: 0 4px 12px rgba(31, 92, 139, 0.25);
+}
+
+.btn-secondary {
+    padding: 11px 20px;
+    background: #f0f0f0;
+    color: var(--text-dark);
+    border: 1px solid var(--border-gray);
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 13px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    justify-content: center;
+}
+
+.btn-secondary:hover {
+    background: #e8e8e8;
+    border-color: var(--text-muted);
+}
+
+/* FILTROS ACTIVOS */
+.active-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-light);
+    grid-column: 1 / -1;
+}
+
+.filter-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--primary);
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* ESTADÍSTICAS */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    padding: 24px;
+    background: #fff;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, #f8f7f5 0%, #fafaf8 100%);
+    border-radius: 10px;
+    padding: 18px;
+    border: 1px solid var(--border-light);
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.stat-label {
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.stat-value {
+    margin: 0;
+    font-size: 24px;
+    color: var(--primary);
+    font-weight: 700;
+}
+
+/* TABLA DE DATOS */
+.data-section {
+    padding: 24px;
+}
+
+.data-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.data-info {
+    flex: 1;
+}
+
+.data-count {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary);
+    margin: 0;
+}
+
+.data-subtitle {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-top: 4px;
+}
+
+.btn-download {
+    padding: 12px 20px;
+    background: var(--success);
+    color: #fff;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 13px;
+}
+
+.btn-download:hover {
+    background: #009938;
+    box-shadow: 0 4px 12px rgba(0, 170, 68, 0.25);
+}
+
+/* TABLA */
+.table-wrapper {
+    overflow-x: auto;
+    margin-bottom: 16px;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.data-table thead tr {
+    background: var(--bg-light);
+    border-bottom: 2px solid var(--border-gray);
+}
+
+.data-table th {
+    padding: 14px 16px;
+    text-align: left;
+    font-weight: 700;
+    color: var(--text-dark);
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+}
+
+.data-table tbody tr {
+    border-bottom: 1px solid var(--border-light);
+    transition: background 0.2s ease;
+}
+
+.data-table tbody tr:nth-child(even) {
+    background: var(--bg-lighter);
+}
+
+.data-table tbody tr:hover {
+    background: var(--primary-light);
+}
+
+.data-table td {
+    padding: 14px 16px;
+    color: var(--text-dark);
+}
+
+/* ESTADO VACÍO */
+.empty-state {
+    padding: 60px 40px;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.empty-icon {
+    font-size: 56px;
+    opacity: 0.4;
+    display: block;
+    margin-bottom: 16px;
+}
+
+.empty-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 8px;
+}
+
+.empty-text {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+/* ADVERTENCIA */
+.warning-banner {
+    padding: 14px 20px;
+    background: #FFF3E0;
+    color: var(--warning);
+    font-size: 12px;
+    border-top: 1px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    .report-selector {
+        grid-template-columns: 1fr;
+    }
+
+    .filter-form {
+        grid-template-columns: 1fr;
+    }
+
+    .filter-buttons {
+        flex-direction: column;
+    }
+
+    .data-header {
+        flex-direction: column;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 12px;
+    }
+}
+</style>
+
+<div class="main-container" style="padding: 20px; max-width: 1400px; margin: 0 auto;">
     
-    <!-- Panel de Selección de Reporte -->
-    <div class="charts-card" style="margin-bottom:20px;padding:0;">
-        <div style="padding:16px 20px;border-bottom:0.5px solid #EDECEA;">
-            <div class="card-title">Paso 1: Selecciona el tipo de reporte</div>
+    <!-- SELECTOR DE REPORTES -->
+    <div class="charts-card">
+        <div style="padding: 24px; border-bottom: 1px solid var(--border-light);">
+            <div class="card-title">
+                <i class="ti ti-file-report" style="margin-right: 8px; color: var(--primary);"></i>
+                Reportes Disponibles
+            </div>
+            <div class="card-sub">Selecciona el tipo de reporte que deseas consultar</div>
         </div>
         
-        <div style="padding:20px;display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:12px;">
+        <div class="report-selector">
             <?php foreach ($report_types as $key => $config): ?>
-            <a href="?page=reportes&type=<?= urlencode($key) ?>" 
-               style="padding:16px;border:1.5px solid <?= ($report_type === $key ? '#2b7abc' : '#D0CCC6') ?>;border-radius:10px;text-decoration:none;transition:all 0.2s;background:<?= ($report_type === $key ? '#E3F2FD' : '#fff') ?>;cursor:pointer;"
-               onmouseover="this.style.borderColor='#2b7abc';this.style.background='#E3F2FD';"
-               onmouseout="this.style.borderColor='<?= ($report_type === $key ? '#2b7abc' : '#D0CCC6') ?>';this.style.background='<?= ($report_type === $key ? '#E3F2FD' : '#fff') ?>';">
-                <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
-                    <i class="ti <?= $config['icon'] ?>" style="font-size:24px;color:#2b7abc;"></i>
-                    <div>
-                        <div style="font-weight:600;color:#1C1A17;font-size:14px;"><?= h($config['label']) ?></div>
-                        <div style="font-size:12px;color:#8C8479;"><?= h($config['desc']) ?></div>
-                    </div>
+            <a href="?page=reportes&type=<?= h($key) ?>" class="report-item <?= ($report_type === $key ? 'active' : '') ?>">
+                <div class="report-item-icon">
+                    <i class="ti <?= $config['icon'] ?>"></i>
+                </div>
+                <div class="report-item-content">
+                    <div class="report-item-label"><?= h($config['label']) ?></div>
+                    <div class="report-item-desc"><?= h($config['desc']) ?></div>
                 </div>
             </a>
             <?php endforeach; ?>
@@ -406,79 +853,37 @@ if ($current_report && ($current_report['has_status_filter'] ?? false)) {
 
     <?php if ($current_report): ?>
     
-    <!-- Panel de Filtros -->
-    <div class="charts-card" style="margin-bottom:20px;padding:0;">
-        <div style="padding:16px 20px;border-bottom:0.5px solid #EDECEA;">
-            <div class="card-title">Paso 2: Configura filtros (opcional)</div>
+    <!-- PANEL DE FILTROS -->
+    <div class="charts-card">
+        <div style="padding: 24px; border-bottom: 1px solid var(--border-light);">
+            <div class="card-title">
+                <i class="ti ti-filter" style="margin-right: 8px; color: var(--primary);"></i>
+                Filtros Avanzados
+            </div>
+            <div class="card-sub">Personaliza tu búsqueda para obtener resultados exactos</div>
         </div>
         
-        
-<!-- KPI CARDS -->
-<style>
-.card-stat{
-    background:#fff;
-    border-radius:18px;
-    padding:22px;
-    border:1px solid #E5E7EB;
-    box-shadow:0 4px 14px rgba(0,0,0,.05);
-}
-.card-stat div{
-    color:#6B7280;
-    font-size:14px;
-    margin-bottom:8px;
-}
-.card-stat h2{
-    margin:0;
-    font-size:28px;
-    color:#111827;
-}
-</style>
-
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin-bottom:22px;">
-    <div class="card-stat">
-        <div>Total Órdenes</div>
-        <h2><?= number_format($stats['ordenes']) ?></h2>
-    </div>
-
-    <div class="card-stat">
-        <div>Completadas</div>
-        <h2><?= number_format($stats['completadas']) ?></h2>
-    </div>
-
-    <div class="card-stat">
-        <div>Pendientes</div>
-        <h2><?= number_format($stats['pendientes']) ?></h2>
-    </div>
-
-    <div class="card-stat">
-        <div>Ingresos</div>
-        <h2>RD$ <?= number_format($stats['ingresos'],2) ?></h2>
-    </div>
-</div>
-
-<form method="get" style="padding:20px;display:grid;grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));gap:16px;align-items:end;">
+        <form method="get" class="filter-form" style="padding: 24px;">
             <input type="hidden" name="page" value="reportes">
             <input type="hidden" name="type" value="<?= h($report_type) ?>">
             
             <?php if ($current_report['has_date_range'] ?? false): ?>
-            <div>
-                <label style="display:block;font-size:12px;font-weight:600;color:#4D4841;margin-bottom:6px;">Desde:</label>
-                <input type="date" name="date_from" value="<?= h($date_from) ?>" 
-                       style="width:100%;padding:10px;border:0.5px solid #D0CCC6;border-radius:8px;font-size:13px;">
+            <div class="filter-group">
+                <label class="filter-label">Desde</label>
+                <input type="date" name="date_from" value="<?= h($date_from) ?>" class="filter-input">
             </div>
             
-            <div>
-                <label style="display:block;font-size:12px;font-weight:600;color:#4D4841;margin-bottom:6px;">Hasta:</label>
-                <input type="date" name="date_to" value="<?= h($date_to) ?>" 
-                       style="width:100%;padding:10px;border:0.5px solid #D0CCC6;border-radius:8px;font-size:13px;">
+            <div class="filter-group">
+                <label class="filter-label">Hasta</label>
+                <input type="date" name="date_to" value="<?= h($date_to) ?>" class="filter-input">
             </div>
             <?php endif; ?>
             
             <?php if ($current_report['has_status_filter'] ?? false): ?>
-            <div>
-                <label style="display:block;font-size:12px;font-weight:600;color:#4D4841;margin-bottom:6px;">Estado:</label>
-                <select name="status" style="width:100%;padding:10px;border:0.5px solid #D0CCC6;border-radius:8px;font-size:13px;">
-                    <option value="">-- Todos los estados --</option>
+            <div class="filter-group">
+                <label class="filter-label">Estado</label>
+                <select name="status" class="filter-select">
+                    <option value="">Todos los estados</option>
                     <?php if (($current_report['status_mode'] ?? null) === 'id'): ?>
                         <?php foreach ($status_options_id_to_name as $sid => $sname): ?>
                         <option value="<?= h((string)$sid) ?>" <?= ((string)$status_filter === (string)$sid ? 'selected' : '') ?>>
@@ -496,71 +901,143 @@ if ($current_report && ($current_report['has_status_filter'] ?? false)) {
             </div>
             <?php endif; ?>
             
-            <div style="display:flex;gap:8px;">
-                <button type="submit" style="padding:10px 16px;background:#1F5C8B;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;flex:1;">
-                    <i class="ti ti-search"></i> Filtrar
+            <div class="filter-buttons">
+                <button type="submit" class="btn-primary">
+                    <i class="ti ti-search"></i>
+                    Aplicar Filtros
                 </button>
-                <a href="?page=reportes&type=<?= h($report_type) ?>" 
-                   style="padding:10px 16px;background:#D0CCC6;color:#4D4841;text-decoration:none;border-radius:8px;font-weight:600;text-align:center;">
-                    <i class="ti ti-x"></i> Limpiar
+                <a href="?page=reportes&type=<?= h($report_type) ?>" class="btn-secondary">
+                    <i class="ti ti-x"></i>
+                    Limpiar
                 </a>
             </div>
+
+            <!-- FILTROS ACTIVOS -->
+            <?php 
+            $has_filters = ($date_from || $date_to || $status_filter);
+            if ($has_filters): 
+            ?>
+            <div class="active-filters">
+                <?php if ($date_from): ?>
+                <div class="filter-badge">
+                    <i class="ti ti-calendar"></i>
+                    Desde: <?= h($date_from) ?>
+                </div>
+                <?php endif; ?>
+                <?php if ($date_to): ?>
+                <div class="filter-badge">
+                    <i class="ti ti-calendar"></i>
+                    Hasta: <?= h($date_to) ?>
+                </div>
+                <?php endif; ?>
+                <?php if ($status_filter): ?>
+                <div class="filter-badge">
+                    <i class="ti ti-status"></i>
+                    <?php 
+                    if (($current_report['status_mode'] ?? null) === 'id' && isset($status_options_id_to_name[$status_filter])) {
+                        echo h((string)$status_options_id_to_name[$status_filter]);
+                    } else {
+                        echo h($status_filter);
+                    }
+                    ?>
+                </div>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
         </form>
     </div>
 
-    <!-- Vista Previa de Datos -->
-    <div class="charts-card" style="margin-bottom:20px;padding:0;">
-        <div style="padding:16px 20px;border-bottom:0.5px solid #EDECEA;display:flex;justify-content:space-between;align-items:center;">
-            <div>
-                <div class="card-title">Paso 3: Previsualiza los datos</div>
-                <div class="card-sub"><?= count($report_data) ?> registros encontrados</div>
+    <!-- ESTADÍSTICAS -->
+    <div class="charts-card">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Órdenes</div>
+                <h2 class="stat-value"><?= number_format($stats['ordenes']) ?></h2>
             </div>
-            <?php if (!empty($report_data)): ?>
-            <a href="?page=reportes&type=<?= h($report_type) ?>&action=generate_pdf<?= ($date_from ? '&date_from=' . urlencode($date_from) : '') ?><?= ($date_to ? '&date_to=' . urlencode($date_to) : '') ?><?= ($status_filter ? '&status=' . urlencode($status_filter) : '') ?>"
-               style="padding:12px 20px;background:#00AA44;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;display:inline-flex;align-items:center;gap:8px;cursor:pointer;">
-                <i class="ti ti-download"></i> Descargar PDF
-            </a>
-            <?php endif; ?>
+            <div class="stat-card">
+                <div class="stat-label">Completadas</div>
+                <h2 class="stat-value" style="color: var(--success);"><?= number_format($stats['completadas']) ?></h2>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Pendientes</div>
+                <h2 class="stat-value" style="color: var(--warning);"><?= number_format($stats['pendientes']) ?></h2>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Ingresos</div>
+                <h2 class="stat-value" style="color: #2b7abc;">RD$ <?= number_format($stats['ingresos'], 2) ?></h2>
+            </div>
         </div>
-        
-        <?php if (empty($report_data)): ?>
-        <div style="padding:40px;text-align:center;color:#8C8479;">
-            <i class="ti ti-inbox" style="font-size:48px;opacity:0.5;display:block;margin-bottom:12px;"></i>
-            <p>No hay datos que mostrar con los filtros seleccionados</p>
-        </div>
-        <?php else: ?>
-        <div style="overflow-x:auto;">
-            <table style="width:100%;border-collapse:collapse;font-size:12px;">
-                <thead>
-                    <tr style="background:#F5F5F5;border-bottom:0.5px solid #D0CCC6;">
-                        <?php foreach ($current_report['display_cols'] as $col): ?>
-                        <th style="padding:12px;text-align:left;font-weight:600;color:#4D4841;border:0.5px solid #D0CCC6;">
-                            <?= h($col) ?>
-                        </th>
+    </div>
+
+    <!-- TABLA DE RESULTADOS -->
+    <div class="charts-card">
+        <div class="data-section">
+            <div class="data-header">
+                <div class="data-info">
+                    <h3 class="data-count"><?= count($report_data) ?></h3>
+                    <p class="data-subtitle">
+                        <?php 
+                        if ($has_filters) {
+                            echo 'Registros encontrados con filtros aplicados';
+                        } else {
+                            echo 'Registros totales';
+                        }
+                        ?>
+                    </p>
+                </div>
+                <?php if (!empty($report_data)): ?>
+                <a href="?page=reportes&type=<?= h($report_type) ?>&action=generate_pdf<?= ($date_from ? '&date_from=' . urlencode($date_from) : '') ?><?= ($date_to ? '&date_to=' . urlencode($date_to) : '') ?><?= ($status_filter ? '&status=' . urlencode($status_filter) : '') ?>" class="btn-download">
+                    <i class="ti ti-download"></i>
+                    Descargar PDF
+                </a>
+                <?php endif; ?>
+            </div>
+            
+            <?php if (empty($report_data)): ?>
+            <div class="empty-state">
+                <i class="ti ti-inbox empty-icon"></i>
+                <div class="empty-title">Sin resultados</div>
+                <p class="empty-text">
+                    <?php 
+                    if ($has_filters) {
+                        echo 'No hay datos que coincidan con los filtros aplicados. Intenta modificar tus criterios de búsqueda.';
+                    } else {
+                        echo 'No hay registros disponibles en esta categoría.';
+                    }
+                    ?>
+                </p>
+            </div>
+            <?php else: ?>
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <?php foreach ($current_report['display_cols'] as $col): ?>
+                            <th><?= h($col) ?></th>
+                            <?php endforeach; ?>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php $row_count = 0; ?>
+                        <?php foreach ($report_data as $row): ?>
+                        <?php $row_count++; if ($row_count > 100) break; ?>
+                        <tr>
+                            <?php foreach ($current_report['columns'] as $col): ?>
+                            <td><?= h((string)($row[$col] ?? '—')) ?></td>
+                            <?php endforeach; ?>
+                        </tr>
                         <?php endforeach; ?>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php $row_count = 0; ?>
-                    <?php foreach ($report_data as $row): ?>
-                    <?php $row_count++; if ($row_count > 100) break; ?>
-                    <tr style="border-bottom:0.5px solid #EDECEA;<?= ($row_count % 2 === 0 ? 'background:#FAFAF8;' : '') ?>">
-                        <?php foreach ($current_report['columns'] as $col): ?>
-                        <td style="padding:10px 12px;color:#1C1A17;">
-                            <?= h((string)($row[$col] ?? '—')) ?>
-                        </td>
-                        <?php endforeach; ?>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            </div>
             <?php if (count($report_data) > 100): ?>
-            <div style="padding:12px 20px;background:#FFF3E0;color:#FF9500;font-size:12px;border-top:0.5px solid #D0CCC6;">
-                ⚠️ Se muestran 100 primeros registros. El PDF descargado contiene todos (hasta 1000).
+            <div class="warning-banner">
+                <i class="ti ti-alert-triangle"></i>
+                Se muestran 100 primeros registros. El PDF descargado contiene todos (hasta 1000).
             </div>
             <?php endif; ?>
+            <?php endif; ?>
         </div>
-        <?php endif; ?>
     </div>
 
     <?php endif; ?>
