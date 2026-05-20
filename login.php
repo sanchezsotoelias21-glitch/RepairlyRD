@@ -107,9 +107,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($uidLogin <= 0) {
                         $error = 'Error de esquema: no se encontró la columna de ID del usuario (id_usuario o id).';
                     } else {
-                        session_regenerate_id(true);
                         $_SESSION['repairly_uid'] = $uidLogin;
                         $_SESSION['csrf'] = bin2hex(random_bytes(32));
+                        session_write_close();
                         $next = isset($_POST['next']) && is_string($_POST['next']) ? $_POST['next'] : '';
                         $target = 'index.php';
                         if ($next !== '' && str_starts_with(ltrim($next, '/'), 'index.php')) {
@@ -210,7 +210,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     if ($error === '' && $ok && $newId > 0) {
                         $_SESSION['repairly_uid'] = $newId;
-                        session_regenerate_id(true);
+                        $_SESSION['csrf'] = bin2hex(random_bytes(32));
+                        session_write_close();
                         repairly_redirect('index.php');
                     }
                     if ($error === '' && (!$ok || $newId <= 0)) {
