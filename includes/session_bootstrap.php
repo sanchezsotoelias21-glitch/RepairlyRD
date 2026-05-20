@@ -98,10 +98,16 @@ function repairly_session_start(): void
 
     $lifetime = (int)(getenv('SESSION_COOKIE_LIFETIME') ?: 86400);
 
+    // IMPORTANT:
+    // Do not default cookie "domain" to HTTP_HOST. On some proxies/platforms it may include a port
+    // (e.g. "example.com:443") or differ between aliases, which prevents the browser from storing
+    // the cookie and causes random logouts / CSRF errors. Use host-only cookies by default.
+    $cookieDomain = trim((string)(getenv('SESSION_COOKIE_DOMAIN') ?: ''));
+
     session_set_cookie_params([
         'lifetime' => $lifetime,
         'path' => '/',
-        'domain' => $_SERVER['HTTP_HOST'] ?? '',
+        'domain' => $cookieDomain !== '' ? $cookieDomain : '',
         'secure' => $secure,
         'httponly' => true,
         'samesite' => 'Lax',

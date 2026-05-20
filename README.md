@@ -28,6 +28,8 @@ Este repo también se puede desplegar en Railway con `Dockerfile`.
 ### Variables (Railway)
 
 - `PORT`: Railway la inyecta automáticamente (no hace falta configurarla).
+- Recomendado (Railway / múltiples instancias): `SESSION_HANDLER=mysql` para evitar pérdidas de sesión/CSRF cuando el balanceador te enruta a otra instancia.
+- Opcional: `SESSION_COOKIE_DOMAIN` si necesitas compartir sesión entre subdominios (por defecto se usa cookie "host-only").
 
 ## Correr local (Docker)
 
