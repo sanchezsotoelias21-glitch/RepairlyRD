@@ -1435,13 +1435,79 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 })();
 </script>
 
+<!-- Combobox autocompletables -->
+<script>
+(function(){
+    document.addEventListener('DOMContentLoaded', function(){
+        // Inicializar todos los combobox autocompletables
+        document.querySelectorAll('.searchable-select-input').forEach(function(input){
+            const container = input.closest('div');
+            const hiddenInput = container.querySelector('.searchable-select-hidden');
+            const optionsDiv = container.querySelector('.searchable-select-options');
+            const options = optionsDiv ? Array.from(optionsDiv.querySelectorAll('.searchable-select-option')) : [];
+            
+            // Mostrar opciones al hacer click
+            input.addEventListener('focus', function(){
+                optionsDiv.style.display = 'block';
+            });
+            
+            // Filtrar opciones mientras se escribe
+            input.addEventListener('input', function(e){
+                const query = e.target.value.toLowerCase();
+                optionsDiv.style.display = 'block';
+                let visibleCount = 0;
+                
+                options.forEach(function(opt){
+                    const text = opt.textContent.toLowerCase();
+                    if(text.includes(query)){
+                        opt.style.display = 'block';
+                        visibleCount++;
+                    } else {
+                        opt.style.display = 'none';
+                    }
+                });
+            });
+            
+            // Seleccionar opción
+            options.forEach(function(opt){
+                opt.addEventListener('click', function(){
+                    const value = opt.getAttribute('data-value');
+                    const text = opt.textContent;
+                    
+                    input.value = text;
+                    hiddenInput.value = value;
+                    optionsDiv.style.display = 'none';
+                });
+            });
+            
+            // Cerrar opciones al hacer click fuera
+            document.addEventListener('click', function(e){
+                if(!container.contains(e.target)){
+                    optionsDiv.style.display = 'none';
+                }
+            });
+            
+            // Permitir navegación con teclado
+            input.addEventListener('keydown', function(e){
+                const visibleOpts = options.filter(o => o.style.display !== 'none');
+                if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+                    e.preventDefault();
+                    optionsDiv.style.display = 'block';
+                }
+            });
+        });
+    });
+})();
+</script>
+
 <!-- Filtrado en vivo de búsqueda -->
 <script>
 (function(){
     // Esperar a que el DOM esté listo
     document.addEventListener('DOMContentLoaded', function(){
         // Encontrar todos los inputs de búsqueda que contengan "search" o "filtro" en su name
-        var searchInputs = document.querySelectorAll('input[name*="q"], input[name*="search"], input[name*="filtro"], .topbar-search input');
+        // EXCLUYENDO los inputs autocompletables
+        var searchInputs = document.querySelectorAll('input[name*="q"]:not(.searchable-select-input), input[name*="search"]:not(.searchable-select-input), input[name*="filtro"]:not(.searchable-select-input), .topbar-search input:not(.searchable-select-input)');
         
         searchInputs.forEach(function(input){
             // Agregar evento de entrada para filtrar en tiempo real

@@ -161,25 +161,48 @@ $estado_name = function (int $eid) use ($estados): string {
                         <input name="codigo_seguimiento" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;" value="<?= h((string)($edit['codigo_seguimiento'] ?? '')) ?>"></div>
                 <?php endif; ?>
                 <?php if (isset($orden_cols['id_equipo'])): ?>
-                    <div style="grid-column:1/-1;">
+                    <div style="grid-column:1/-1;position:relative;">
                         <label style="font-size:10px;color:#6B6560;">Equipo</label>
-                        <select name="id_equipo" required style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;">
-                            <option value="0">—</option>
+                        <input type="hidden" name="id_equipo" class="searchable-select-hidden" value="<?= (int)($edit['id_equipo'] ?? 0) ?>" required>
+                        <input type="text" class="searchable-select-input" placeholder="Buscar equipo..." value="<?php 
+                            $val = (int)($edit['id_equipo'] ?? 0);
+                            foreach ($equipos_list as $e) {
+                                if ((int)$e['id_equipo'] === $val) {
+                                    echo h((string)($e['label'] ?? ''));
+                                    break;
+                                }
+                            }
+                        ?>" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;background:#fff;">
+                        <div class="searchable-select-options" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:0.5px solid #D0CCC6;border-top:none;border-radius:0 0 8px 8px;max-height:200px;overflow-y:auto;z-index:10;display:none;">
                             <?php foreach ($equipos_list as $e): ?>
-                                <option value="<?= (int)$e['id_equipo'] ?>" <?= (int)($edit['id_equipo'] ?? 0) === (int)$e['id_equipo'] ? 'selected' : '' ?>><?= h((string)($e['label'] ?? $e['id_equipo'])) ?></option>
+                                <div class="searchable-select-option" data-value="<?= (int)$e['id_equipo'] ?>" style="padding:8px 10px;cursor:pointer;border-bottom:0.5px solid #f0f0f0;font-size:12px;">
+                                    <?= h((string)($e['label'] ?? $e['id_equipo'])) ?>
+                                </div>
                             <?php endforeach; ?>
-                        </select>
+                        </div>
                     </div>
                 <?php endif; ?>
                 <?php if (isset($orden_cols['id_tecnico'])): ?>
-                    <div>
+                    <div style="position:relative;">
                         <label style="font-size:10px;color:#6B6560;">Técnico</label>
-                        <select name="id_tecnico" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;">
-                            <option value="0">—</option>
+                        <input type="hidden" name="id_tecnico" class="searchable-select-hidden" value="<?= (int)($edit['id_tecnico'] ?? 0) ?>">
+                        <input type="text" class="searchable-select-input" placeholder="Buscar técnico..." value="<?php 
+                            $val = (int)($edit['id_tecnico'] ?? 0);
+                            foreach ($tecs as $te) {
+                                if ((int)$te['id_tecnico'] === $val) {
+                                    echo h((string)$te['nombre']);
+                                    break;
+                                }
+                            }
+                        ?>" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;background:#fff;">
+                        <div class="searchable-select-options" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:0.5px solid #D0CCC6;border-top:none;border-radius:0 0 8px 8px;max-height:200px;overflow-y:auto;z-index:10;display:none;">
+                            <div class="searchable-select-option" data-value="0" style="padding:8px 10px;cursor:pointer;border-bottom:0.5px solid #f0f0f0;font-size:12px;">— Sin asignar —</div>
                             <?php foreach ($tecs as $te): ?>
-                                <option value="<?= (int)$te['id_tecnico'] ?>" <?= (int)($edit['id_tecnico'] ?? 0) === (int)$te['id_tecnico'] ? 'selected' : '' ?>><?= h((string)$te['nombre']) ?></option>
+                                <div class="searchable-select-option" data-value="<?= (int)$te['id_tecnico'] ?>" style="padding:8px 10px;cursor:pointer;border-bottom:0.5px solid #f0f0f0;font-size:12px;">
+                                    <?= h((string)$te['nombre']) ?>
+                                </div>
                             <?php endforeach; ?>
-                        </select>
+                        </div>
                     </div>
                 <?php endif; ?>
                 <?php if (isset($orden_cols['id_estado_actual'])): ?>
