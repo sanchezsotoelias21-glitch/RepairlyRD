@@ -44,7 +44,14 @@ function repairly_session_start(): void
     if ($handler === 'mysql') {
         $maybeConn = $GLOBALS['conn'] ?? null;
         if ($maybeConn instanceof mysqli) {
-            repairly_enable_mysql_sessions($maybeConn);
+            $ok = repairly_enable_mysql_sessions($maybeConn);
+            if (!$ok) {
+                http_response_code(500);
+                die('Sesiones en MySQL no disponibles. Crea la tabla `php_sessions` y verifica permisos de lectura/escritura en la base de datos.');
+            }
+        } else {
+            http_response_code(500);
+            die('Sesiones en MySQL habilitadas (SESSION_HANDLER=mysql) pero no hay conexiÃ³n ($conn) disponible.');
         }
     }
 
@@ -104,11 +111,11 @@ function repairly_session_start(): void
     session_start();
 }
 
-function repairly_enable_mysql_sessions(mysqli $conn): void
+function repairly_enable_mysql_sessions(mysqli $conn): bool
 {
     static $enabled = false;
     if ($enabled) {
-        return;
+        return true;
     }
 
     // Best-effort create table; ignore errors if permissions don't allow.
@@ -121,6 +128,16 @@ function repairly_enable_mysql_sessions(mysqli $conn): void
         " INDEX (`timestamp`)" .
         ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
     );
+
+    // Validate table exists and is accessible; otherwise PHP will create new sessions (strict_mode)
+    // and the user gets random logouts + CSRF errors.
+    $probe = $conn->query("SELECT 1 FROM `php_sessions` LIMIT 1");
+    if ($probe === false) {
+        return false;
+    }
+    if ($probe instanceof mysqli_result) {
+        $probe->free();
+    }
 
     $lifetime = (int)ini_get('session.gc_maxlifetime');
 
@@ -205,4 +222,5 @@ function repairly_enable_mysql_sessions(mysqli $conn): void
     session_set_save_handler($handler, true);
     ini_set('session.save_handler', 'user');
     $enabled = true;
+    return true;
 }
