@@ -90,7 +90,9 @@ function repairly_session_start(): void
         ini_set('session.cookie_secure', '1');
     }
 
-    ini_set('session.save_handler', 'files');
+    if ($handler !== 'mysql') {
+        ini_set('session.save_handler', 'files');
+    }
 
 
 
