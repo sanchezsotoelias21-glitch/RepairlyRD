@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "**/*.php", "use": "@vercel/php" }
+  ],
+  "routes": [
+    { "src": "/includes/(.*)", "status": 404 },
+    { "src": "/sql/(.*)", "status": 404 },
+    { "src": "/data/(.*)", "status": 404 },
+    { "src": "/(assets|public|src)/(.*)", "dest": "/$1/$2" },
+    { "src": "/(.*\\.php)$", "dest": "/$1" },
+    { "src": "/(.*)", "dest": "/index.php" }
+  ]
+}
+

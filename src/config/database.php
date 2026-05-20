@@ -2,14 +2,31 @@
 
 mysqli_report(MYSQLI_REPORT_OFF);
 
-$databaseUrl = getenv('MYSQL_URL') ?: getenv('MYSQL_PUBLIC_URL') ?: getenv('DATABASE_URL') ?: '';
+function env_first(array $keys, ?string $default = null): ?string
+{
+    foreach ($keys as $key) {
+        $val = getenv($key);
+        if ($val !== false && $val !== '') {
+            return $val;
+        }
+        if (isset($_ENV[$key]) && is_string($_ENV[$key]) && $_ENV[$key] !== '') {
+            return $_ENV[$key];
+        }
+    }
+    return $default;
+}
 
-$host = getenv('DB_HOST') ?: getenv('MYSQLHOST') ?: getenv('MYSQL_HOST') ?: 'turntable.proxy.rlwy.net';
-$rawPort = getenv('DB_PORT') ?: getenv('MYSQLPORT') ?: getenv('MYSQL_PORT') ?: '';
+$databaseUrl = env_first(['MYSQL_URL', 'MYSQL_PUBLIC_URL', 'DATABASE_URL'], '');
+
+$host = env_first(['DB_HOST', 'MYSQLHOST', 'MYSQL_HOST', 'DATABASE_HOST', 'RAILWAY_TCP_PROXY_DOMAIN'], '127.0.0.1');
+$rawPort = env_first(['DB_PORT', 'MYSQLPORT', 'MYSQL_PORT', 'DATABASE_PORT', 'RAILWAY_TCP_PROXY_PORT'], '3306');
 $port = (int)$rawPort;
-$user = getenv('DB_USER') ?: getenv('MYSQLUSER') ?: getenv('MYSQL_USER') ?: 'root';
-$password = getenv('DB_PASSWORD') ?: getenv('MYSQLPASSWORD') ?: getenv('MYSQL_PASSWORD') ?: 'wUeNcKAWLZqGgJwmXcKJwPgiQdeyTIgA';
-$database = getenv('DB_NAME') ?: getenv('MYSQLDATABASE') ?: getenv('MYSQL_DATABASE') ?: 'taller_reparaciones';
+$user = env_first(['DB_USER', 'MYSQLUSER', 'MYSQL_USER', 'DATABASE_USER', 'RAILWAY_DATABASE_USERNAME'], 'root');
+$password = env_first(
+    ['DB_PASS', 'DB_PASSWORD', 'MYSQLPASSWORD', 'MYSQL_PASSWORD', 'DATABASE_PASSWORD', 'RAILWAY_DATABASE_PASSWORD'],
+    ''
+);
+$database = env_first(['DB_NAME', 'MYSQLDATABASE', 'MYSQL_DATABASE', 'DATABASE_NAME', 'RAILWAY_DATABASE_NAME'], 'repairlyrd');
 
 if ($databaseUrl !== '') {
     $parts = parse_url($databaseUrl);
@@ -22,15 +39,10 @@ if ($databaseUrl !== '') {
     }
 }
 
-if ($port <= 0 && str_contains($host, 'proxy.rlwy.net')) {
-    http_response_code(500);
-    die('Error de conexión a MySQL: falta DB_PORT/MYSQLPORT. El host público de Railway (*.proxy.rlwy.net) necesita el puerto TCP público de MySQL.');
-}
-
 $conn = mysqli_init();
 if ($conn === false) {
     http_response_code(500);
-    die('Error de conexión: no se pudo inicializar mysqli.');
+    die('Error de conexiÃ³n: no se pudo inicializar mysqli.');
 }
 
 $conn->options(MYSQLI_OPT_CONNECT_TIMEOUT, 10);
@@ -39,7 +51,7 @@ $connected = $conn->real_connect($host, $user, $password, $database, $port ?: 33
 if (!$connected) {
     http_response_code(500);
     die(
-        'Error de conexión a MySQL. Revisa las variables DB_HOST, DB_PORT, DB_USER, DB_PASSWORD y DB_NAME en Railway. ' .
+        'Error de conexiÃ³n a MySQL. Revisa las variables DB_HOST, DB_PORT, DB_USER, DB_PASS/DB_PASSWORD y DB_NAME. ' .
         'Intentando conectar a ' . $host . ':' . ($port ?: 3306) . '. ' .
         'Detalle: ' . $conn->connect_error
     );
