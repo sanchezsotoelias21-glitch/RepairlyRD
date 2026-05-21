@@ -1,4 +1,8 @@
 <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+
 // src/pages/reportes.php - Sistema integral de reportes profesionales
 
 
@@ -421,7 +425,7 @@ if ($action === 'generate_pdf' && $current_report) {
         // Enviar datos
         echo $bytes;
         exit;
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         // Log del error
         error_log('Error generando PDF: ' . $e->getMessage());
         
@@ -934,7 +938,11 @@ if ($current_report && ($current_report['has_status_filter'] ?? false)) {
         </div>
         
         <div class="report-selector">
-            <?php foreach ($report_types as $key => $config): ?>
+            <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ foreach ($report_types as $key => $config): ?>
             <a href="?page=reportes&type=<?= h($key) ?>" class="report-item <?= ($report_type === $key ? 'active' : '') ?>">
                 <div class="report-item-icon">
                     <i class="ti <?= $config['icon'] ?>"></i>
@@ -944,11 +952,19 @@ if ($current_report && ($current_report['has_status_filter'] ?? false)) {
                     <div class="report-item-desc"><?= h($config['desc']) ?></div>
                 </div>
             </a>
-            <?php endforeach; ?>
+            <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ endforeach; ?>
         </div>
     </div>
 
-    <?php if ($current_report): ?>
+    <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ if ($current_report): ?>
     
     <!-- PANEL DE FILTROS -->
     <div class="charts-card">
@@ -964,7 +980,11 @@ if ($current_report && ($current_report['has_status_filter'] ?? false)) {
             <input type="hidden" name="page" value="reportes">
             <input type="hidden" name="type" value="<?= h($report_type) ?>">
             
-            <?php if ($current_report['has_date_range'] ?? false): ?>
+            <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ if ($current_report['has_date_range'] ?? false): ?>
             <div class="filter-group">
                 <label class="filter-label">Desde</label>
                 <input type="date" name="date_from" value="<?= h($date_from) ?>" class="filter-input">
@@ -974,29 +994,69 @@ if ($current_report && ($current_report['has_status_filter'] ?? false)) {
                 <label class="filter-label">Hasta</label>
                 <input type="date" name="date_to" value="<?= h($date_to) ?>" class="filter-input">
             </div>
-            <?php endif; ?>
+            <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ endif; ?>
             
-            <?php if ($current_report['has_status_filter'] ?? false): ?>
+            <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ if ($current_report['has_status_filter'] ?? false): ?>
             <div class="filter-group">
                 <label class="filter-label">Estado</label>
                 <select name="status" class="filter-select">
                     <option value="">Todos los estados</option>
-                    <?php if (($current_report['status_mode'] ?? null) === 'id'): ?>
-                        <?php foreach ($status_options_id_to_name as $sid => $sname): ?>
+                    <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ if (($current_report['status_mode'] ?? null) === 'id'): ?>
+                        <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ foreach ($status_options_id_to_name as $sid => $sname): ?>
                         <option value="<?= h((string)$sid) ?>" <?= ((string)$status_filter === (string)$sid ? 'selected' : '') ?>>
                             <?= h((string)$sname) ?>
                         </option>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <?php foreach ($status_options as $status): ?>
+                        <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ endforeach; ?>
+                    <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ else: ?>
+                        <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ foreach ($status_options as $status): ?>
                         <option value="<?= h($status) ?>" <?= ($status_filter === $status ? 'selected' : '') ?>>
                             <?= h($status) ?>
                         </option>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
+                        <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ endforeach; ?>
+                    <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ endif; ?>
                 </select>
             </div>
-            <?php endif; ?>
+            <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ endif; ?>
             
             <div class="filter-buttons">
                 <button type="submit" class="btn-primary">
@@ -1010,27 +1070,55 @@ if ($current_report && ($current_report['has_status_filter'] ?? false)) {
             </div>
 
             <!-- FILTROS ACTIVOS -->
-            <?php 
+            <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ 
             $has_filters = ($date_from || $date_to || $status_filter);
             if ($has_filters): 
             ?>
             <div class="active-filters">
-                <?php if ($date_from): ?>
+                <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ if ($date_from): ?>
                 <div class="filter-badge">
                     <i class="ti ti-calendar"></i>
                     Desde: <?= h($date_from) ?>
                 </div>
-                <?php endif; ?>
-                <?php if ($date_to): ?>
+                <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ endif; ?>
+                <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ if ($date_to): ?>
                 <div class="filter-badge">
                     <i class="ti ti-calendar"></i>
                     Hasta: <?= h($date_to) ?>
                 </div>
-                <?php endif; ?>
-                <?php if ($status_filter): ?>
+                <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ endif; ?>
+                <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ if ($status_filter): ?>
                 <div class="filter-badge">
                     <i class="ti ti-status"></i>
-                    <?php 
+                    <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ 
                     if (($current_report['status_mode'] ?? null) === 'id' && isset($status_options_id_to_name[$status_filter])) {
                         echo h((string)$status_options_id_to_name[$status_filter]);
                     } else {
@@ -1038,9 +1126,17 @@ if ($current_report && ($current_report['has_status_filter'] ?? false)) {
                     }
                     ?>
                 </div>
-                <?php endif; ?>
+                <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ endif; ?>
             </div>
-            <?php endif; ?>
+            <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ endif; ?>
         </form>
     </div>
 
@@ -1073,7 +1169,11 @@ if ($current_report && ($current_report['has_status_filter'] ?? false)) {
                 <div class="data-info">
                     <h3 class="data-count"><?= count($report_data) ?></h3>
                     <p class="data-subtitle">
-                        <?php 
+                        <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ 
                         if ($has_filters) {
                             echo 'Registros encontrados con filtros aplicados';
                         } else {
@@ -1082,20 +1182,36 @@ if ($current_report && ($current_report['has_status_filter'] ?? false)) {
                         ?>
                     </p>
                 </div>
-                <?php if (!empty($report_data)): ?>
+                <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ if (!empty($report_data)): ?>
                 <a href="?page=reportes&type=<?= h($report_type) ?>&action=generate_pdf<?= ($date_from ? '&date_from=' . urlencode($date_from) : '') ?><?= ($date_to ? '&date_to=' . urlencode($date_to) : '') ?><?= ($status_filter ? '&status=' . urlencode($status_filter) : '') ?>" class="btn-download">
                     <i class="ti ti-download"></i>
                     Descargar PDF
                 </a>
-                <?php endif; ?>
+                <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ endif; ?>
             </div>
             
-            <?php if (empty($report_data)): ?>
+            <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ if (empty($report_data)): ?>
             <div class="empty-state">
                 <i class="ti ti-inbox empty-icon"></i>
                 <div class="empty-title">Sin resultados</div>
                 <p class="empty-text">
-                    <?php 
+                    <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ 
                     if ($has_filters) {
                         echo 'No hay datos que coincidan con los filtros aplicados. Intenta modificar tus criterios de búsqueda.';
                     } else {
@@ -1104,39 +1220,91 @@ if ($current_report && ($current_report['has_status_filter'] ?? false)) {
                     ?>
                 </p>
             </div>
-            <?php else: ?>
+            <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ else: ?>
             <div class="table-wrapper">
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <?php foreach ($current_report['display_cols'] as $col): ?>
+                            <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ foreach ($current_report['display_cols'] as $col): ?>
                             <th><?= h($col) ?></th>
-                            <?php endforeach; ?>
+                            <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ endforeach; ?>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php $row_count = 0; ?>
-                        <?php foreach ($report_data as $row): ?>
-                        <?php $row_count++; if ($row_count > 100) break; ?>
+                        <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ $row_count = 0; ?>
+                        <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ foreach ($report_data as $row): ?>
+                        <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ $row_count++; if ($row_count > 100) break; ?>
                         <tr>
-                            <?php foreach ($current_report['columns'] as $col): ?>
+                            <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ foreach ($current_report['columns'] as $col): ?>
                             <td><?= h((string)($row[$col] ?? '—')) ?></td>
-                            <?php endforeach; ?>
+                            <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ endforeach; ?>
                         </tr>
-                        <?php endforeach; ?>
+                        <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ endforeach; ?>
                     </tbody>
                 </table>
             </div>
-            <?php if (count($report_data) > 100): ?>
+            <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ if (count($report_data) > 100): ?>
             <div class="warning-banner">
                 <i class="ti ti-alert-triangle"></i>
                 Se muestran 100 primeros registros. El PDF descargado contiene todos (hasta 1000).
             </div>
-            <?php endif; ?>
-            <?php endif; ?>
+            <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ endif; ?>
+            <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ endif; ?>
         </div>
     </div>
 
-    <?php endif; ?>
+    <?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
+ endif; ?>
 
 </div>
