@@ -291,51 +291,120 @@ if ($action === 'generate_pdf' && $current_report) {
     }
 
     $report_data = get_report_data($conn, $current_report, $date_from, $date_to, $status_filter);
-    
-    // Generar PDF simple
+
+    // ---- Generar PDF profesional con RepairlyPDF (FPDF) ----
     require_once __DIR__ . '/../../includes/pdf_generator.php';
-    
-    $pdf = new SimplePDF();
-    $pdf->addPage();
-    
-    // Encabezado
-    $pdf->setFont('Arial', 'B', 16);
-    $pdf->cell(0, 10, $current_report['label'], 0, 1);
-    
-    $pdf->setFont('Arial', '', 10);
-    $pdf->cell(0, 5, 'Generado: ' . date('d/m/Y H:i:s'), 0, 1);
-    
-    if ($date_from) {
-        $pdf->cell(0, 5, 'Desde: ' . $date_from, 0, 1);
+
+    $pdf = new RepairlyPDF('P', 'mm', 'A4');
+    $pdf->AliasNbPages();
+
+    // Subtítulo dinámico con filtros y cantidad
+    $subtitleParts = [];
+    if ($date_from || $date_to) {
+        $range = trim(($date_from ? 'Desde ' . $date_from : '') . ($date_to ? '  Hasta ' . $date_to : ''));
+        $subtitleParts[] = $range;
     }
-    if ($date_to) {
-        $pdf->cell(0, 5, 'Hasta: ' . $date_to, 0, 1);
-    }
-    $pdf->ln(5);
-    
-    // Tabla
-    $pdf->setFont('Arial', 'B', 9);
-    $col_width = 180 / count($current_report['display_cols']);
-    foreach ($current_report['display_cols'] as $col) {
-        $pdf->cell($col_width, 7, $col, 1);
-    }
-    $pdf->ln();
-    
-    $pdf->setFont('Arial', '', 8);
-    foreach ($report_data as $row) {
-        foreach ($current_report['columns'] as $key) {
-            $val = $row[$key] ?? '';
-            $pdf->cell($col_width, 6, substr((string)$val, 0, 20), 1);
+    $subtitleParts[] = count($report_data) . ' registros encontrados';
+    $subtitle = implode('  ·  ', $subtitleParts);
+
+    $pdf->setReportMeta($current_report['label'], $subtitle);
+    $pdf->AddPage();
+
+    // ---- Bloque de KPIs (solo para órdenes, siempre mostramos resumen básico) ----
+    $kpiStats = [];
+    if ($report_type === 'ordenes') {
+        $total      = count($report_data);
+        $completadas = 0;
+        $pendientes  = 0;
+        $ingresos    = 0.0;
+        foreach ($report_data as $r) {
+            $est = strtolower((string)($r['estado'] ?? $r['id_estado_actual'] ?? ''));
+            if (str_contains($est, 'complet') || str_contains($est, 'entrega') || str_contains($est, 'listo')) {
+                $completadas++;
+            }
+            if (str_contains($est, 'pendient') || str_contains($est, 'espera')) {
+                $pendientes++;
+            }
+            $ingresos += (float)($r['costo_total'] ?? $r['costo'] ?? $r['total'] ?? 0);
         }
-        $pdf->ln();
+        $kpiStats = [
+            ['label' => 'Total órdenes',  'value' => (string)$total,                       'color' => 'primary'],
+            ['label' => 'Completadas',    'value' => (string)$completadas,                  'color' => 'green'],
+            ['label' => 'Pendientes',     'value' => (string)$pendientes,                   'color' => 'orange'],
+            ['label' => 'Ingresos',       'value' => 'RD$ ' . number_format($ingresos, 0, '.', ','), 'color' => 'primary'],
+        ];
+    } elseif ($report_type === 'piezas') {
+        $total     = count($report_data);
+        $stockBajo = 0;
+        $stockOk   = 0;
+        foreach ($report_data as $r) {
+            $stock = (int)($r['stock'] ?? $r['cantidad'] ?? 0);
+            if ($stock <= 5) {
+                $stockBajo++;
+            } else {
+                $stockOk++;
+            }
+        }
+        $kpiStats = [
+            ['label' => 'Total piezas',  'value' => (string)$total,     'color' => 'primary'],
+            ['label' => 'Stock OK',      'value' => (string)$stockOk,   'color' => 'green'],
+            ['label' => 'Stock bajo',    'value' => (string)$stockBajo,  'color' => 'orange'],
+        ];
+    } else {
+        $kpiStats = [
+            ['label' => 'Total registros', 'value' => (string)count($report_data), 'color' => 'primary'],
+        ];
     }
-    
-    $filename = 'Reporte_' . $report_type . '_' . date('Ymd_His') . '.pdf';
-    $bytes = $pdf->output();
+    $pdf->addKpiRow($kpiStats);
+
+    // ---- Filtros activos ----
+    $statusDisplay = $status_filter;
+    if (($current_report['status_mode'] ?? null) === 'id' && isset($status_options_id_to_name[$status_filter])) {
+        $statusDisplay = (string)$status_options_id_to_name[$status_filter];
+    }
+    $pdf->addFilterBadges($date_from, $date_to, $statusDisplay);
+
+    // ---- Preparar filas para la tabla ----
+    $headers   = $current_report['display_cols'];
+    $colKeys   = $current_report['columns'];
+    $tableRows = [];
+    foreach ($report_data as $row) {
+        $tableRow = [];
+        foreach ($colKeys as $key) {
+            $tableRow[] = (string)($row[$key] ?? '—');
+        }
+        $tableRows[] = $tableRow;
+    }
+
+    // Calcular anchos de columna inteligentes (columnas pequeñas: ID, Stock, etc.)
+    $narrowCols = ['id', 'id ', 'stock', 'estado', 'tipo', 'p. compra', 'p. venta'];
+    $usable     = 186;
+    $colWidths  = [];
+    $narrowW    = 22;
+    $narrowCount = 0;
+    foreach ($headers as $h) {
+        if (in_array(strtolower($h), $narrowCols, true)) {
+            $narrowCount++;
+        }
+    }
+    $wideCount = count($headers) - $narrowCount;
+    $wideW     = $wideCount > 0
+        ? (int)round(($usable - $narrowCount * $narrowW) / $wideCount)
+        : (int)round($usable / count($headers));
+    foreach ($headers as $h) {
+        $colWidths[] = in_array(strtolower($h), $narrowCols, true) ? $narrowW : $wideW;
+    }
+
+    $pdf->addDataTable($headers, $tableRows, $colWidths);
+
+    // ---- Entregar PDF al navegador ----
+    $filename = 'Repairly_' . ucfirst($report_type) . '_' . date('Ymd_His') . '.pdf';
+    $bytes    = $pdf->Output('S');
 
     header('Content-Type: application/pdf');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
     header('Content-Length: ' . strlen($bytes));
+    header('Cache-Control: no-cache, no-store');
     header('X-Content-Type-Options: nosniff');
     echo $bytes;
     exit;
