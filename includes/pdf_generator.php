@@ -44,25 +44,25 @@ class RepairlyPDF extends FPDF
         $this->Rect(0, 0, 210, 28, 'F');
 
         // Nombre del sistema
-        $this->SetFont('Helvetica', 'B', 18);
+        $this->SetFont('Arial', '', 18);
         $this->SetTextColor(...self::COLOR_WHITE);
         $this->SetXY(12, 6);
         $this->Cell(80, 8, 'REPAIRLY', 0, 0, 'L');
 
         // Subtítulo del sistema
-        $this->SetFont('Helvetica', '', 8);
+        $this->SetFont('Arial', '', 8);
         $this->SetTextColor(180, 210, 235);
         $this->SetXY(12, 15);
         $this->Cell(80, 5, 'Sistema de Gestión de Reparaciones', 0, 0, 'L');
 
         // Fecha en la derecha
-        $this->SetFont('Helvetica', '', 8);
+        $this->SetFont('Arial', '', 8);
         $this->SetTextColor(...self::COLOR_WHITE);
         $this->SetXY(120, 10);
         $this->Cell(78, 5, 'Generado: ' . $this->generatedAt, 0, 0, 'R');
 
         // Número de página
-        $this->SetFont('Helvetica', '', 7);
+        $this->SetFont('Arial', '', 7);
         $this->SetTextColor(180, 210, 235);
         $this->SetXY(120, 17);
         $this->Cell(78, 4, 'Página ' . $this->PageNo(), 0, 0, 'R');
@@ -78,13 +78,13 @@ class RepairlyPDF extends FPDF
             $this->SetFillColor(...self::COLOR_LIGHT_BG);
             $this->Rect(0, 30, 210, 18, 'F');
 
-            $this->SetFont('Helvetica', 'B', 13);
+            $this->SetFont('Arial', '', 13);
             $this->SetTextColor(...self::COLOR_PRIMARY);
             $this->SetXY(12, 32);
             $this->Cell(140, 8, $this->toWin($this->reportTitle), 0, 0, 'L');
 
             if ($this->reportSubtitle !== '') {
-                $this->SetFont('Helvetica', '', 8);
+                $this->SetFont('Arial', '', 8);
                 $this->SetTextColor(...self::COLOR_MUTED);
                 $this->SetXY(12, 40);
                 $this->Cell(140, 5, $this->toWin($this->reportSubtitle), 0, 0, 'L');
@@ -112,7 +112,7 @@ class RepairlyPDF extends FPDF
         $this->SetLineWidth(0.3);
         $this->Line(0, $this->GetY(), 210, $this->GetY());
 
-        $this->SetFont('Helvetica', '', 7);
+        $this->SetFont('Arial', '', 7);
         $this->SetTextColor(...self::COLOR_MUTED);
         $this->SetX(12);
         $this->Cell(90, 10, $this->toWin('Repairly RD · Reporte confidencial'), 0, 0, 'L');
@@ -151,7 +151,7 @@ class RepairlyPDF extends FPDF
             $this->Rect($x, $startY, 2, $boxH, 'F');
 
             // Label
-            $this->SetFont('Helvetica', '', 6.5);
+            $this->SetFont('Arial', '', 6.5);
             $this->SetTextColor(...self::COLOR_MUTED);
             $this->SetXY($x + 5, $startY + 3);
             $this->Cell($boxW - 7, 5, $this->toWin(strtoupper($s['label'])), 0, 0, 'L');
@@ -163,7 +163,7 @@ class RepairlyPDF extends FPDF
                 'orange' => self::COLOR_WARNING,
                 default  => self::COLOR_PRIMARY,
             };
-            $this->SetFont('Helvetica', 'B', 13);
+            $this->SetFont('Arial', '', 13);
             $this->SetTextColor(...$rgb);
             $this->SetXY($x + 5, $startY + 9);
             $this->Cell($boxW - 7, 9, $this->toWin($s['value']), 0, 0, 'L');
@@ -195,7 +195,7 @@ class RepairlyPDF extends FPDF
         // Cabecera de la tabla
         $this->SetFillColor(...self::COLOR_HEADER_BG);
         $this->SetTextColor(...self::COLOR_WHITE);
-        $this->SetFont('Helvetica', 'B', 7.5);
+        $this->SetFont('Arial', '', 7.5);
         $this->SetDrawColor(...self::COLOR_BORDER);
         $this->SetLineWidth(0.2);
 
@@ -206,7 +206,7 @@ class RepairlyPDF extends FPDF
         $this->Ln();
 
         // Filas
-        $this->SetFont('Helvetica', '', 7.5);
+        $this->SetFont('Arial', '', 7.5);
         $alt = false;
         foreach ($rows as $row) {
             // Salto de página automático con re-cabecera
@@ -215,13 +215,13 @@ class RepairlyPDF extends FPDF
                 // Re-dibujar cabecera de tabla
                 $this->SetFillColor(...self::COLOR_HEADER_BG);
                 $this->SetTextColor(...self::COLOR_WHITE);
-                $this->SetFont('Helvetica', 'B', 7.5);
+                $this->SetFont('Arial', '', 7.5);
                 $this->SetX(12);
                 foreach ($headers as $k => $h) {
                     $this->Cell($colWidths[$k], 9, $this->toWin(strtoupper($h)), 0, 0, 'L', true);
                 }
                 $this->Ln();
-                $this->SetFont('Helvetica', '', 7.5);
+                $this->SetFont('Arial', '', 7.5);
                 $alt = false;
             }
 
@@ -258,12 +258,12 @@ class RepairlyPDF extends FPDF
 
         $this->SetFillColor(227, 242, 253); // azul muy claro
         $this->SetTextColor(...self::COLOR_PRIMARY);
-        $this->SetFont('Helvetica', 'B', 7);
+        $this->SetFont('Arial', '', 7);
         $this->SetX(12);
         $this->Cell(186, 7, $this->toWin('  Filtros aplicados:'), 0, 1, 'L', true);
 
         $this->SetFillColor(240, 247, 253);
-        $this->SetFont('Helvetica', '', 7);
+        $this->SetFont('Arial', '', 7);
         $parts = [];
         if ($dateFrom !== '') {
             $parts[] = 'Desde: ' . $dateFrom;
@@ -339,11 +339,47 @@ class RepairlyPDF extends FPDF
     }
 }
 
-
-
 /**
- * Alias limpio compatible con FPDF
+ * Alias de compatibilidad – el código antiguo instanciaba SimplePDF.
+ * Ya no se usa, pero lo dejamos por si algo lo referencia.
  */
 class SimplePDF extends RepairlyPDF
 {
+    /** @var list<string> */
+    private array $lines = [];
+    /** @var list<string> */
+    private array $currentRow = [];
+
+    public function addPage(string $orientation = '', string $size = '', int $rotation = 0): void
+    {
+        parent::AddPage($orientation, $size, $rotation);
+    }
+
+    public function setFont(string $family, string $style = '', int $size = 10): void
+    {
+        parent::SetFont($family ?: 'Arial', $style, $size);
+    }
+
+    public function cell(int|float $w, int|float $h, string $txt = '', int $border = 0, int $ln = 0): void
+    {
+        $this->currentRow[] = trim($txt);
+        if ($ln > 0) {
+            $this->ln();
+        }
+    }
+
+    public function ln(int|float $h = 0): void
+    {
+        if (!empty($this->currentRow)) {
+            $this->lines[] = implode(' | ', $this->currentRow);
+            $this->currentRow = [];
+        } else {
+            $this->lines[] = '';
+        }
+    }
+
+    public function output(): string
+    {
+        return parent::Output('S');
+    }
 }
