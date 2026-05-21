@@ -339,21 +339,11 @@ class RepairlyPDF extends FPDF
     }
 }
 
+
+
 /**
- * Alias de compatibilidad – el código antiguo instanciaba SimplePDF.
- * Ya no se usa, pero lo dejamos por si algo lo referencia.
+ * Alias limpio compatible con FPDF
  */
 class SimplePDF extends RepairlyPDF
 {
-    /** @var list<string> */
-    private array $lines = [];
-    /** @var list<string> */
-    private array $currentRow = [];
-
-    }
- else {
-            $this->lines[] = '';
-        }
-    }
-
 }
