@@ -195,7 +195,7 @@ class RepairlyPDF extends FPDF
         // Cabecera de la tabla
         $this->SetFillColor(...self::COLOR_HEADER_BG);
         $this->SetTextColor(...self::COLOR_WHITE);
-        $this->SetFont('Arial', '', 7.5);
+        $this->SetFont('Arial', 'B', 7.5);
         $this->SetDrawColor(...self::COLOR_BORDER);
         $this->SetLineWidth(0.2);
 
@@ -215,7 +215,7 @@ class RepairlyPDF extends FPDF
                 // Re-dibujar cabecera de tabla
                 $this->SetFillColor(...self::COLOR_HEADER_BG);
                 $this->SetTextColor(...self::COLOR_WHITE);
-                $this->SetFont('Arial', '', 7.5);
+                $this->SetFont('Arial', 'B', 7.5);
                 $this->SetX(12);
                 foreach ($headers as $k => $h) {
                     $this->Cell($colWidths[$k], 9, $this->toWin(strtoupper($h)), 0, 0, 'L', true);
@@ -339,47 +339,11 @@ class RepairlyPDF extends FPDF
     }
 }
 
+
+
 /**
- * Alias de compatibilidad – el código antiguo instanciaba SimplePDF.
- * Ya no se usa, pero lo dejamos por si algo lo referencia.
+ * Clase compatible con Railway + FPDF
  */
 class SimplePDF extends RepairlyPDF
 {
-    /** @var list<string> */
-    private array $lines = [];
-    /** @var list<string> */
-    private array $currentRow = [];
-
-    public function addPage(string $orientation = '', string $size = '', int $rotation = 0): void
-    {
-        parent::AddPage($orientation, $size, $rotation);
-    }
-
-    public function setFont(string $family, string $style = '', int $size = 10): void
-    {
-        parent::SetFont($family ?: 'Arial', $style, $size);
-    }
-
-    public function cell(int|float $w, int|float $h, string $txt = '', int $border = 0, int $ln = 0): void
-    {
-        $this->currentRow[] = trim($txt);
-        if ($ln > 0) {
-            $this->ln();
-        }
-    }
-
-    public function ln(int|float $h = 0): void
-    {
-        if (!empty($this->currentRow)) {
-            $this->lines[] = implode(' | ', $this->currentRow);
-            $this->currentRow = [];
-        } else {
-            $this->lines[] = '';
-        }
-    }
-
-    public function output(): string
-    {
-        return parent::Output('S');
-    }
 }
