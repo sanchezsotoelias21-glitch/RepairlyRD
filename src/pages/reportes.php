@@ -284,10 +284,6 @@ function get_report_data(mysqli $conn, array $report_config, string $date_from, 
 }
 
 // Procesar descarga de PDF
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 if ($action === 'generate_pdf' && $current_report) {
     // Evita que se mezclen HTML+PDF (index.php puede haber escrito markup al buffer).
     while (ob_get_level() > 0) {
@@ -407,9 +403,6 @@ if ($action === 'generate_pdf' && $current_report) {
         
         // Generar PDF en memoria
         $bytes = $pdf->Output('S');
-        if (!$bytes) {
-            throw new Exception('FPDF no devolvió contenido');
-        }
         
         // Validar que Output() retornó datos válidos
         if (!is_string($bytes) || strlen($bytes) === 0) {
@@ -428,7 +421,7 @@ if ($action === 'generate_pdf' && $current_report) {
         // Enviar datos
         echo $bytes;
         exit;
-    } catch (Throwable $e) {
+    } catch (Exception $e) {
         // Log del error
         error_log('Error generando PDF: ' . $e->getMessage());
         

@@ -350,7 +350,7 @@ class SimplePDF extends RepairlyPDF
     /** @var list<string> */
     private array $currentRow = [];
 
-    public function addPage(string $orientation = '', string $size = '', int $rotation = 0): void
+    public function AddPage($orientation = '', $size = '', $rotation = 0)
     {
         parent::AddPage($orientation, $size, $rotation);
     }
