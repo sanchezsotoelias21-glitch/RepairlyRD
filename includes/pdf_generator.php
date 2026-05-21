@@ -350,32 +350,10 @@ class SimplePDF extends RepairlyPDF
     /** @var list<string> */
     private array $currentRow = [];
 
-
-    public function setFont(string $family, string $style = '', int $size = 10): void
-    {
-        parent::SetFont($family ?: 'Helvetica', $style, $size);
     }
-
-    public function cell(int|float $w, int|float $h, string $txt = '', int $border = 0, int $ln = 0): void
-    {
-        $this->currentRow[] = trim($txt);
-        if ($ln > 0) {
-            $this->ln();
-        }
-    }
-
-    public function ln(int|float $h = 0): void
-    {
-        if (!empty($this->currentRow)) {
-            $this->lines[] = implode(' | ', $this->currentRow);
-            $this->currentRow = [];
-        } else {
+ else {
             $this->lines[] = '';
         }
     }
 
-    public function output(): string
-    {
-        return parent::Output('S');
-    }
 }
