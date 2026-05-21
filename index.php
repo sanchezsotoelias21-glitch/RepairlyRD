@@ -305,6 +305,47 @@ if ($current_page === 'clientes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: ?page=clientes&t=' . ($ok ? 'ok' : 'err') . '&m=' . ($ok ? 'Cliente+eliminado' : 'Error+al+eliminar'));
         exit;
     }
+
+    if ($post_action === 'merge') {
+        $id_principal = isset($_POST['id_principal']) ? (int)$_POST['id_principal'] : 0;
+        $id_secundario = isset($_POST['id_secundario']) ? (int)$_POST['id_secundario'] : 0;
+        
+        if ($id_principal <= 0 || $id_secundario <= 0 || $id_principal === $id_secundario) {
+            header('Location: ?page=clientes&t=err&m=IDs+inv%C3%A1lidos');
+            exit;
+        }
+
+        // Iniciar transacción
+        $conn->begin_transaction();
+
+        try {
+            // 1. Reasignar todos los equipos del cliente secundario al principal
+            $sql_equipos = "UPDATE Equipo SET id_cliente = ? WHERE id_cliente = ?";
+            $stmt_eq = $conn->prepare($sql_equipos);
+            if (!$stmt_eq) throw new Exception('Error al preparar SQL de equipos');
+            $stmt_eq->bind_param('ii', $id_principal, $id_secundario);
+            $stmt_eq->execute();
+            $stmt_eq->close();
+
+            // 2. Eliminar el cliente secundario
+            $sql_del = "DELETE FROM `{$cliente_table}` WHERE `{$id_field}` = ?";
+            $stmt_del = $conn->prepare($sql_del);
+            if (!$stmt_del) throw new Exception('Error al preparar SQL de eliminación');
+            $stmt_del->bind_param('i', $id_secundario);
+            $stmt_del->execute();
+            $stmt_del->close();
+
+            // Confirmar transacción
+            $conn->commit();
+            header('Location: ?page=clientes&t=ok&m=Clientes+fusionados+correctamente');
+            exit;
+        } catch (Exception $e) {
+            // Revertir en caso de error
+            $conn->rollback();
+            header('Location: ?page=clientes&t=err&m=Error+al+fusionar:+' . urlencode($e->getMessage()));
+            exit;
+        }
+    }
 }
 
 $nav_items = [
@@ -1435,70 +1476,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 })();
 </script>
 
-<!-- Combobox autocompletables -->
-<script>
-(function(){
-    document.addEventListener('DOMContentLoaded', function(){
-        // Inicializar todos los combobox autocompletables
-        document.querySelectorAll('.searchable-select-input').forEach(function(input){
-            const container = input.closest('div');
-            const hiddenInput = container.querySelector('.searchable-select-hidden');
-            const optionsDiv = container.querySelector('.searchable-select-options');
-            const options = optionsDiv ? Array.from(optionsDiv.querySelectorAll('.searchable-select-option')) : [];
-            
-            // Mostrar opciones al hacer click
-            input.addEventListener('focus', function(){
-                optionsDiv.style.display = 'block';
-            });
-            
-            // Filtrar opciones mientras se escribe
-            input.addEventListener('input', function(e){
-                const query = e.target.value.toLowerCase();
-                optionsDiv.style.display = 'block';
-                let visibleCount = 0;
-                
-                options.forEach(function(opt){
-                    const text = opt.textContent.toLowerCase();
-                    if(text.includes(query)){
-                        opt.style.display = 'block';
-                        visibleCount++;
-                    } else {
-                        opt.style.display = 'none';
-                    }
-                });
-            });
-            
-            // Seleccionar opción
-            options.forEach(function(opt){
-                opt.addEventListener('click', function(){
-                    const value = opt.getAttribute('data-value');
-                    const text = opt.textContent;
-                    
-                    input.value = text;
-                    hiddenInput.value = value;
-                    optionsDiv.style.display = 'none';
-                });
-            });
-            
-            // Cerrar opciones al hacer click fuera
-            document.addEventListener('click', function(e){
-                if(!container.contains(e.target)){
-                    optionsDiv.style.display = 'none';
-                }
-            });
-            
-            // Permitir navegación con teclado
-            input.addEventListener('keydown', function(e){
-                const visibleOpts = options.filter(o => o.style.display !== 'none');
-                if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
-                    e.preventDefault();
-                    optionsDiv.style.display = 'block';
-                }
-            });
-        });
-    });
-})();
-</script>
+<!-- Script de Select Searchable -->
+<script src="public/searchable-select.js"></script>
 
 <!-- Filtrado en vivo de búsqueda -->
 <script>
@@ -1506,8 +1485,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
     // Esperar a que el DOM esté listo
     document.addEventListener('DOMContentLoaded', function(){
         // Encontrar todos los inputs de búsqueda que contengan "search" o "filtro" en su name
-        // EXCLUYENDO los inputs autocompletables
-        var searchInputs = document.querySelectorAll('input[name*="q"]:not(.searchable-select-input), input[name*="search"]:not(.searchable-select-input), input[name*="filtro"]:not(.searchable-select-input), .topbar-search input:not(.searchable-select-input)');
+        var searchInputs = document.querySelectorAll('input[name*="q"], input[name*="search"], input[name*="filtro"], .topbar-search input');
         
         searchInputs.forEach(function(input){
             // Agregar evento de entrada para filtrar en tiempo real

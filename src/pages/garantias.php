@@ -177,7 +177,7 @@ $eest = $gar_col_est !== null && $edit ? (string)($edit[$gar_col_est] ?? 'activa
                 <?php endif; ?>
                 <div style="grid-column:1/-1;">
                     <label style="font-size:10px;color:#6B6560;">Orden *</label>
-                    <select name="id_orden" required style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;">
+                    <select name="id_orden" required class="searchable-select" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;">
                         <?php foreach ($ordenes_opts as $o): ?>
                             <option value="<?= (int)$o['id_orden'] ?>" <?= $eid_ord === (int)$o['id_orden'] ? 'selected' : '' ?>><?= h((string)($o['lbl'] ?? $o['id_orden'])) ?></option>
                         <?php endforeach; ?>

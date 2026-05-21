@@ -277,25 +277,14 @@ function copiarResultadoIA(){
                     <div style="grid-column:1/-1;"><label style="font-size:10px;color:#6B6560;">Observaciones ingreso</label><textarea name="observaciones_ingreso" rows="3" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;"><?= h((string)($edit['observaciones_ingreso'] ?? '')) ?></textarea></div>
                 <?php endif; ?>
                 <?php if (isset($equipo_cols['id_cliente']) && $cliente_pick !== ''): ?>
-                    <div style="grid-column:1/-1;position:relative;">
+                    <div style="grid-column:1/-1;">
                         <label style="font-size:10px;color:#6B6560;">Cliente</label>
-                        <input type="hidden" name="id_cliente" class="searchable-select-hidden" value="<?= (int)($edit['id_cliente'] ?? 0) ?>" required>
-                        <input type="text" class="searchable-select-input" placeholder="Buscar cliente..." value="<?php 
-                            $val = (int)($edit['id_cliente'] ?? 0);
-                            foreach ($clientes_opts as $c) {
-                                if ((int)$c['id'] === $val) {
-                                    echo h((string)$c['nombre']);
-                                    break;
-                                }
-                            }
-                        ?>" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;background:#fff;">
-                        <div class="searchable-select-options" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:0.5px solid #D0CCC6;border-top:none;border-radius:0 0 8px 8px;max-height:200px;overflow-y:auto;z-index:10;display:none;">
+                        <select name="id_cliente" required class="searchable-select" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;">
+                            <option value="0">— Seleccionar —</option>
                             <?php foreach ($clientes_opts as $c): ?>
-                                <div class="searchable-select-option" data-value="<?= (int)$c['id'] ?>" style="padding:8px 10px;cursor:pointer;border-bottom:0.5px solid #f0f0f0;font-size:12px;">
-                                    <?= h((string)$c['nombre']) ?>
-                                </div>
+                                <option value="<?= (int)$c['id'] ?>" <?= (int)($edit['id_cliente'] ?? 0) === (int)$c['id'] ? 'selected' : '' ?>><?= h((string)$c['nombre']) ?></option>
                             <?php endforeach; ?>
-                        </div>
+                        </select>
                     </div>
                 <?php endif; ?>
                 <div style="grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end;">
