@@ -350,10 +350,6 @@ class SimplePDF extends RepairlyPDF
     /** @var list<string> */
     private array $currentRow = [];
 
-    public function AddPage($orientation = '', $size = '', $rotation = 0)
-    {
-        parent::AddPage($orientation, $size, $rotation);
-    }
 
     public function setFont(string $family, string $style = '', int $size = 10): void
     {
