@@ -290,124 +290,152 @@ if ($action === 'generate_pdf' && $current_report) {
         ob_end_clean();
     }
 
-    $report_data = get_report_data($conn, $current_report, $date_from, $date_to, $status_filter);
+    try {
+        $report_data = get_report_data($conn, $current_report, $date_from, $date_to, $status_filter);
 
-    // ---- Generar PDF profesional con RepairlyPDF (FPDF) ----
-    require_once __DIR__ . '/../../includes/pdf_generator.php';
+        // ---- Generar PDF profesional con RepairlyPDF (FPDF) ----
+        require_once __DIR__ . '/../../includes/pdf_generator.php';
 
-    $pdf = new RepairlyPDF('P', 'mm', 'A4');
-    $pdf->AliasNbPages();
+        $pdf = new RepairlyPDF('P', 'mm', 'A4');
+        $pdf->AliasNbPages();
 
-    // Subtítulo dinámico con filtros y cantidad
-    $subtitleParts = [];
-    if ($date_from || $date_to) {
-        $range = trim(($date_from ? 'Desde ' . $date_from : '') . ($date_to ? '  Hasta ' . $date_to : ''));
-        $subtitleParts[] = $range;
-    }
-    $subtitleParts[] = count($report_data) . ' registros encontrados';
-    $subtitle = implode('  ·  ', $subtitleParts);
+        // Subtítulo dinámico con filtros y cantidad
+        $subtitleParts = [];
+        if ($date_from || $date_to) {
+            $range = trim(($date_from ? 'Desde ' . $date_from : '') . ($date_to ? '  Hasta ' . $date_to : ''));
+            $subtitleParts[] = $range;
+        }
+        $subtitleParts[] = count($report_data) . ' registros encontrados';
+        $subtitle = implode('  ·  ', $subtitleParts);
 
-    $pdf->setReportMeta($current_report['label'], $subtitle);
-    $pdf->AddPage();
+        $pdf->setReportMeta($current_report['label'], $subtitle);
+        $pdf->AddPage();
 
-    // ---- Bloque de KPIs (solo para órdenes, siempre mostramos resumen básico) ----
-    $kpiStats = [];
-    if ($report_type === 'ordenes') {
-        $total      = count($report_data);
-        $completadas = 0;
-        $pendientes  = 0;
-        $ingresos    = 0.0;
-        foreach ($report_data as $r) {
-            $est = strtolower((string)($r['estado'] ?? $r['id_estado_actual'] ?? ''));
-            if (strpos($est, 'complet') || strpos($est, 'entrega') || strpos($est, 'listo')) {
-                $completadas++;
+        // ---- Bloque de KPIs (solo para órdenes, siempre mostramos resumen básico) ----
+        $kpiStats = [];
+        if ($report_type === 'ordenes') {
+            $total      = count($report_data);
+            $completadas = 0;
+            $pendientes  = 0;
+            $ingresos    = 0.0;
+            foreach ($report_data as $r) {
+                $est = strtolower((string)($r['estado'] ?? $r['id_estado_actual'] ?? ''));
+                if (strpos($est, 'complet') !== false || strpos($est, 'entrega') !== false || strpos($est, 'listo') !== false) {
+                    $completadas++;
+                }
+                if (strpos($est, 'pendient') !== false || strpos($est, 'espera') !== false) {
+                    $pendientes++;
+                }
+                $ingresos += (float)($r['costo_total'] ?? $r['costo'] ?? $r['total'] ?? 0);
             }
-            if (strpos($est, 'pendient') || strpos($est, 'espera')) {
-                $pendientes++;
+            $kpiStats = [
+                ['label' => 'Total órdenes',  'value' => (string)$total,                       'color' => 'primary'],
+                ['label' => 'Completadas',    'value' => (string)$completadas,                  'color' => 'green'],
+                ['label' => 'Pendientes',     'value' => (string)$pendientes,                   'color' => 'orange'],
+                ['label' => 'Ingresos',       'value' => 'RD$ ' . number_format($ingresos, 0, '.', ','), 'color' => 'primary'],
+            ];
+        } elseif ($report_type === 'piezas') {
+            $total     = count($report_data);
+            $stockBajo = 0;
+            $stockOk   = 0;
+            foreach ($report_data as $r) {
+                $stock = (int)($r['stock'] ?? $r['cantidad'] ?? 0);
+                if ($stock <= 5) {
+                    $stockBajo++;
+                } else {
+                    $stockOk++;
+                }
             }
-            $ingresos += (float)($r['costo_total'] ?? $r['costo'] ?? $r['total'] ?? 0);
+            $kpiStats = [
+                ['label' => 'Total piezas',  'value' => (string)$total,     'color' => 'primary'],
+                ['label' => 'Stock OK',      'value' => (string)$stockOk,   'color' => 'green'],
+                ['label' => 'Stock bajo',    'value' => (string)$stockBajo,  'color' => 'orange'],
+            ];
+        } else {
+            $kpiStats = [
+                ['label' => 'Total registros', 'value' => (string)count($report_data), 'color' => 'primary'],
+            ];
         }
-        $kpiStats = [
-            ['label' => 'Total órdenes',  'value' => (string)$total,                       'color' => 'primary'],
-            ['label' => 'Completadas',    'value' => (string)$completadas,                  'color' => 'green'],
-            ['label' => 'Pendientes',     'value' => (string)$pendientes,                   'color' => 'orange'],
-            ['label' => 'Ingresos',       'value' => 'RD$ ' . number_format($ingresos, 0, '.', ','), 'color' => 'primary'],
-        ];
-    } elseif ($report_type === 'piezas') {
-        $total     = count($report_data);
-        $stockBajo = 0;
-        $stockOk   = 0;
-        foreach ($report_data as $r) {
-            $stock = (int)($r['stock'] ?? $r['cantidad'] ?? 0);
-            if ($stock <= 5) {
-                $stockBajo++;
-            } else {
-                $stockOk++;
+        $pdf->addKpiRow($kpiStats);
+
+        // ---- Filtros activos ----
+        $statusDisplay = $status_filter;
+        if (($current_report['status_mode'] ?? null) === 'id' && isset($status_options_id_to_name[$status_filter])) {
+            $statusDisplay = (string)$status_options_id_to_name[$status_filter];
+        }
+        $pdf->addFilterBadges($date_from, $date_to, $statusDisplay);
+
+        // ---- Preparar filas para la tabla ----
+        $headers   = $current_report['display_cols'];
+        $colKeys   = $current_report['columns'];
+        $tableRows = [];
+        foreach ($report_data as $row) {
+            $tableRow = [];
+            foreach ($colKeys as $key) {
+                $tableRow[] = (string)($row[$key] ?? '—');
+            }
+            $tableRows[] = $tableRow;
+        }
+
+        // Calcular anchos de columna inteligentes (columnas pequeñas: ID, Stock, etc.)
+        $narrowCols = ['id', 'id ', 'stock', 'estado', 'tipo', 'p. compra', 'p. venta'];
+        $usable     = 186;
+        $colWidths  = [];
+        $narrowW    = 22;
+        $narrowCount = 0;
+        foreach ($headers as $h) {
+            if (in_array(strtolower($h), $narrowCols, true)) {
+                $narrowCount++;
             }
         }
-        $kpiStats = [
-            ['label' => 'Total piezas',  'value' => (string)$total,     'color' => 'primary'],
-            ['label' => 'Stock OK',      'value' => (string)$stockOk,   'color' => 'green'],
-            ['label' => 'Stock bajo',    'value' => (string)$stockBajo,  'color' => 'orange'],
-        ];
-    } else {
-        $kpiStats = [
-            ['label' => 'Total registros', 'value' => (string)count($report_data), 'color' => 'primary'],
-        ];
-    }
-    $pdf->addKpiRow($kpiStats);
-
-    // ---- Filtros activos ----
-    $statusDisplay = $status_filter;
-    if (($current_report['status_mode'] ?? null) === 'id' && isset($status_options_id_to_name[$status_filter])) {
-        $statusDisplay = (string)$status_options_id_to_name[$status_filter];
-    }
-    $pdf->addFilterBadges($date_from, $date_to, $statusDisplay);
-
-    // ---- Preparar filas para la tabla ----
-    $headers   = $current_report['display_cols'];
-    $colKeys   = $current_report['columns'];
-    $tableRows = [];
-    foreach ($report_data as $row) {
-        $tableRow = [];
-        foreach ($colKeys as $key) {
-            $tableRow[] = (string)($row[$key] ?? '—');
+        $wideCount = count($headers) - $narrowCount;
+        $wideW     = $wideCount > 0
+            ? (int)round(($usable - $narrowCount * $narrowW) / $wideCount)
+            : (int)round($usable / count($headers));
+        foreach ($headers as $h) {
+            $colWidths[] = in_array(strtolower($h), $narrowCols, true) ? $narrowW : $wideW;
         }
-        $tableRows[] = $tableRow;
-    }
 
-    // Calcular anchos de columna inteligentes (columnas pequeñas: ID, Stock, etc.)
-    $narrowCols = ['id', 'id ', 'stock', 'estado', 'tipo', 'p. compra', 'p. venta'];
-    $usable     = 186;
-    $colWidths  = [];
-    $narrowW    = 22;
-    $narrowCount = 0;
-    foreach ($headers as $h) {
-        if (in_array(strtolower($h), $narrowCols, true)) {
-            $narrowCount++;
+        $pdf->addDataTable($headers, $tableRows, $colWidths);
+
+        // ---- Entregar PDF al navegador ----
+        $filename = 'Repairly_' . ucfirst($report_type) . '_' . date('Ymd_His') . '.pdf';
+        
+        // Generar PDF en memoria
+        $bytes = $pdf->Output('S');
+        
+        // Validar que Output() retornó datos válidos
+        if (!is_string($bytes) || strlen($bytes) === 0) {
+            throw new Exception('La generación del PDF no produjo datos válidos');
         }
+
+        // Enviar headers de descarga
+        header('Content-Type: application/pdf; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . basename($filename) . '"');
+        header('Content-Length: ' . strlen($bytes));
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        header('X-Content-Type-Options: nosniff');
+        
+        // Enviar datos
+        echo $bytes;
+        exit;
+    } catch (Exception $e) {
+        // Log del error
+        error_log('Error generando PDF: ' . $e->getMessage());
+        
+        // Mostrar error amigable
+        header('Content-Type: text/html; charset=utf-8');
+        http_response_code(500);
+        echo '<div style="padding:20px;font-family:Arial;color:#B83232;">';
+        echo '<h2>Error al generar PDF</h2>';
+        echo '<p>Hubo un problema al procesar tu solicitud.</p>';
+        echo '<p style="font-size:12px;color:#666;">Detalles: ' . htmlspecialchars($e->getMessage()) . '</p>';
+        echo '<a href="?page=reportes" style="color:#1F5C8B;">Volver a reportes</a>';
+        echo '</div>';
+        exit;
     }
-    $wideCount = count($headers) - $narrowCount;
-    $wideW     = $wideCount > 0
-        ? (int)round(($usable - $narrowCount * $narrowW) / $wideCount)
-        : (int)round($usable / count($headers));
-    foreach ($headers as $h) {
-        $colWidths[] = in_array(strtolower($h), $narrowCols, true) ? $narrowW : $wideW;
-    }
-
-    $pdf->addDataTable($headers, $tableRows, $colWidths);
-
-    // ---- Entregar PDF al navegador ----
-    $filename = 'Repairly_' . ucfirst($report_type) . '_' . date('Ymd_His') . '.pdf';
-    $bytes    = $pdf->Output('S');
-
-    header('Content-Type: application/pdf');
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
-    header('Content-Length: ' . strlen($bytes));
-    header('Cache-Control: no-cache, no-store');
-    header('X-Content-Type-Options: nosniff');
-    echo $bytes;
-    exit;
 }
 
 // Obtener datos del reporte si está seleccionado
