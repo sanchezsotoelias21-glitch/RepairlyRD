@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+
 
 $garantia_table_name = pick_table($conn, ['garantia', 'Garantia', 'GARANTIA']);
 $garantia_cols = $garantia_table_name ? table_columns($conn, $garantia_table_name) : [];

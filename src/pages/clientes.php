@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+
 
 /** @var mysqli $conn */
 require_once __DIR__ . '/../../includes/ui_helper.php';

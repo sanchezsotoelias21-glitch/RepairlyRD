@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+
 
 $diag_table = pick_table($conn, ['diagnostico', 'Diagnostico', 'DIAGNOSTICO']);
 $diag_cols = $diag_table ? table_columns($conn, $diag_table) : [];

@@ -4,7 +4,7 @@
  * Ejecutar manualmente desde terminal o panel de administración
  */
 
-declare(strict_types=1);
+
 
 // Cargar conexión a BD
 require_once __DIR__ . '/src/config/database.php';

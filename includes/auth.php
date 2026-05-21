@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+
 
 function repairly_panel_roles(): array
 {
@@ -65,7 +65,7 @@ function repairly_resolve_rol_for_insert(mysqli $conn, string $table, string $ro
     }
     foreach ($allowed as $a) {
         $n = repairly_normalize_role($a);
-        if ($want === 'administrador' && str_contains($n, 'admin')) {
+        if ($want === 'administrador' && strpos($n, 'admin')) {
             return $a;
         }
     }
@@ -73,8 +73,8 @@ function repairly_resolve_rol_for_insert(mysqli $conn, string $table, string $ro
         $n = repairly_normalize_role($a);
         if (
             $want === 'tecnico'
-            && (str_contains($n, 'tecnic') || str_contains($n, 'emplead')
-                || $n === 'operador' || str_contains($n, 'operad'))
+            && (strpos($n, 'tecnic') || strpos($n, 'emplead')
+                || $n === 'operador' || strpos($n, 'operad'))
         ) {
             return $a;
         }
@@ -117,7 +117,7 @@ function repairly_resolve_estado_for_insert(mysqli $conn, string $table, string 
         }
         foreach ($allowed as $a) {
             $n = repairly_normalize_role($a);
-            if (str_contains($n, 'activ') || $n === '1' || str_contains($n, 'habil')) {
+            if (strpos($n, 'activ') || $n === '1' || strpos($n, 'habil')) {
                 return [$a, 's'];
             }
         }

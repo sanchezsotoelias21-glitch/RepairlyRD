@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+
 
 function table_exists(mysqli $conn, string $name): bool
 {
@@ -68,7 +68,7 @@ function pick_table(mysqli $conn, array $candidates): string
 
         // 2) Luego permite coincidencia parcial como fallback.
         foreach ($tables as $table) {
-            if (str_contains($table, $candidate)) {
+            if (strpos($table, $candidate)) {
                 return $originalByLower[$table] ?? $candidate;
             }
         }
@@ -194,10 +194,10 @@ function repairly_guess_pieza_nombre_column(array $cols): ?string
         if (str_starts_with($norm, 'id')) {
             continue;
         }
-        if (str_contains($norm, 'precio') || str_contains($norm, 'costo')) {
+        if (strpos($norm, 'precio') || strpos($norm, 'costo')) {
             continue;
         }
-        if (str_contains($norm, 'stock') || str_contains($norm, 'cantidad') || str_contains($norm, 'existencia')) {
+        if (strpos($norm, 'stock') || strpos($norm, 'cantidad') || strpos($norm, 'existencia')) {
             continue;
         }
         return (string)$k;
@@ -237,14 +237,14 @@ function repairly_coerce_value_for_enum_column(mysqli $conn, string $table, stri
     }
     foreach ($allowed as $a) {
         $an = $norm((string)$a);
-        if ($an !== '' && str_contains($vn, $an)) {
+        if ($an !== '' && strpos($vn, $an)) {
             return (string)$a;
         }
     }
     foreach (['otro', 'otros', 'general', 'varios', 'mixto', 'n/a', 'sin_clasificar'] as $hint) {
         foreach ($allowed as $a) {
             $an = $norm((string)$a);
-            if ($an === $hint || str_contains($an, $hint)) {
+            if ($an === $hint || strpos($an, $hint)) {
                 return (string)$a;
             }
         }

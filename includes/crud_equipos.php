@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+
 
 $equipo_table = pick_table($conn, ['equipo', 'Equipo']);
 $equipo_cols = $equipo_table ? table_columns($conn, $equipo_table) : [];

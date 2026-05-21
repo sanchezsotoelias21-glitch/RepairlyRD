@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+
 
 /**
  * Sesiones en MySQL para varias instancias (Railway) cuando SESSION_STORE=mysql.

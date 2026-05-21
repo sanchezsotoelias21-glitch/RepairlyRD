@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+
 
 if ($current_page === 'configuracion' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     require_csrf();

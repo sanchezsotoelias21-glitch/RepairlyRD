@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+
 
 $tecnico_table = pick_table($conn, ['tecnico', 'Tecnico']);
 $tecnico_cols = $tecnico_table ? table_columns($conn, $tecnico_table) : [];

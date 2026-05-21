@@ -154,19 +154,19 @@ if (isset($crud_by_page[$current_page])) {
 
 function status_palette(string $status): array {
     $name = strtolower($status);
-    if (str_contains($name, 'falla')) {
+    if (strpos($name, 'falla')) {
         return ['bg' => '#FFEBEE', 'color' => '#FF4444', 'border' => '#FF4444', 'dot' => '#FF4444'];
     }
-    if (str_contains($name, 'garant')) {
+    if (strpos($name, 'garant')) {
         return ['bg' => '#F3E5F5', 'color' => '#7B4EC4', 'border' => '#7B4EC4', 'dot' => '#7B4EC4'];
     }
-    if (str_contains($name, 'listo') || str_contains($name, 'entreg') || str_contains($name, 'complet')) {
+    if (strpos($name, 'listo') || strpos($name, 'entreg') || strpos($name, 'complet')) {
         return ['bg' => '#E8F5E9', 'color' => '#00AA44', 'border' => '#00AA44', 'dot' => '#00AA44'];
     }
-    if (str_contains($name, 'pend') || str_contains($name, 'recib')) {
+    if (strpos($name, 'pend') || strpos($name, 'recib')) {
         return ['bg' => '#FFF3E0', 'color' => '#FF9500', 'border' => '#FF9500', 'dot' => '#FF9500'];
     }
-    if (str_contains($name, 'diagn')) {
+    if (strpos($name, 'diagn')) {
         return ['bg' => '#F5F5F5', 'color' => '#424242', 'border' => '#424242', 'dot' => '#424242'];
     }
     return ['bg' => '#E3F2FD', 'color' => '#2b7abc', 'border' => '#2b7abc', 'dot' => '#2b7abc'];
@@ -174,13 +174,13 @@ function status_palette(string $status): array {
 
 function device_icon(string $type): string {
     $name = strtolower($type);
-    if (str_contains($name, 'phone') || str_contains($name, 'tel')) {
+    if (strpos($name, 'phone') || strpos($name, 'tel')) {
         return 'ti-device-mobile';
     }
-    if (str_contains($name, 'tablet') || str_contains($name, 'ipad')) {
+    if (strpos($name, 'tablet') || strpos($name, 'ipad')) {
         return 'ti-device-tablet';
     }
-    if (str_contains($name, 'pc') || str_contains($name, 'torre') || str_contains($name, 'desktop')) {
+    if (strpos($name, 'pc') || strpos($name, 'torre') || strpos($name, 'desktop')) {
         return 'ti-device-desktop';
     }
     return 'ti-device-laptop';
@@ -585,7 +585,7 @@ if ($has_dashboard_core) {
     ];
 }
 
-$fallas_urgentes = array_filter($ordenes_recientes, fn($o) => strtolower($o['estado']) === 'con falla' || str_contains(strtolower($o['estado']), 'falla'));
+$fallas_urgentes = array_filter($ordenes_recientes, fn($o) => strtolower($o['estado']) === 'con falla' || strpos(strtolower($o['estado']), 'falla'));
 $total_fallas    = count($fallas_urgentes);
 
 foreach ($nav_items as &$nav_item) {

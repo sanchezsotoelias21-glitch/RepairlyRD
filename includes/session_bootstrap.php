@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+
 
 /**
  * HTTPS visto por el cliente (Railway, nginx, Cloudflare envían X-Forwarded-Proto).

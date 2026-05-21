@@ -1,7 +1,7 @@
 <?php
 // src/pages/reportes.php - Sistema integral de reportes profesionales
 
-declare(strict_types=1);
+
 
 // Reportes disponibles (resuelve tablas/columnas segÃºn el esquema real en MySQL).
 $report_types = [
@@ -319,10 +319,10 @@ if ($action === 'generate_pdf' && $current_report) {
         $ingresos    = 0.0;
         foreach ($report_data as $r) {
             $est = strtolower((string)($r['estado'] ?? $r['id_estado_actual'] ?? ''));
-            if (str_contains($est, 'complet') || str_contains($est, 'entrega') || str_contains($est, 'listo')) {
+            if (strpos($est, 'complet') || strpos($est, 'entrega') || strpos($est, 'listo')) {
                 $completadas++;
             }
-            if (str_contains($est, 'pendient') || str_contains($est, 'espera')) {
+            if (strpos($est, 'pendient') || strpos($est, 'espera')) {
                 $pendientes++;
             }
             $ingresos += (float)($r['costo_total'] ?? $r['costo'] ?? $r['total'] ?? 0);

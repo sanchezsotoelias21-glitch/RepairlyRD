@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+
 
 $pieza_table = pick_table($conn, [
     'pieza', 'Pieza', 'PIEZA',
