@@ -514,75 +514,276 @@ if ($has_dashboard_core) {
     $d_tec = $dashboard_tables['tecnico'];
     $d_gar = $dashboard_tables['garantia'];
 
-    $estado_join = "FROM `{$d_ord}` o LEFT JOIN `{$d_est}` s ON s.id_estado = o.id_estado_actual";
-    $estado_expr = "LOWER(COALESCE(s.nombre_estado, ''))";
+    $chart_tecnico_labels = [];
+$chart_tecnico_reparaciones = [];
+$chart_tecnico_ingresos = [];
+$chart_estado_labels = [];
+$chart_estado_values = [];
+$chart_estado_colors = [];
 
-    $en_proceso = (int)db_scalar($conn, "SELECT COUNT(*) {$estado_join} WHERE {$estado_expr} LIKE '%proceso%' OR {$estado_expr} LIKE '%repar%'");
-    $pendientes = (int)db_scalar($conn, "SELECT COUNT(*) {$estado_join} WHERE {$estado_expr} LIKE '%pend%' OR {$estado_expr} LIKE '%recib%'");
-    $con_falla = (int)db_scalar($conn, "SELECT COUNT(*) {$estado_join} WHERE {$estado_expr} LIKE '%falla%'");
-    $completadas = (int)db_scalar($conn, "SELECT COUNT(*) {$estado_join} WHERE ({$estado_expr} LIKE '%entreg%' OR {$estado_expr} LIKE '%complet%' OR {$estado_expr} LIKE '%listo%') AND MONTH(COALESCE(o.fecha_entrega_real, o.fecha_actualizacion, o.fecha_ingreso)) = MONTH(CURDATE()) AND YEAR(COALESCE(o.fecha_entrega_real, o.fecha_actualizacion, o.fecha_ingreso)) = YEAR(CURDATE())");
-    $ingresos_hoy = (float)db_scalar($conn, "SELECT COALESCE(SUM(o.costo_total), 0) FROM `{$d_ord}` o WHERE DATE(COALESCE(o.fecha_entrega_real, o.fecha_actualizacion, o.fecha_ingreso)) = CURDATE()", 0);
-    $ingresos_ayer = (float)db_scalar($conn, "SELECT COALESCE(SUM(o.costo_total), 0) FROM `{$d_ord}` o WHERE DATE(COALESCE(o.fecha_entrega_real, o.fecha_actualizacion, o.fecha_ingreso)) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)", 0);
+if ($has_dashboard_core) {
+
+    $d_ord = $dashboard_tables['orden'];
+    $d_est = $dashboard_tables['estado'];
+    $d_eq  = $dashboard_tables['equipo'];
+    $d_tec = $dashboard_tables['tecnico'];
+    $d_gar = $dashboard_tables['garantia'];
+    $cliente_table_dashboard = $dashboard_tables['cliente'];
+
+    $orden_cols = table_columns($conn, $d_ord);
+    $estado_cols = table_columns($conn, $d_est);
+
+    $col_estado_fk = in_array('id_estado_actual', $orden_cols)
+        ? 'id_estado_actual'
+        : (in_array('id_estado', $orden_cols) ? 'id_estado' : null);
+
+    $col_estado_pk = in_array('id_estado', $estado_cols)
+        ? 'id_estado'
+        : (in_array('IdEstado', $estado_cols) ? 'IdEstado' : null);
+
+    $col_estado_nombre = in_array('nombre_estado', $estado_cols)
+        ? 'nombre_estado'
+        : (in_array('estado', $estado_cols)
+            ? 'estado'
+            : (in_array('nombre', $estado_cols) ? 'nombre' : null));
+
+    $col_fecha = in_array('fecha_actualizacion', $orden_cols)
+        ? 'fecha_actualizacion'
+        : (in_array('fecha_ingreso', $orden_cols)
+            ? 'fecha_ingreso'
+            : (in_array('fecha_creacion', $orden_cols)
+                ? 'fecha_creacion'
+                : null));
+
+    $col_costo = in_array('costo_total', $orden_cols)
+        ? 'costo_total'
+        : (in_array('total', $orden_cols)
+            ? 'total'
+            : (in_array('precio', $orden_cols)
+                ? 'precio'
+                : null));
+
+    $estado_join = "FROM `{$d_ord}` o";
+
+    if ($col_estado_fk && $col_estado_pk && $col_estado_nombre) {
+        $estado_join .= " LEFT JOIN `{$d_est}` s ON s.`{$col_estado_pk}` = o.`{$col_estado_fk}`";
+        $estado_expr = "LOWER(COALESCE(s.`{$col_estado_nombre}`, ''))";
+    } else {
+        $estado_expr = "''";
+    }
+
+    $en_proceso = (int) db_scalar(
+        $conn,
+        "SELECT COUNT(*) {$estado_join}
+         WHERE {$estado_expr} LIKE '%proceso%'
+         OR {$estado_expr} LIKE '%repar%'"
+    );
+
+    $pendientes = (int) db_scalar(
+        $conn,
+        "SELECT COUNT(*) {$estado_join}
+         WHERE {$estado_expr} LIKE '%pend%'"
+    );
+
+    $con_falla = (int) db_scalar(
+        $conn,
+        "SELECT COUNT(*) {$estado_join}
+         WHERE {$estado_expr} LIKE '%falla%'"
+    );
+
+    $fecha_expr = $col_fecha
+        ? "DATE(o.`{$col_fecha}`)"
+        : "CURDATE()";
+
+    $costo_expr = $col_costo
+        ? "COALESCE(o.`{$col_costo}`,0)"
+        : "0";
+
+    $completadas = (int) db_scalar(
+        $conn,
+        "SELECT COUNT(*) {$estado_join}
+         WHERE (
+            {$estado_expr} LIKE '%listo%'
+            OR {$estado_expr} LIKE '%entreg%'
+            OR {$estado_expr} LIKE '%complet%'
+         )"
+    );
+
+    $ingresos_hoy = (float) db_scalar(
+        $conn,
+        "SELECT SUM({$costo_expr})
+         FROM `{$d_ord}` o
+         WHERE {$fecha_expr} = CURDATE()",
+        0
+    );
+
+    $ingresos_ayer = (float) db_scalar(
+        $conn,
+        "SELECT SUM({$costo_expr})
+         FROM `{$d_ord}` o
+         WHERE {$fecha_expr} = DATE_SUB(CURDATE(), INTERVAL 1 DAY)",
+        0
+    );
+
     $garantias_activas = table_exists($conn, $d_gar)
-        ? (int)db_scalar($conn, "SELECT COUNT(*) FROM `{$d_gar}` WHERE (LOWER(COALESCE(estado, '')) LIKE '%activ%' OR (CURDATE() BETWEEN fecha_inicio AND fecha_fin))")
+        ? (int) db_scalar($conn, "SELECT COUNT(*) FROM `{$d_gar}`")
         : 0;
 
-    $trend = $ingresos_ayer > 0 ? (($ingresos_hoy - $ingresos_ayer) / $ingresos_ayer) * 100 : ($ingresos_hoy > 0 ? 100 : 0);
-    $trend_color = $trend >= 0 ? '#00AA44' : '#2b7abc';
+    $trend = $ingresos_ayer > 0
+        ? (($ingresos_hoy - $ingresos_ayer) / $ingresos_ayer) * 100
+        : 0;
+
+    $trend_color = $trend >= 0 ? '#00AA44' : '#FF4444';
     $trend_icon = $trend >= 0 ? 'ti-trending-up' : 'ti-trending-down';
 
     $kpis = [
-        ['clave' => 'en_proceso', 'label' => 'En proceso', 'valor' => $en_proceso, 'sub' => 'órdenes activas', 'icono' => 'ti-loader', 'color' => '#2b7abc', 'bg' => '#E3F2FD', 'texto' => '#2b7abc'],
-        ['clave' => 'pendientes', 'label' => 'Pendientes', 'valor' => $pendientes, 'sub' => 'sin completar', 'icono' => 'ti-clock', 'color' => '#FF9500', 'bg' => '#FFF3E0', 'texto' => '#FF9500'],
-        ['clave' => 'ingresos', 'label' => 'Ingresos hoy', 'valor' => '$' . number_format($ingresos_hoy, 2), 'sub' => '<span style="color:' . $trend_color . ';display:flex;align-items:center;gap:3px;"><i class="ti ' . $trend_icon . '" style="font-size:11px;"></i>' . number_format(abs($trend), 0) . '% vs ayer</span>', 'icono' => 'ti-cash', 'color' => '#00AA44', 'bg' => '#E8F5E9', 'texto' => '#00AA44'],
-        ['clave' => 'garantias', 'label' => 'Garantías', 'valor' => $garantias_activas, 'sub' => 'activas ahora', 'icono' => 'ti-shield', 'color' => '#7B4EC4', 'bg' => '#F3E5F5', 'texto' => '#7B4EC4'],
-        ['clave' => 'completadas', 'label' => 'Completadas', 'valor' => $completadas, 'sub' => 'servicios este mes', 'icono' => 'ti-checks', 'color' => '#424242', 'bg' => '#F5F5F5', 'texto' => '#424242'],
-        ['clave' => 'con_falla', 'label' => 'Con falla', 'valor' => $con_falla, 'sub' => 'requieren atención', 'icono' => 'ti-alert-triangle', 'color' => '#FF4444', 'bg' => '#FFEBEE', 'texto' => '#FF4444'],
+        [
+            'clave' => 'en_proceso',
+            'label' => 'En proceso',
+            'valor' => $en_proceso,
+            'sub' => 'órdenes activas',
+            'icono' => 'ti-loader',
+            'color' => '#2b7abc',
+            'bg' => '#E3F2FD',
+            'texto' => '#2b7abc'
+        ],
+        [
+            'clave' => 'pendientes',
+            'label' => 'Pendientes',
+            'valor' => $pendientes,
+            'sub' => 'sin completar',
+            'icono' => 'ti-clock',
+            'color' => '#FF9500',
+            'bg' => '#FFF3E0',
+            'texto' => '#FF9500'
+        ],
+        [
+            'clave' => 'ingresos',
+            'label' => 'Ingresos hoy',
+            'valor' => '$' . number_format($ingresos_hoy, 2),
+            'sub' => '<span style="color:' . $trend_color . '"><i class="ti ' . $trend_icon . '"></i> ' . number_format(abs($trend), 0) . '% vs ayer</span>',
+            'icono' => 'ti-cash',
+            'color' => '#00AA44',
+            'bg' => '#E8F5E9',
+            'texto' => '#00AA44'
+        ],
+        [
+            'clave' => 'garantias',
+            'label' => 'Garantías',
+            'valor' => $garantias_activas,
+            'sub' => 'registradas',
+            'icono' => 'ti-shield',
+            'color' => '#7B4EC4',
+            'bg' => '#F3E5F5',
+            'texto' => '#7B4EC4'
+        ],
+        [
+            'clave' => 'completadas',
+            'label' => 'Completadas',
+            'valor' => $completadas,
+            'sub' => 'servicios finalizados',
+            'icono' => 'ti-checks',
+            'color' => '#424242',
+            'bg' => '#F5F5F5',
+            'texto' => '#424242'
+        ],
+        [
+            'clave' => 'con_falla',
+            'label' => 'Con falla',
+            'valor' => $con_falla,
+            'sub' => 'requieren atención',
+            'icono' => 'ti-alert-triangle',
+            'color' => '#FF4444',
+            'bg' => '#FFEBEE',
+            'texto' => '#FF4444'
+        ],
     ];
 
     $ordenes_recientes = [];
-    $ordenes_sql = "SELECT o.id_orden, COALESCE(c.nombre, 'Cliente no asignado') AS cliente, COALESCE(e.tipo, '') AS tipo, COALESCE(e.marca, '') AS marca, COALESCE(e.modelo, '') AS modelo, COALESCE(t.nombre, 'Sin técnico') AS tecnico, COALESCE(s.nombre_estado, 'Sin estado') AS estado, COALESCE(o.costo_total, 0) AS costo_total FROM `{$d_ord}` o LEFT JOIN `{$d_eq}` e ON e.id_equipo = o.id_equipo LEFT JOIN `{$cliente_table_dashboard}` c ON c.id_cliente = e.id_cliente LEFT JOIN `{$d_tec}` t ON t.id_tecnico = o.id_tecnico LEFT JOIN `{$d_est}` s ON s.id_estado = o.id_estado_actual ORDER BY COALESCE(o.fecha_actualizacion, o.fecha_creacion, o.fecha_ingreso) DESC, o.id_orden DESC LIMIT 6";
+
+    $ordenes_sql = "
+        SELECT
+            o.id_orden,
+            COALESCE(c.nombre, 'Cliente') AS cliente,
+            COALESCE(e.tipo, '') AS tipo,
+            COALESCE(e.marca, '') AS marca,
+            COALESCE(e.modelo, '') AS modelo,
+            COALESCE(t.nombre, 'Sin técnico') AS tecnico,
+            COALESCE(s.`{$col_estado_nombre}`, 'Sin estado') AS estado,
+            {$costo_expr} AS costo_total
+
+        FROM `{$d_ord}` o
+
+        LEFT JOIN `{$d_eq}` e
+            ON e.id_equipo = o.id_equipo
+
+        LEFT JOIN `{$cliente_table_dashboard}` c
+            ON c.id_cliente = e.id_cliente
+
+        LEFT JOIN `{$d_tec}` t
+            ON t.id_tecnico = o.id_tecnico
+
+        LEFT JOIN `{$d_est}` s
+            ON s.`{$col_estado_pk}` = o.`{$col_estado_fk}`
+
+        ORDER BY o.id_orden DESC
+        LIMIT 6
+    ";
+
     foreach (db_rows($conn, $ordenes_sql) as $row) {
-        $status = (string)$row['estado'];
-        $palette = status_palette($status);
-        $tipo = trim((string)$row['tipo']);
-        $equipo_label = trim($tipo . ' ' . (string)$row['marca'] . ' ' . (string)$row['modelo']);
-        $ordenes_recientes[] = ['id' => (string)$row['id_orden'], 'cliente' => (string)$row['cliente'], 'equipo' => $equipo_label !== '' ? $equipo_label : 'Equipo sin detalle', 'icono_eq' => device_icon($tipo), 'tecnico' => (string)$row['tecnico'], 'estado' => $status, 'est_bg' => $palette['bg'], 'est_color'=> $palette['color'], 'est_borde'=> $palette['border'], 'est_dot' => $palette['dot'], 'valor' => '$' . number_format((float)$row['costo_total'], 2)];
+
+        $palette = status_palette($row['estado']);
+
+        $equipo = trim(
+            $row['tipo'] . ' ' .
+            $row['marca'] . ' ' .
+            $row['modelo']
+        );
+
+        $ordenes_recientes[] = [
+            'id' => $row['id_orden'],
+            'cliente' => $row['cliente'],
+            'equipo' => $equipo,
+            'icono_eq' => device_icon($row['tipo']),
+            'tecnico' => $row['tecnico'],
+            'estado' => $row['estado'],
+            'est_bg' => $palette['bg'],
+            'est_color' => $palette['color'],
+            'est_borde' => $palette['border'],
+            'est_dot' => $palette['dot'],
+            'valor' => '$' . number_format((float)$row['costo_total'], 2)
+        ];
     }
 
-    $device_rows = db_rows($conn, "SELECT COALESCE(NULLIF(TRIM(tipo), ''), 'Sin tipo') AS tipo, COUNT(*) AS total FROM `{$d_eq}` GROUP BY COALESCE(NULLIF(TRIM(tipo), ''), 'Sin tipo') ORDER BY total DESC LIMIT 5");
-    $device_total = array_sum(array_map(fn($row) => (int)$row['total'], $device_rows));
-    $device_colors = ['#2b7abc', '#00AA44', '#FF9500', '#7B4EC4', '#424242'];
-    $device_bgs = ['#E3F2FD', '#E8F5E9', '#FFF3E0', '#F3E5F5', '#F5F5F5'];
-    $dispositivos = [];
-    foreach ($device_rows as $idx => $row) {
-        $color = $device_colors[$idx % count($device_colors)];
-        $dispositivos[] = ['tipo' => (string)$row['tipo'], 'icono' => device_icon((string)$row['tipo']), 'pct' => $device_total > 0 ? (int)round(((int)$row['total'] / $device_total) * 100) : 0, 'color' => $color, 'bg' => $device_bgs[$idx % count($device_bgs)], 'tc' => $color];
-    }
+    $estado_rows = db_rows(
+        $conn,
+        "SELECT
+            COALESCE(s.`{$col_estado_nombre}`, 'Sin estado') AS estado,
+            COUNT(*) AS total
 
-    foreach (db_rows($conn, "SELECT COALESCE(t.nombre, 'Sin técnico') AS tecnico, COUNT(o.id_orden) AS reparaciones, COALESCE(SUM(o.costo_total), 0) AS ingresos FROM `{$d_ord}` o LEFT JOIN `{$d_tec}` t ON t.id_tecnico = o.id_tecnico WHERE MONTH(COALESCE(o.fecha_entrega_real, o.fecha_actualizacion, o.fecha_ingreso)) = MONTH(CURDATE()) AND YEAR(COALESCE(o.fecha_entrega_real, o.fecha_actualizacion, o.fecha_ingreso)) = YEAR(CURDATE()) GROUP BY COALESCE(t.nombre, 'Sin técnico') ORDER BY reparaciones DESC LIMIT 6") as $row) {
-        $chart_tecnico_labels[] = (string)$row['tecnico'];
-        $chart_tecnico_reparaciones[] = (int)$row['reparaciones'];
-        $chart_tecnico_ingresos[] = round(((float)$row['ingresos']) / 100, 2);
-    }
+         {$estado_join}
 
-    $estado_rows = db_rows($conn, "SELECT COALESCE(s.nombre_estado, 'Sin estado') AS estado, COUNT(o.id_orden) AS total {$estado_join} GROUP BY COALESCE(s.nombre_estado, 'Sin estado') ORDER BY total DESC");
-    $estado_total = array_sum(array_map(fn($row) => (int)$row['total'], $estado_rows));
+         GROUP BY s.`{$col_estado_nombre}`
+         ORDER BY total DESC"
+    );
+
+    $estado_total = array_sum(array_map(
+        fn($r) => (int)$r['total'],
+        $estado_rows
+    ));
+
     foreach ($estado_rows as $row) {
-        $palette = status_palette((string)$row['estado']);
-        $chart_estado_labels[] = (string)$row['estado'];
-        $chart_estado_values[] = $estado_total > 0 ? (int)round(((int)$row['total'] / $estado_total) * 100) : 0;
+
+        $palette = status_palette($row['estado']);
+
+        $chart_estado_labels[] = $row['estado'];
+
+        $chart_estado_values[] = $estado_total > 0
+            ? round(($row['total'] / $estado_total) * 100)
+            : 0;
+
         $chart_estado_colors[] = $palette['color'];
     }
-} else {
-    $kpis = [
-        ['clave' => 'en_proceso', 'label' => 'En proceso', 'valor' => 0, 'sub' => 'sin tablas base', 'icono' => 'ti-loader', 'color' => '#2b7abc', 'bg' => '#E3F2FD', 'texto' => '#2b7abc'],
-        ['clave' => 'pendientes', 'label' => 'Pendientes', 'valor' => 0, 'sub' => 'sin datos', 'icono' => 'ti-clock', 'color' => '#FF9500', 'bg' => '#FFF3E0', 'texto' => '#FF9500'],
-        ['clave' => 'ingresos', 'label' => 'Ingresos hoy', 'valor' => '$0.00', 'sub' => '—', 'icono' => 'ti-cash', 'color' => '#00AA44', 'bg' => '#E8F5E9', 'texto' => '#00AA44'],
-        ['clave' => 'garantias', 'label' => 'Garantías', 'valor' => 0, 'sub' => 'activas', 'icono' => 'ti-shield', 'color' => '#7B4EC4', 'bg' => '#F3E5F5', 'texto' => '#7B4EC4'],
-        ['clave' => 'completadas', 'label' => 'Completadas', 'valor' => 0, 'sub' => 'este mes', 'icono' => 'ti-checks', 'color' => '#424242', 'bg' => '#F5F5F5', 'texto' => '#424242'],
-        ['clave' => 'con_falla', 'label' => 'Con falla', 'valor' => 0, 'sub' => '—', 'icono' => 'ti-alert-triangle', 'color' => '#FF4444', 'bg' => '#FFEBEE', 'texto' => '#FF4444'],
-    ];
 }
 
 $fallas_urgentes = array_filter($ordenes_recientes, fn($o) => strtolower($o['estado']) === 'con falla' || strpos(strtolower($o['estado']), 'falla'));
