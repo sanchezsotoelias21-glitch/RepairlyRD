@@ -345,7 +345,7 @@ if ($action === 'generate_pdf' && $current_report) {
     }
 
     try {
-        $report_data = get_report_data($conn, $current_report, $date_from, $date_to, $status_filter);
+        $report_data = get_report_data($conn, $current_report, $date_from ?? '', $date_to ?? '', $status_filter);
 
         // ---- Generar PDF profesional con RepairlyPDF (FPDF) ----
         require_once __DIR__ . '/../../includes/pdf_generator.php';
