@@ -163,23 +163,25 @@ $estado_name = function (int $eid) use ($estados): string {
                 <?php if (isset($orden_cols['id_equipo'])): ?>
                     <div style="grid-column:1/-1;">
                         <label style="font-size:10px;color:#6B6560;">Equipo</label>
-                        <select name="id_equipo" required class="searchable-select" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;">
-                            <option value="0">—</option>
+                        <input type="text" name="id_equipo_text" list="equipo_list" required placeholder="Buscar o escribir equipo..." style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;" value="<?= (int)($edit['id_equipo'] ?? 0) > 0 ? h((string)($edit['equipo_label'] ?? '')) : '' ?>">
+                        <input type="hidden" name="id_equipo" id="id_equipo_hidden" value="<?= (int)($edit['id_equipo'] ?? 0) ?>">
+                        <datalist id="equipo_list">
                             <?php foreach ($equipos_list as $e): ?>
-                                <option value="<?= (int)$e['id_equipo'] ?>" <?= (int)($edit['id_equipo'] ?? 0) === (int)$e['id_equipo'] ? 'selected' : '' ?>><?= h((string)($e['label'] ?? $e['id_equipo'])) ?></option>
+                                <option value="<?= h((string)($e['label'] ?? $e['id_equipo'])) ?>" data-id="<?= (int)$e['id_equipo'] ?>"></option>
                             <?php endforeach; ?>
-                        </select>
+                        </datalist>
                     </div>
                 <?php endif; ?>
                 <?php if (isset($orden_cols['id_tecnico'])): ?>
                     <div>
                         <label style="font-size:10px;color:#6B6560;">Técnico</label>
-                        <select name="id_tecnico" class="searchable-select" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;">
-                            <option value="0">—</option>
+                        <input type="text" name="id_tecnico_text" list="tecnico_list" placeholder="Buscar o escribir técnico..." style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;" value="<?= (int)($edit['id_tecnico'] ?? 0) > 0 ? h((string)($edit['nombre_tecnico'] ?? '')) : '' ?>">
+                        <input type="hidden" name="id_tecnico" id="id_tecnico_hidden" value="<?= (int)($edit['id_tecnico'] ?? 0) ?>">
+                        <datalist id="tecnico_list">
                             <?php foreach ($tecs as $te): ?>
-                                <option value="<?= (int)$te['id_tecnico'] ?>" <?= (int)($edit['id_tecnico'] ?? 0) === (int)$te['id_tecnico'] ? 'selected' : '' ?>><?= h((string)$te['nombre']) ?></option>
+                                <option value="<?= h((string)$te['nombre']) ?>" data-id="<?= (int)$te['id_tecnico'] ?>"></option>
                             <?php endforeach; ?>
-                        </select>
+                        </datalist>
                     </div>
                 <?php endif; ?>
                 <?php if (isset($orden_cols['id_estado_actual'])): ?>
@@ -247,3 +249,40 @@ $estado_name = function (int $eid) use ($estados): string {
         </div>
     </div>
 </div>
+
+<script>
+// Script para actualizar los IDs cuando se seleccionan del datalist
+document.addEventListener('DOMContentLoaded', function() {
+    // Equipo
+    const equipoInput = document.querySelector('input[name="id_equipo_text"]');
+    const equipoHidden = document.getElementById('id_equipo_hidden');
+    const equipoList = document.getElementById('equipo_list');
+
+    if (equipoInput && equipoHidden && equipoList) {
+        equipoInput.addEventListener('input', function() {
+            const selectedOption = Array.from(equipoList.options).find(option => option.value === this.value);
+            if (selectedOption) {
+                equipoHidden.value = selectedOption.getAttribute('data-id');
+            } else {
+                equipoHidden.value = '';
+            }
+        });
+    }
+
+    // Técnico
+    const tecnicoInput = document.querySelector('input[name="id_tecnico_text"]');
+    const tecnicoHidden = document.getElementById('id_tecnico_hidden');
+    const tecnicoList = document.getElementById('tecnico_list');
+
+    if (tecnicoInput && tecnicoHidden && tecnicoList) {
+        tecnicoInput.addEventListener('input', function() {
+            const selectedOption = Array.from(tecnicoList.options).find(option => option.value === this.value);
+            if (selectedOption) {
+                tecnicoHidden.value = selectedOption.getAttribute('data-id');
+            } else {
+                tecnicoHidden.value = '';
+            }
+        });
+    }
+});
+</script>

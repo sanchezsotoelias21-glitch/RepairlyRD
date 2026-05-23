@@ -240,6 +240,24 @@ function copiarResultadoIA(){
     const texto = document.getElementById('ia-html').innerText;
     navigator.clipboard.writeText(texto);
 }
+
+// Script para actualizar el ID del cliente cuando se selecciona del datalist
+document.addEventListener('DOMContentLoaded', function() {
+    const clienteInput = document.querySelector('input[name="id_cliente_text"]');
+    const clienteHidden = document.getElementById('id_cliente_hidden');
+    const clienteList = document.getElementById('cliente_list');
+
+    if (clienteInput && clienteHidden && clienteList) {
+        clienteInput.addEventListener('input', function() {
+            const selectedOption = Array.from(clienteList.options).find(option => option.value === this.value);
+            if (selectedOption) {
+                clienteHidden.value = selectedOption.getAttribute('data-id');
+            } else {
+                clienteHidden.value = '';
+            }
+        });
+    }
+});
 </script>
 
 <?php if ($action === 'new' || $action === 'edit'): ?>
@@ -250,7 +268,21 @@ function copiarResultadoIA(){
                     <input type="hidden" name="id_equipo" value="<?= (int)($edit[$idField] ?? 0) ?>">
                 <?php endif; ?>
                 <?php if (isset($equipo_cols['tipo'])): ?>
-                    <div><label style="font-size:10px;color:#6B6560;">Tipo</label><input name="tipo" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;background:#fff;" value="<?= h((string)($edit['tipo'] ?? '')) ?>"></div>
+                    <div><label style="font-size:10px;color:#6B6560;">Tipo</label>
+                        <select name="tipo" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;background:#fff;">
+                            <option value="">— Seleccionar —</option>
+                            <option value="Celular" <?= (string)($edit['tipo'] ?? '') === 'Celular' ? 'selected' : '' ?>>Celular</option>
+                            <option value="Tablet" <?= (string)($edit['tipo'] ?? '') === 'Tablet' ? 'selected' : '' ?>>Tablet</option>
+                            <option value="Laptop" <?= (string)($edit['tipo'] ?? '') === 'Laptop' ? 'selected' : '' ?>>Laptop</option>
+                            <option value="Computadora de escritorio" <?= (string)($edit['tipo'] ?? '') === 'Computadora de escritorio' ? 'selected' : '' ?>>Computadora de escritorio</option>
+                            <option value="Monitor" <?= (string)($edit['tipo'] ?? '') === 'Monitor' ? 'selected' : '' ?>>Monitor</option>
+                            <option value="Televisor" <?= (string)($edit['tipo'] ?? '') === 'Televisor' ? 'selected' : '' ?>>Televisor</option>
+                            <option value="Consola de videojuegos" <?= (string)($edit['tipo'] ?? '') === 'Consola de videojuegos' ? 'selected' : '' ?>>Consola de videojuegos</option>
+                            <option value="Cámara" <?= (string)($edit['tipo'] ?? '') === 'Cámara' ? 'selected' : '' ?>>Cámara</option>
+                            <option value="Impresora" <?= (string)($edit['tipo'] ?? '') === 'Impresora' ? 'selected' : '' ?>>Impresora</option>
+                            <option value="Otro" <?= (string)($edit['tipo'] ?? '') === 'Otro' ? 'selected' : '' ?>>Otro</option>
+                        </select>
+                    </div>
                 <?php endif; ?>
                 <?php if (isset($equipo_cols['marca'])): ?>
                     <div><label style="font-size:10px;color:#6B6560;">Marca</label><input name="marca" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;" value="<?= h((string)($edit['marca'] ?? '')) ?>"></div>
@@ -279,12 +311,13 @@ function copiarResultadoIA(){
                 <?php if (isset($equipo_cols['id_cliente']) && $cliente_pick !== ''): ?>
                     <div style="grid-column:1/-1;">
                         <label style="font-size:10px;color:#6B6560;">Cliente</label>
-                        <select name="id_cliente" required class="searchable-select" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;">
-                            <option value="0">— Seleccionar —</option>
+                        <input type="text" name="id_cliente_text" list="cliente_list" required placeholder="Buscar o escribir cliente..." style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;" value="<?= (int)($edit['id_cliente'] ?? 0) > 0 ? h((string)($edit['nombre_cliente'] ?? '')) : '' ?>">
+                        <input type="hidden" name="id_cliente" id="id_cliente_hidden" value="<?= (int)($edit['id_cliente'] ?? 0) ?>">
+                        <datalist id="cliente_list">
                             <?php foreach ($clientes_opts as $c): ?>
-                                <option value="<?= (int)$c['id'] ?>" <?= (int)($edit['id_cliente'] ?? 0) === (int)$c['id'] ? 'selected' : '' ?>><?= h((string)$c['nombre']) ?></option>
+                                <option value="<?= h((string)$c['nombre']) ?>" data-id="<?= (int)$c['id'] ?>"></option>
                             <?php endforeach; ?>
-                        </select>
+                        </datalist>
                     </div>
                 <?php endif; ?>
                 <div style="grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end;">
