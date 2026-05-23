@@ -2,7 +2,7 @@
 /** @var mysqli $conn */
 require_once __DIR__ . '/../../includes/ui_helper.php';
 
-$webhook_url = 'https://repairlyrdoficial.app.n8n.cloud/webhook/send-whatsapp';
+$webhook_url = 'https://repairlyrd-whatsapp-production.up.railway.app/send';
 
 function whatsapp_find_clients_table(mysqli $conn): string {
     foreach (['Cliente', 'clientes', 'cliente', 'Clientes'] as $table) {
