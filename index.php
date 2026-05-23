@@ -608,11 +608,18 @@ unset($nav_item);
 
 $notif_table_ui = pick_table($conn, ['notificacion', 'Notificacion']);
 $notificaciones_top = [];
+$notificaciones_pendientes = 0;
 if ($notif_table_ui !== '') {
     $ncol = table_columns($conn, $notif_table_ui);
     $orderNotif = isset($ncol['fecha_envio']) ? 'fecha_envio' : (isset($ncol['id_notificacion']) ? 'id_notificacion' : '');
     if ($orderNotif !== '') {
         $notificaciones_top = db_rows($conn, "SELECT * FROM `{$notif_table_ui}` ORDER BY `{$orderNotif}` DESC LIMIT 8");
+        // Contar notificaciones pendientes
+        foreach ($notificaciones_top as $n) {
+            if (isset($n['estado']) && strtolower($n['estado']) === 'pendiente') {
+                $notificaciones_pendientes++;
+            }
+        }
     }
 }
 $global_ord_search_q = isset($_GET['ord_q']) && is_string($_GET['ord_q']) ? trim($_GET['ord_q']) : '';
@@ -1124,7 +1131,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
             <div class="notif-dd-wrap">
                 <button type="button" class="topbar-btn" id="notif-toggle" title="Notificaciones" aria-expanded="false" aria-controls="notif-menu">
                     <i class="ti ti-bell" aria-hidden="true"></i>
-                    <?php if (!empty($notificaciones_top)): ?>
+                    <?php if ($notificaciones_pendientes > 0): ?>
                         <span class="notif-dot" aria-hidden="true"></span>
                     <?php elseif ($total_fallas > 0): ?>
                         <span class="notif-dot" aria-hidden="true"></span>
