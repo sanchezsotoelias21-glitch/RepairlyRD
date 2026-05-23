@@ -1177,3 +1177,39 @@ if ($current_report && ($current_report['has_status_filter'] ?? false)) {
     <?php endif; ?>
 
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const reportItems = document.querySelectorAll('.report-item');
+    reportItems.forEach(item => {
+        item.addEventListener('click', function () {
+            reportItems.forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+
+    const table = document.querySelector('.data-table');
+    if (table) {
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.placeholder = 'Buscar dentro del reporte...';
+        searchInput.className = 'filter-input';
+        searchInput.style.marginBottom = '16px';
+
+        table.parentNode.insertBefore(searchInput, table);
+
+        searchInput.addEventListener('keyup', function () {
+            const value = this.value.toLowerCase();
+            table.querySelectorAll('tbody tr').forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(value) ? '' : 'none';
+            });
+        });
+    }
+
+    const current = document.querySelector('.report-item.active');
+    if (current) {
+        current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+});
+</script>
