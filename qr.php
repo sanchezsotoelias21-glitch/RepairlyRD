@@ -1,23 +1,14 @@
 <?php
 /**
  * Generador de QR dinámico para seguimiento de órdenes
+ * Usando API externa para evitar problemas con librerías locales
  */
-
-// Habilitar reporte de errores
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
-// Verificar si la extensión GD está disponible
-if (!extension_loaded('gd')) {
-    die('Error: La extensión GD de PHP no está habilitada. Es necesaria para generar imágenes QR.');
-}
-
-require_once __DIR__ . '/libs/phpqrcode/qrlib.php';
 
 // Obtener código de seguimiento del parámetro GET
 $codigo = isset($_GET['codigo']) ? trim($_GET['codigo']) : '';
 
 if (empty($codigo)) {
+    // Mostrar imagen de error si no hay código
     header('Content-Type: image/png');
     $img = imagecreatetruecolor(60, 60);
     $bg = imagecolorallocate($img, 240, 240, 240);
@@ -38,11 +29,9 @@ if (is_string($proto) && strtolower(trim(explode(',', $proto)[0])) === 'https') 
 $baseUrl = ($isHttps ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'];
 $seguimientoUrl = $baseUrl . '/seguimiento.php?codigo=' . urlencode($codigo);
 
-// Configuración del QR
-$level = QR_ECLEVEL_H;
-$size = 10;
-$margin = 2;
+// Usar API externa de Google Charts para generar el QR
+$qrApiUrl = 'https://chart.googleapis.com/chart?cht=qr&chs=150x150&chl=' . urlencode($seguimientoUrl);
 
-// Generar QR y enviar como imagen PNG
-header('Content-Type: image/png');
-QRcode::png($seguimientoUrl, null, $level, $size, $margin);
+// Redirigir a la API de Google
+header('Location: ' . $qrApiUrl);
+exit;
