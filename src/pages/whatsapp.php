@@ -57,9 +57,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'send_
         if ($curl_error) {
             $error = 'Error enviando mensaje: ' . $curl_error;
         } elseif ($http >= 200 && $http < 300) {
+            $response_data = json_decode($response, true);
             $success = 'Mensaje enviado correctamente por WhatsApp 🚀';
+            if ($response_data) {
+                $success .= '<br><small style="color:#6B6560;">Respuesta del webhook: ' . htmlspecialchars(json_encode($response_data)) . '</small>';
+            }
         } else {
-            $error = 'El webhook respondió con código ' . $http;
+            $error = 'El webhook respondió con código ' . $http . '<br><small>Respuesta: ' . htmlspecialchars($response) . '</small>';
         }
     }
 }
