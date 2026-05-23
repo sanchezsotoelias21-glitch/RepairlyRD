@@ -1,7 +1,11 @@
 <?php
 // src/pages/reportes.php - Sistema integral de reportes profesionales
 
+// Capturar errores fatales para depuración
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
 
+try {
 
 // Reportes disponibles (resuelve tablas/columnas segÃºn el esquema real en MySQL).
 $report_types = [
@@ -1365,3 +1369,15 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 </script>
+
+<?php
+} catch (Throwable $e) {
+    echo '<div style="padding:20px;background:#ffebee;border:1px solid #ef9a9a;border-radius:10px;margin:20px;color:#c62828;">';
+    echo '<h2>Error en reportes.php</h2>';
+    echo '<p><strong>Mensaje:</strong> ' . htmlspecialchars($e->getMessage()) . '</p>';
+    echo '<p><strong>Archivo:</strong> ' . htmlspecialchars($e->getFile()) . '</p>';
+    echo '<p><strong>Línea:</strong> ' . $e->getLine() . '</p>';
+    echo '<pre style="background:#f5f5f5;padding:10px;border-radius:5px;overflow:auto;">' . htmlspecialchars($e->getTraceAsString()) . '</pre>';
+    echo '</div>';
+}
+?>
