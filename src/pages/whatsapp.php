@@ -5,7 +5,7 @@ require_once __DIR__ . '/../../includes/ui_helper.php';
 $webhook_url = 'https://repairlyrdoficial.app.n8n.cloud/webhook/send-whatsapp';
 
 function whatsapp_find_clients_table(mysqli $conn): string {
-    foreach (['clientes', 'cliente', 'Clientes'] as $table) {
+    foreach (['Cliente', 'clientes', 'cliente', 'Clientes'] as $table) {
         $check = $conn->query("SHOW TABLES LIKE '{$table}'");
         if ($check && $check->num_rows > 0) {
             return $table;
@@ -150,27 +150,31 @@ if ($clients_table !== '') {
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
                 <div>
-                    <label style="display:block;font-weight:600;margin-bottom:8px;">Cliente</label>
-                    <select id="cliente_select" class="table-search" style="width:100%;">
-                        <option value="">Seleccionar cliente</option>
-                        <?php foreach ($clients as $client): ?>
-                            <option 
-                                value="<?= htmlspecialchars($client['telefono']) ?>"
-                                data-name="<?= htmlspecialchars($client['nombre']) ?>"
-                            >
-                                <?= htmlspecialchars($client['nombre']) ?> — <?= htmlspecialchars($client['telefono']) ?>
-                            </option>
-                        <?php endforeach; ?>
+                    <label style="font-size:11px;color:#6B6560;display:block;margin-bottom:6px;">Seleccionar Cliente</label>
+                    <select id="cliente_select" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;background:white;font-size:12px;color:#1C1A17;">
+                        <option value="">— Seleccionar cliente —</option>
+                        <?php if (!empty($clients)): ?>
+                            <?php foreach ($clients as $client): ?>
+                                <option 
+                                    value="<?= htmlspecialchars($client['telefono']) ?>"
+                                    data-name="<?= htmlspecialchars($client['nombre']) ?>"
+                                >
+                                    <?= htmlspecialchars($client['nombre']) ?> — <?= htmlspecialchars($client['telefono']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <option value="" disabled>No hay clientes disponibles</option>
+                        <?php endif; ?>
                     </select>
                 </div>
 
                 <div>
-                    <label style="display:block;font-weight:600;margin-bottom:8px;">Número</label>
+                    <label style="font-size:11px;color:#6B6560;display:block;margin-bottom:6px;">Número de WhatsApp</label>
                     <input 
                         type="text" 
                         name="number" 
                         id="number_input"
-                        class="table-search"
+                        style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;font-size:12px;color:#1C1A17;"
                         placeholder="1809XXXXXXX"
                         required
                     >
@@ -178,17 +182,16 @@ if ($clients_table !== '') {
             </div>
 
             <div style="margin-bottom:16px;">
-                <label style="display:block;font-weight:600;margin-bottom:8px;">Mensaje</label>
+                <label style="font-size:11px;color:#6B6560;display:block;margin-bottom:6px;">Mensaje</label>
                 <textarea 
                     name="message"
-                    class="table-search"
-                    style="width:100%;min-height:160px;padding:16px;resize:vertical;"
+                    style="width:100%;min-height:160px;padding:12px;border-radius:8px;border:0.5px solid #D0CCC6;resize:vertical;font-size:12px;color:#1C1A17;font-family:inherit;"
                     placeholder="Hola, tu equipo está listo para retirar 🚀"
                     required
                 ></textarea>
             </div>
 
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="ordenes-ver-btn" style="background:#25D366;color:white;border-color:#25D366;">
                 <i class="ti ti-send"></i>
                 Enviar mensaje
             </button>
@@ -238,7 +241,11 @@ if ($clients_table !== '') {
 
 <script>
 document.getElementById('cliente_select')?.addEventListener('change', function() {
-    document.getElementById('number_input').value = this.value || '';
+    const selectedOption = this.options[this.selectedIndex];
+    const rawNumber = this.value || '';
+    // Filtrar solo dígitos del número
+    const filteredNumber = rawNumber.replace(/\D/g, '');
+    document.getElementById('number_input').value = filteredNumber;
 });
 
 document.querySelectorAll('.btn-template').forEach(btn => {
