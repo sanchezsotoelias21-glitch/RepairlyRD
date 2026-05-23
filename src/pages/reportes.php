@@ -173,14 +173,21 @@ $date_to = !empty($_GET['date_to']) ? $_GET['date_to'] : null;
 $status_filter = isset($_GET['status']) && is_string($_GET['status']) ? trim($_GET['status']) : '';
 $status_filter = mysqli_real_escape_string($conn, $status_filter);
 
+// Validar tipo de reporte
+$current_report = null;
+if ($report_type && isset($report_types[$report_type])) {
+    $current_report = repairly_resolve_report($conn, $report_types[$report_type]);
+
+
+// Exportar CSV
 if ($action === 'csv' && $current_report) {
 
     $data = get_report_data(
         $conn,
         $current_report,
-        $date_from,
-        $date_to,
-        $status_filter
+        $date_from ?? '',
+        $date_to ?? '',
+        $status_filter ?? ''
     );
 
     header('Content-Type: text/csv');
@@ -198,10 +205,6 @@ if ($action === 'csv' && $current_report) {
     exit;
 }
 
-// Validar tipo de reporte
-$current_report = null;
-if ($report_type && isset($report_types[$report_type])) {
-    $current_report = repairly_resolve_report($conn, $report_types[$report_type]);
 }
 
 
