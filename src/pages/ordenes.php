@@ -237,7 +237,15 @@ $estado_name = function (int $eid) use ($estados): string {
                     <div class="order-valor" style="text-align:left;">$<?= number_format((float)($o['costo_total'] ?? 0), 2) ?></div>
                     <div style="display:flex;align-items:center;justify-content:center;">
                         <?php if ($codigo_seg): ?>
-                            <img src="qr.php?codigo=<?= h($codigo_seg) ?>" width="60" height="60" alt="QR" style="border-radius:4px;">
+                            <?php
+                            $isHttps = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+                            $proto = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '';
+                            if (is_string($proto) && strtolower(trim(explode(',', $proto)[0])) === 'https') {
+                                $isHttps = true;
+                            }
+                            $baseUrl = ($isHttps ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'];
+                            ?>
+                            <img src="<?= $baseUrl ?>/qr.php?codigo=<?= h($codigo_seg) ?>" width="60" height="60" alt="QR" style="border-radius:4px;">
                         <?php else: ?>
                             <span style="color:#999;font-size:11px;">Sin QR</span>
                         <?php endif; ?>

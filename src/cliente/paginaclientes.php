@@ -908,21 +908,21 @@ footer {
           <div class="info-item-icon">📍</div>
           <div class="info-item-text">
             <strong>Dirección</strong>
-            <span>Av. Winston Churchill esq. Gustavo Mejía Ricart,<br>Santo Domingo, República Dominicana</span>
+            <span>Av. Emma Balaguer. Los Guaricanos,<br>Santo Domingo Norte, República Dominicana</span>
           </div>
         </div>
         <div class="info-item">
           <div class="info-item-icon">📞</div>
           <div class="info-item-text">
             <strong>Teléfono / WhatsApp</strong>
-            <span><a href="tel:+18095550100">809-555-0100</a> · <a href="https://wa.me/18095550100">Escribir por WhatsApp</a></span>
+            <span><a href="tel:+18295921607">+1 (829) 592-1607</a> · <a href="https://wa.me/18095550100">Escribir por WhatsApp</a></span>
           </div>
         </div>
         <div class="info-item">
           <div class="info-item-icon">✉️</div>
           <div class="info-item-text">
             <strong>Correo electrónico</strong>
-            <span><a href="mailto:info@repairlyrd.com">info@repairlyrd.com</a></span>
+            <span><a href="mailto:repairlyrd@gmail.com">repairlyrd@gmail.com</a></span>
           </div>
         </div>
       </div>
