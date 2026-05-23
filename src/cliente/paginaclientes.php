@@ -639,6 +639,39 @@ textarea { resize: none; min-height: 100px; line-height: 1.6; }
 
 .success-panel p { font-size: 14px; color: var(--gray-text); line-height: 1.7; }
 
+/* loading */
+.loading-panel {
+  display: none;
+  text-align: center;
+  padding: 48px 24px;
+}
+
+.loading-spinner {
+  width: 64px;
+  height: 64px;
+  border: 4px solid #e5e7eb;
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-panel h3 {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--navy-dark);
+  margin-bottom: 10px;
+}
+
+.loading-panel p { font-size: 14px; color: var(--gray-text); line-height: 1.7; }
+
 /* ── FOOTER ── */
 footer {
   background: var(--navy-dark);
@@ -967,6 +1000,12 @@ footer {
         <h3>¡Solicitud recibida!</h3>
         <p>Gracias por contactarnos. Nuestro equipo revisará tu caso y te responderá en breve para coordinar la revisión de tu equipo.</p>
       </div>
+
+      <div class="loading-panel" id="loading-area" style="display:none;">
+        <div class="loading-spinner"></div>
+        <h3>Enviando...</h3>
+        <p>Por favor espera, estamos procesando tu solicitud.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -1047,6 +1086,10 @@ async function enviar() {
     return;
   }
   
+  // Mostrar pantalla de carga
+  document.getElementById('form-area').style.display = 'none';
+  document.getElementById('loading-area').style.display = 'block';
+  
   const formData = new FormData();
   formData.append('nombre', nombre);
   formData.append('email', email);
@@ -1061,12 +1104,16 @@ async function enviar() {
     const result = await response.json();
     
     if (result.success) {
-      document.getElementById('form-area').style.display = 'none';
+      document.getElementById('loading-area').style.display = 'none';
       document.getElementById('success-area').style.display = 'block';
     } else {
+      document.getElementById('loading-area').style.display = 'none';
+      document.getElementById('form-area').style.display = 'block';
       alert('Error al enviar: ' + (result.error || 'Error desconocido'));
     }
   } catch (error) {
+    document.getElementById('loading-area').style.display = 'none';
+    document.getElementById('form-area').style.display = 'block';
     alert('Error de conexión: ' + error.message);
   }
 }

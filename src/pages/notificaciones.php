@@ -133,13 +133,29 @@ if ($nt !== '') {
         <?php else: ?>
             <div style="margin-top:12px;max-height:400px;overflow-y:auto;">
                 <?php foreach ($rows as $r): ?>
-                    <div style="padding:12px 14px;border-bottom:0.5px solid #EDECEA;font-size:12px;">
-                        <div style="font-weight:600;color:#1C1A17;"><?= h((string)($r['tipo'] ?? 'aviso')) ?></div>
-                        <div style="margin-top:4px;color:#4D4841;"><?= h((string)($r['mensaje'] ?? '')) ?></div>
-                        <div style="font-size:10px;color:#8C8479;margin-top:6px;">
-                            <?= h((string)($r['fecha_envio'] ?? '')) ?>
-                            <?php if (isset($r['id_orden'])): ?> · Orden #<?= (int)$r['id_orden'] ?><?php endif; ?>
-                            · <?= h((string)($r['estado'] ?? '')) ?>
+                    <div style="padding:16px;border-bottom:1px solid #EDECEA;font-size:13px;background:#fff;border-radius:8px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+                            <div style="font-weight:700;color:#1C1A17;font-size:14px;"><?= h((string)($r['tipo'] ?? 'aviso')) ?></div>
+                            <div style="font-size:11px;padding:4px 8px;border-radius:12px;background:<?= strtolower($r['estado'] ?? '') === 'pendiente' ? '#FFF3E0' : '#E8F5E9' ?>;color:<?= strtolower($r['estado'] ?? '') === 'pendiente' ? '#FF9500' : '#00AA44' ?>;font-weight:600;"><?= h((string)($r['estado'] ?? 'N/A')) ?></div>
+                        </div>
+                        <div style="margin-top:8px;color:#4D4841;line-height:1.5;"><?= h((string)($r['mensaje'] ?? '')) ?></div>
+                        <div style="margin-top:12px;padding-top:12px;border-top:1px solid #F0EFE9;font-size:11px;color:#8C8479;display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;">
+                            <div>
+                                <span style="color:#6B6560;font-weight:500;">📅 Fecha:</span>
+                                <span style="color:#4D4841;"><?= h((string)($r['fecha_envio'] ?? '')) ?></span>
+                            </div>
+                            <?php if (isset($r['id_orden'])): ?>
+                            <div>
+                                <span style="color:#6B6560;font-weight:500;">📋 Orden:</span>
+                                <span style="color:#4D4841;">#<?= (int)$r['id_orden'] ?></span>
+                            </div>
+                            <?php endif; ?>
+                            <?php if (isset($r['id_notificacion'])): ?>
+                            <div>
+                                <span style="color:#6B6560;font-weight:500;">🔔 ID:</span>
+                                <span style="color:#4D4841;"><?= (int)$r['id_notificacion'] ?></span>
+                            </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 <?php endforeach; ?>
