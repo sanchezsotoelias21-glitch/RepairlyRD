@@ -6,6 +6,8 @@
 require_once __DIR__ . '/../../includes/ui_helper.php';
 require_once __DIR__ . '/../../includes/crud_notificaciones.php';
 
+$nt = pick_table($conn, ['notificacion', 'Notificacion']);
+
 // Procesar acciones POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -25,8 +27,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Location: ?page=notificaciones');
     exit;
 }
-
-$nt = pick_table($conn, ['notificacion', 'Notificacion']);
 $search_q = isset($_GET['q']) && is_string($_GET['q']) ? trim($_GET['q']) : '';
 $rows = [];
 $total_notif = 0;
