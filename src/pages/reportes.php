@@ -1,6 +1,16 @@
 <?php
 // src/pages/reportes.php - Sistema integral de reportes profesionales
 
+// Incluir configuración de base de datos si no está incluida
+if (!isset($conn) || !($conn instanceof mysqli)) {
+    require_once __DIR__ . '/../config/database.php';
+}
+
+// Incluir funciones auxiliares si no están incluidas
+if (!function_exists('pick_table')) {
+    require_once __DIR__ . '/../../includes/sql_helpers.php';
+}
+
 // Capturar errores fatales para depuración
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
@@ -96,6 +106,76 @@ $report_types = [
         ],
     ],
 ];
+
+// Función auxiliar para obtener datos del reporte (definida antes de usarla)
+function get_report_data(mysqli $conn, array $report_config, string $date_from, string $date_to, string $status_filter): array {
+    $table = $report_config['table'] ?? '';
+    if (!is_string($table) || $table === '') {
+        return [];
+    }
+
+    $cols = $report_config['columns'] ?? [];
+    if (!is_array($cols) || empty($cols)) {
+        return [];
+    }
+
+    $select = implode(', ', array_map(static function ($c): string {
+        $c = str_replace('`', '``', (string)$c);
+        return "`{$c}`";
+    }, $cols));
+
+    $sql = "SELECT {$select} FROM `{$table}` WHERE 1=1";
+    $params = [];
+    $types = '';
+
+    $dateCol = $report_config['date_col'] ?? null;
+    if (($report_config['has_date_range'] ?? false) && is_string($dateCol) && $dateCol !== '') {
+        $dateSafe = str_replace('`', '``', $dateCol);
+        if ($date_from !== '') {
+            $sql .= " AND `{$dateSafe}` >= ?";
+            $params[] = $date_from . ' 00:00:00';
+            $types .= 's';
+        }
+        if ($date_to !== '') {
+            $sql .= " AND `{$dateSafe}` <= ?";
+            $params[] = $date_to . ' 23:59:59';
+            $types .= 's';
+        }
+    }
+
+    $statusCol = $report_config['status_col'] ?? null;
+    $statusMode = $report_config['status_mode'] ?? null;
+    if (($report_config['has_status_filter'] ?? false) && $status_filter !== '' && is_string($statusCol) && $statusCol !== '') {
+        $statusSafe = str_replace('`', '``', $statusCol);
+        if ($statusMode === 'id') {
+            $sql .= " AND `{$statusSafe}` = ?";
+            $params[] = (int)$status_filter;
+            $types .= 'i';
+        } else {
+            $sql .= " AND `{$statusSafe}` = ?";
+            $params[] = $status_filter;
+            $types .= 's';
+        }
+    }
+
+    $orderBy = str_replace('`', '``', (string)$cols[0]);
+    $sql .= " ORDER BY `{$orderBy}` DESC LIMIT 1000";
+
+    if (empty($params)) {
+        return db_rows($conn, $sql);
+    }
+
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        return [];
+    }
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+    $stmt->close();
+    return $rows;
+}
 
 /**
  * Convierte un reporte "lógico" a un reporte "resuelto" (tabla + columnas reales).
@@ -243,76 +323,6 @@ try {
 } catch (Throwable $e) {
 }
 
-
-// Función auxiliar para obtener datos del reporte
-function get_report_data(mysqli $conn, array $report_config, string $date_from, string $date_to, string $status_filter): array {
-    $table = $report_config['table'] ?? '';
-    if (!is_string($table) || $table === '') {
-        return [];
-    }
-
-    $cols = $report_config['columns'] ?? [];
-    if (!is_array($cols) || empty($cols)) {
-        return [];
-    }
-
-    $select = implode(', ', array_map(static function ($c): string {
-        $c = str_replace('`', '``', (string)$c);
-        return "`{$c}`";
-    }, $cols));
-
-    $sql = "SELECT {$select} FROM `{$table}` WHERE 1=1";
-    $params = [];
-    $types = '';
-
-    $dateCol = $report_config['date_col'] ?? null;
-    if (($report_config['has_date_range'] ?? false) && is_string($dateCol) && $dateCol !== '') {
-        $dateSafe = str_replace('`', '``', $dateCol);
-        if ($date_from !== '') {
-            $sql .= " AND `{$dateSafe}` >= ?";
-            $params[] = $date_from . ' 00:00:00';
-            $types .= 's';
-        }
-        if ($date_to !== '') {
-            $sql .= " AND `{$dateSafe}` <= ?";
-            $params[] = $date_to . ' 23:59:59';
-            $types .= 's';
-        }
-    }
-
-    $statusCol = $report_config['status_col'] ?? null;
-    $statusMode = $report_config['status_mode'] ?? null;
-    if (($report_config['has_status_filter'] ?? false) && $status_filter !== '' && is_string($statusCol) && $statusCol !== '') {
-        $statusSafe = str_replace('`', '``', $statusCol);
-        if ($statusMode === 'id') {
-            $sql .= " AND `{$statusSafe}` = ?";
-            $params[] = (int)$status_filter;
-            $types .= 'i';
-        } else {
-            $sql .= " AND `{$statusSafe}` = ?";
-            $params[] = $status_filter;
-            $types .= 's';
-        }
-    }
-
-    $orderBy = str_replace('`', '``', (string)$cols[0]);
-    $sql .= " ORDER BY `{$orderBy}` DESC LIMIT 1000";
-
-    if (empty($params)) {
-        return db_rows($conn, $sql);
-    }
-
-    $stmt = $conn->prepare($sql);
-    if (!$stmt) {
-        return [];
-    }
-    $stmt->bind_param($types, ...$params);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
-    $stmt->close();
-    return $rows;
-}
 
 // Procesar descarga de PDF
 if ($action === 'generate_pdf' && $current_report) {
