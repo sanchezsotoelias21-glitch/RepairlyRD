@@ -4,6 +4,27 @@
 
 /** @var mysqli $conn */
 require_once __DIR__ . '/../../includes/ui_helper.php';
+require_once __DIR__ . '/../../includes/crud_notificaciones.php';
+
+// Procesar acciones POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    
+    if ($nt !== '' && $id > 0) {
+        if ($action === 'eliminar') {
+            eliminar_notificacion($conn, $nt, $id);
+        } elseif ($action === 'marcar_leida') {
+            marcar_notificacion_leida($conn, $nt, $id);
+        } elseif ($action === 'marcar_todas') {
+            marcar_todas_leidas($conn, $nt);
+        }
+    }
+    
+    // Redirigir para evitar reenvío del formulario
+    header('Location: ?page=notificaciones');
+    exit;
+}
 
 $nt = pick_table($conn, ['notificacion', 'Notificacion']);
 $search_q = isset($_GET['q']) && is_string($_GET['q']) ? trim($_GET['q']) : '';
@@ -127,6 +148,12 @@ if ($nt !== '') {
                     <a class="ordenes-ver-btn" href="?page=notificaciones">Limpiar</a>
                 <?php endif; ?>
             </form>
+            <?php if ($pending_notif > 0): ?>
+                <form method="post" style="display:inline;">
+                    <input type="hidden" name="action" value="marcar_todas">
+                    <button type="submit" class="ordenes-ver-btn" style="background:#00AA44;color:#fff;border-color:#00AA44;">Marcar todas como leídas</button>
+                </form>
+            <?php endif; ?>
         </div>
         <?php if ($nt === ''): ?>
             <p style="padding:12px;color:#B83232;">Tabla Notificacion no encontrada.</p>
@@ -157,6 +184,22 @@ if ($nt !== '') {
                             </div>
                             <?php endif; ?>
                         </div>
+                        <?php if (isset($r['id_notificacion'])): ?>
+                        <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;">
+                            <?php if (strtolower($r['estado'] ?? '') === 'pendiente'): ?>
+                            <form method="post" style="display:inline;">
+                                <input type="hidden" name="action" value="marcar_leida">
+                                <input type="hidden" name="id" value="<?= (int)$r['id_notificacion'] ?>">
+                                <button type="submit" class="ordenes-ver-btn" style="background:#00AA44;color:#fff;border-color:#00AA44;">Marcar como leída</button>
+                            </form>
+                            <?php endif; ?>
+                            <form method="post" style="display:inline;" onsubmit="return confirm('¿Eliminar esta notificación?');">
+                                <input type="hidden" name="action" value="eliminar">
+                                <input type="hidden" name="id" value="<?= (int)$r['id_notificacion'] ?>">
+                                <button type="submit" class="ordenes-ver-btn" style="background:#FDF0F0;color:#B83232;">Eliminar</button>
+                            </form>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
                 <?php if (empty($rows)): ?>

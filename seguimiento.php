@@ -238,6 +238,7 @@ $paso_actual = isset($orden_info) ? get_paso_progreso($orden_info['estado_nombre
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Seguimiento de Orden - RepairlyRD</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
     <style>
         * {
             margin: 0;
@@ -246,93 +247,115 @@ $paso_actual = isset($orden_info) ? get_paso_progreso($orden_info['estado_nombre
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: #F8F7F5;
+            color: #1C1A17;
             min-height: 100vh;
             padding: 20px;
         }
         
         .container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
         }
         
         .card {
-            background: white;
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            background: #fff;
+            border: 0.5px solid #D0CCC6;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            margin-bottom: 16px;
+        }
+        
+        .card-header {
             margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 0.5px solid #EDECEA;
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1C1A17;
+            margin-bottom: 4px;
+        }
+        
+        .card-sub {
+            font-size: 13px;
+            color: #6B6560;
         }
         
         .header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 24px;
         }
         
         .header h1 {
-            color: #333;
-            font-size: 28px;
-            margin-bottom: 10px;
+            color: #1C1A17;
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 12px;
         }
         
         .codigo-badge {
             display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #2b7abc;
             color: white;
-            padding: 10px 25px;
-            border-radius: 30px;
-            font-size: 18px;
-            font-weight: bold;
-            margin-top: 10px;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
         }
         
         .error {
-            background: #fee;
-            border: 1px solid #fcc;
-            border-radius: 10px;
-            padding: 20px;
+            background: #FFEBEE;
+            border: 0.5px solid #FFCDD2;
+            border-radius: 6px;
+            padding: 16px;
             text-align: center;
-            color: #c33;
+            color: #C62828;
         }
         
         .info-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+            gap: 12px;
+            margin-bottom: 20px;
         }
         
         .info-item {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 10px;
+            background: #F8F7F5;
+            padding: 12px;
+            border-radius: 6px;
+            border: 0.5px solid #EDECEA;
         }
         
         .info-label {
-            font-size: 12px;
-            color: #666;
+            font-size: 11px;
+            color: #6B6560;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
+            font-weight: 500;
         }
         
         .info-value {
-            font-size: 16px;
-            color: #333;
+            font-size: 14px;
+            color: #1C1A17;
             font-weight: 500;
         }
         
         .progress-container {
-            margin: 30px 0;
+            margin: 24px 0;
         }
         
         .progress-title {
             text-align: center;
-            font-size: 18px;
-            color: #333;
-            margin-bottom: 20px;
-            font-weight: 600;
+            font-size: 14px;
+            color: #1C1A17;
+            margin-bottom: 16px;
+            font-weight: 500;
         }
         
         .progress-steps {
@@ -340,27 +363,27 @@ $paso_actual = isset($orden_info) ? get_paso_progreso($orden_info['estado_nombre
             justify-content: space-between;
             align-items: center;
             position: relative;
-            margin: 40px 20px;
+            margin: 32px 16px;
         }
         
         .progress-line {
             position: absolute;
-            top: 25px;
+            top: 20px;
             left: 0;
             right: 0;
-            height: 4px;
-            background: #e0e0e0;
+            height: 3px;
+            background: #EDECEA;
             z-index: 1;
         }
         
         .progress-line-filled {
             position: absolute;
-            top: 25px;
+            top: 20px;
             left: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            height: 3px;
+            background: #2b7abc;
             z-index: 2;
-            transition: width 0.5s ease;
+            transition: width 0.3s ease;
         }
         
         .step {
@@ -371,116 +394,125 @@ $paso_actual = isset($orden_info) ? get_paso_progreso($orden_info['estado_nombre
         }
         
         .step-circle {
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
-            background: #e0e0e0;
+            background: #EDECEA;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 10px;
-            font-size: 24px;
-            transition: all 0.3s ease;
+            margin: 0 auto 8px;
+            font-size: 18px;
+            transition: all 0.2s ease;
         }
         
         .step.active .step-circle {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            transform: scale(1.1);
+            background: #2b7abc;
+            color: #fff;
         }
         
         .step.completed .step-circle {
-            background: #4caf50;
+            background: #00AA44;
+            color: #fff;
         }
         
         .step-label {
-            font-size: 12px;
-            color: #666;
+            font-size: 11px;
+            color: #6B6560;
             font-weight: 500;
         }
         
         .step.active .step-label {
-            color: #667eea;
-            font-weight: 700;
+            color: #2b7abc;
+            font-weight: 600;
         }
         
         .step.completed .step-label {
-            color: #4caf50;
+            color: #00AA44;
+            font-weight: 600;
         }
         
         .observaciones {
-            background: #fff3cd;
-            border: 1px solid #ffc107;
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 20px;
+            background: #FFF3E0;
+            border: 0.5px solid #FFE0B2;
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 16px;
         }
         
         .observaciones-title {
             font-weight: 600;
-            color: #856404;
-            margin-bottom: 10px;
+            color: #E65100;
+            margin-bottom: 8px;
+            font-size: 13px;
         }
         
         .observaciones-text {
-            color: #856404;
-            line-height: 1.6;
+            color: #BF360C;
+            line-height: 1.5;
+            font-size: 13px;
         }
         
         .footer {
             text-align: center;
-            margin-top: 30px;
-            color: white;
-            font-size: 14px;
+            margin-top: 24px;
+            color: #6B6560;
+            font-size: 12px;
         }
         
         .search-form {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 8px;
+            margin-bottom: 16px;
         }
         
         .search-input {
             flex: 1;
-            padding: 12px 20px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 16px;
+            padding: 10px 16px;
+            border: 0.5px solid #D0CCC6;
+            border-radius: 6px;
+            font-size: 14px;
+            background: #fff;
         }
         
         .search-input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #2b7abc;
         }
         
         .search-button {
-            padding: 12px 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 10px 24px;
+            background: #2b7abc;
             color: white;
             border: none;
-            border-radius: 10px;
-            font-size: 16px;
+            border-radius: 6px;
+            font-size: 13px;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: background 0.2s;
         }
         
         .search-button:hover {
-            transform: translateY(-2px);
+            background: #1a5a9e;
         }
         
         @media (max-width: 600px) {
             .progress-steps {
-                margin: 40px 10px;
+                margin: 32px 8px;
             }
             
             .step-circle {
-                width: 40px;
-                height: 40px;
-                font-size: 18px;
+                width: 32px;
+                height: 32px;
+                font-size: 14px;
             }
             
             .step-label {
                 font-size: 10px;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -489,11 +521,15 @@ $paso_actual = isset($orden_info) ? get_paso_progreso($orden_info['estado_nombre
     <div class="container">
         <?php if (isset($error)): ?>
             <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Seguimiento de Reparación</div>
+                    <div class="card-sub">RepairlyRD - Sistema de Gestión</div>
+                </div>
                 <div class="error">
-                    <h2>❌ Error</h2>
+                    <i class="ti ti-alert-circle" style="font-size: 24px; margin-bottom: 8px; display: block;"></i>
                     <p><?php echo htmlspecialchars($error); ?></p>
                 </div>
-                <div style="margin-top: 30px;">
+                <div style="margin-top: 20px;">
                     <form method="get" class="search-form">
                         <input type="text" name="codigo" class="search-input" placeholder="Ingresa tu código (ej: FC-001)" required>
                         <button type="submit" class="search-button">Buscar</button>
@@ -502,8 +538,11 @@ $paso_actual = isset($orden_info) ? get_paso_progreso($orden_info['estado_nombre
             </div>
         <?php elseif (isset($orden_info)): ?>
             <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Seguimiento de Reparación</div>
+                    <div class="card-sub">RepairlyRD - Sistema de Gestión</div>
+                </div>
                 <div class="header">
-                    <h1>🔧 Seguimiento de Reparación</h1>
                     <div class="codigo-badge">
                         <?php echo htmlspecialchars($codigo); ?>
                     </div>
@@ -638,7 +677,7 @@ $paso_actual = isset($orden_info) ? get_paso_progreso($orden_info['estado_nombre
                     if ($obs_col && !empty($orden_info['orden'][$obs_col])): 
                 ?>
                     <div class="observaciones">
-                        <div class="observaciones-title">📝 Observaciones</div>
+                        <div class="observaciones-title"><i class="ti ti-note"></i> Observaciones</div>
                         <div class="observaciones-text">
                             <?php echo nl2br(htmlspecialchars($orden_info['orden'][$obs_col])); ?>
                         </div>
@@ -648,13 +687,17 @@ $paso_actual = isset($orden_info) ? get_paso_progreso($orden_info['estado_nombre
             
             <div class="footer">
                 <p>¿Tienes preguntas? Contáctanos al taller</p>
-                <p style="margin-top: 10px;">© 2024 RepairlyRD - Sistema de Gestión de Reparaciones</p>
+                <p style="margin-top: 8px;">© 2024 RepairlyRD - Sistema de Gestión de Reparaciones</p>
             </div>
         <?php else: ?>
             <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Seguimiento de Reparación</div>
+                    <div class="card-sub">RepairlyRD - Sistema de Gestión</div>
+                </div>
                 <div class="header">
-                    <h1>🔧 Seguimiento de Reparación</h1>
-                    <p style="color: #666; margin-top: 10px;">Ingresa tu código de seguimiento para ver el estado de tu reparación</p>
+                    <h1><i class="ti ti-clipboard-list"></i> Seguimiento de Reparación</h1>
+                    <p style="color: #6B6560; margin-top: 8px; font-size: 14px;">Ingresa tu código de seguimiento para ver el estado de tu reparación</p>
                 </div>
                 
                 <form method="get" class="search-form">
