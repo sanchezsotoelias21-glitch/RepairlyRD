@@ -241,21 +241,63 @@ function copiarResultadoIA(){
     navigator.clipboard.writeText(texto);
 }
 
-// Script para actualizar el ID del cliente cuando se selecciona del datalist
+// Script para manejar dropdown personalizado de cliente
 document.addEventListener('DOMContentLoaded', function() {
     const clienteInput = document.querySelector('input[name="id_cliente_text"]');
     const clienteHidden = document.getElementById('id_cliente_hidden');
-    const clienteList = document.getElementById('cliente_list');
-
-    if (clienteInput && clienteHidden && clienteList) {
+    const clienteDropdown = document.getElementById('cliente_dropdown');
+    
+    if (clienteInput && clienteHidden && clienteDropdown) {
+        const options = clienteDropdown.querySelectorAll('.custom-select-option');
+        
+        // Mostrar dropdown al hacer foco en el input
+        clienteInput.addEventListener('focus', function() {
+            clienteDropdown.style.display = 'block';
+            filterOptions(clienteInput.value);
+        });
+        
+        // Filtrar opciones al escribir
         clienteInput.addEventListener('input', function() {
-            const selectedOption = Array.from(clienteList.options).find(option => option.value === this.value);
-            if (selectedOption) {
-                clienteHidden.value = selectedOption.getAttribute('data-id');
-            } else {
-                clienteHidden.value = '';
+            filterOptions(this.value);
+            clienteHidden.value = '';
+        });
+        
+        // Ocultar dropdown al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            if (!clienteInput.contains(e.target) && !clienteDropdown.contains(e.target)) {
+                clienteDropdown.style.display = 'none';
             }
         });
+        
+        // Seleccionar opción al hacer clic
+        options.forEach(option => {
+            option.addEventListener('click', function() {
+                clienteInput.value = this.getAttribute('data-value');
+                clienteHidden.value = this.getAttribute('data-id');
+                clienteDropdown.style.display = 'none';
+            });
+            
+            // Hover effect
+            option.addEventListener('mouseenter', function() {
+                this.style.background = '#E3F2FD';
+            });
+            
+            option.addEventListener('mouseleave', function() {
+                this.style.background = '#fff';
+            });
+        });
+        
+        function filterOptions(searchTerm) {
+            const term = searchTerm.toLowerCase();
+            options.forEach(option => {
+                const value = option.getAttribute('data-value').toLowerCase();
+                if (value.includes(term)) {
+                    option.style.display = 'block';
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+        }
     }
 });
 </script>
@@ -311,13 +353,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 <?php if (isset($equipo_cols['id_cliente']) && $cliente_pick !== ''): ?>
                     <div style="grid-column:1/-1;">
                         <label style="font-size:10px;color:#6B6560;">Cliente</label>
-                        <input type="text" name="id_cliente_text" list="cliente_list" required placeholder="Buscar o escribir cliente..." style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;" value="<?= (int)($edit['id_cliente'] ?? 0) > 0 ? h((string)($edit['nombre_cliente'] ?? '')) : '' ?>">
-                        <input type="hidden" name="id_cliente" id="id_cliente_hidden" value="<?= (int)($edit['id_cliente'] ?? 0) ?>">
-                        <datalist id="cliente_list">
-                            <?php foreach ($clientes_opts as $c): ?>
-                                <option value="<?= h((string)$c['nombre']) ?>" data-id="<?= (int)$c['id'] ?>"></option>
-                            <?php endforeach; ?>
-                        </datalist>
+                        <div class="custom-select-wrapper" style="position:relative;">
+                            <input type="text" name="id_cliente_text" class="custom-select-input" required placeholder="Buscar o escribir cliente..." style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;background:#fff;" value="<?= (int)($edit['id_cliente'] ?? 0) > 0 ? h((string)($edit['nombre_cliente'] ?? '')) : '' ?>">
+                            <input type="hidden" name="id_cliente" id="id_cliente_hidden" value="<?= (int)($edit['id_cliente'] ?? 0) ?>">
+                            <div class="custom-select-dropdown" id="cliente_dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:0.5px solid #D0CCC6;border-radius:8px;max-height:200px;overflow-y:auto;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,0.1);margin-top:4px;">
+                                <?php foreach ($clientes_opts as $c): ?>
+                                    <div class="custom-select-option" data-value="<?= h((string)$c['nombre']) ?>" data-id="<?= (int)$c['id'] ?>" style="padding:10px 12px;cursor:pointer;border-bottom:0.5px solid #EDECEA;font-size:13px;color:#1C1A17;">
+                                        <?= h((string)$c['nombre']) ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
                     </div>
                 <?php endif; ?>
                 <div style="grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end;">

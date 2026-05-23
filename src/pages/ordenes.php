@@ -163,25 +163,33 @@ $estado_name = function (int $eid) use ($estados): string {
                 <?php if (isset($orden_cols['id_equipo'])): ?>
                     <div style="grid-column:1/-1;">
                         <label style="font-size:10px;color:#6B6560;">Equipo</label>
-                        <input type="text" name="id_equipo_text" list="equipo_list" required placeholder="Buscar o escribir equipo..." style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;" value="<?= (int)($edit['id_equipo'] ?? 0) > 0 ? h((string)($edit['equipo_label'] ?? '')) : '' ?>">
-                        <input type="hidden" name="id_equipo" id="id_equipo_hidden" value="<?= (int)($edit['id_equipo'] ?? 0) ?>">
-                        <datalist id="equipo_list">
-                            <?php foreach ($equipos_list as $e): ?>
-                                <option value="<?= h((string)($e['label'] ?? $e['id_equipo'])) ?>" data-id="<?= (int)$e['id_equipo'] ?>"></option>
-                            <?php endforeach; ?>
-                        </datalist>
+                        <div class="custom-select-wrapper" style="position:relative;">
+                            <input type="text" name="id_equipo_text" class="custom-select-input" required placeholder="Buscar o escribir equipo..." style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;background:#fff;" value="<?= (int)($edit['id_equipo'] ?? 0) > 0 ? h((string)($edit['equipo_label'] ?? '')) : '' ?>">
+                            <input type="hidden" name="id_equipo" id="id_equipo_hidden" value="<?= (int)($edit['id_equipo'] ?? 0) ?>">
+                            <div class="custom-select-dropdown" id="equipo_dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:0.5px solid #D0CCC6;border-radius:8px;max-height:200px;overflow-y:auto;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,0.1);margin-top:4px;">
+                                <?php foreach ($equipos_list as $e): ?>
+                                    <div class="custom-select-option" data-value="<?= h((string)($e['label'] ?? $e['id_equipo'])) ?>" data-id="<?= (int)$e['id_equipo'] ?>" style="padding:10px 12px;cursor:pointer;border-bottom:0.5px solid #EDECEA;font-size:13px;color:#1C1A17;">
+                                        <?= h((string)($e['label'] ?? $e['id_equipo'])) ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
                     </div>
                 <?php endif; ?>
                 <?php if (isset($orden_cols['id_tecnico'])): ?>
                     <div>
                         <label style="font-size:10px;color:#6B6560;">Técnico</label>
-                        <input type="text" name="id_tecnico_text" list="tecnico_list" placeholder="Buscar o escribir técnico..." style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;" value="<?= (int)($edit['id_tecnico'] ?? 0) > 0 ? h((string)($edit['nombre_tecnico'] ?? '')) : '' ?>">
-                        <input type="hidden" name="id_tecnico" id="id_tecnico_hidden" value="<?= (int)($edit['id_tecnico'] ?? 0) ?>">
-                        <datalist id="tecnico_list">
-                            <?php foreach ($tecs as $te): ?>
-                                <option value="<?= h((string)$te['nombre']) ?>" data-id="<?= (int)$te['id_tecnico'] ?>"></option>
-                            <?php endforeach; ?>
-                        </datalist>
+                        <div class="custom-select-wrapper" style="position:relative;">
+                            <input type="text" name="id_tecnico_text" class="custom-select-input" placeholder="Buscar o escribir técnico..." style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;background:#fff;" value="<?= (int)($edit['id_tecnico'] ?? 0) > 0 ? h((string)($edit['nombre_tecnico'] ?? '')) : '' ?>">
+                            <input type="hidden" name="id_tecnico" id="id_tecnico_hidden" value="<?= (int)($edit['id_tecnico'] ?? 0) ?>">
+                            <div class="custom-select-dropdown" id="tecnico_dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:0.5px solid #D0CCC6;border-radius:8px;max-height:200px;overflow-y:auto;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,0.1);margin-top:4px;">
+                                <?php foreach ($tecs as $te): ?>
+                                    <div class="custom-select-option" data-value="<?= h((string)$te['nombre']) ?>" data-id="<?= (int)$te['id_tecnico'] ?>" style="padding:10px 12px;cursor:pointer;border-bottom:0.5px solid #EDECEA;font-size:13px;color:#1C1A17;">
+                                        <?= h((string)$te['nombre']) ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
                     </div>
                 <?php endif; ?>
                 <?php if (isset($orden_cols['id_estado_actual'])): ?>
@@ -267,38 +275,72 @@ $estado_name = function (int $eid) use ($estados): string {
 </div>
 
 <script>
-// Script para actualizar los IDs cuando se seleccionan del datalist
+// Script para manejar dropdowns personalizados
 document.addEventListener('DOMContentLoaded', function() {
-    // Equipo
-    const equipoInput = document.querySelector('input[name="id_equipo_text"]');
-    const equipoHidden = document.getElementById('id_equipo_hidden');
-    const equipoList = document.getElementById('equipo_list');
-
-    if (equipoInput && equipoHidden && equipoList) {
-        equipoInput.addEventListener('input', function() {
-            const selectedOption = Array.from(equipoList.options).find(option => option.value === this.value);
-            if (selectedOption) {
-                equipoHidden.value = selectedOption.getAttribute('data-id');
-            } else {
-                equipoHidden.value = '';
+    // Función para inicializar un dropdown personalizado
+    function initCustomSelect(inputId, hiddenId, dropdownId) {
+        const input = document.querySelector(inputId);
+        const hidden = document.getElementById(hiddenId);
+        const dropdown = document.getElementById(dropdownId);
+        
+        if (!input || !hidden || !dropdown) return;
+        
+        const options = dropdown.querySelectorAll('.custom-select-option');
+        
+        // Mostrar dropdown al hacer foco en el input
+        input.addEventListener('focus', function() {
+            dropdown.style.display = 'block';
+            filterOptions(input.value);
+        });
+        
+        // Filtrar opciones al escribir
+        input.addEventListener('input', function() {
+            filterOptions(this.value);
+            hidden.value = '';
+        });
+        
+        // Ocultar dropdown al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.style.display = 'none';
             }
         });
-    }
-
-    // Técnico
-    const tecnicoInput = document.querySelector('input[name="id_tecnico_text"]');
-    const tecnicoHidden = document.getElementById('id_tecnico_hidden');
-    const tecnicoList = document.getElementById('tecnico_list');
-
-    if (tecnicoInput && tecnicoHidden && tecnicoList) {
-        tecnicoInput.addEventListener('input', function() {
-            const selectedOption = Array.from(tecnicoList.options).find(option => option.value === this.value);
-            if (selectedOption) {
-                tecnicoHidden.value = selectedOption.getAttribute('data-id');
-            } else {
-                tecnicoHidden.value = '';
-            }
+        
+        // Seleccionar opción al hacer clic
+        options.forEach(option => {
+            option.addEventListener('click', function() {
+                input.value = this.getAttribute('data-value');
+                hidden.value = this.getAttribute('data-id');
+                dropdown.style.display = 'none';
+            });
+            
+            // Hover effect
+            option.addEventListener('mouseenter', function() {
+                this.style.background = '#E3F2FD';
+            });
+            
+            option.addEventListener('mouseleave', function() {
+                this.style.background = '#fff';
+            });
         });
+        
+        function filterOptions(searchTerm) {
+            const term = searchTerm.toLowerCase();
+            options.forEach(option => {
+                const value = option.getAttribute('data-value').toLowerCase();
+                if (value.includes(term)) {
+                    option.style.display = 'block';
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+        }
     }
+    
+    // Inicializar dropdown de equipo
+    initCustomSelect('input[name="id_equipo_text"]', 'id_equipo_hidden', 'equipo_dropdown');
+    
+    // Inicializar dropdown de técnico
+    initCustomSelect('input[name="id_tecnico_text"]', 'id_tecnico_hidden', 'tecnico_dropdown');
 });
 </script>
