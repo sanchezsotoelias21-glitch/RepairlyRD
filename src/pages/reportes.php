@@ -559,7 +559,7 @@ if ($current_report && ($current_report['has_status_filter'] ?? false)) {
     border: 2px solid var(--border-gray);
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     gap: 16px;
@@ -580,11 +580,32 @@ if ($current_report && ($current_report['has_status_filter'] ?? false)) {
     pointer-events: none;
 }
 
+.report-item::after {
+    content: '✓';
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 36px;
+    height: 36px;
+    background: var(--success);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 20px;
+    opacity: 0;
+    transform: scale(0);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 170, 68, 0.3);
+}
+
 .report-item:hover {
     border-color: var(--primary);
-    background: var(--primary-light);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(31, 92, 139, 0.12);
+    background: #f9fbfd;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(31, 92, 139, 0.15);
 }
 
 .report-item:hover::before {
@@ -593,8 +614,15 @@ if ($current_report && ($current_report['has_status_filter'] ?? false)) {
 
 .report-item.active {
     border-color: var(--primary);
+    border-width: 3px;
     background: var(--primary-light);
-    box-shadow: 0 4px 20px rgba(31, 92, 139, 0.15);
+    box-shadow: 0 8px 32px rgba(31, 92, 139, 0.25);
+    transform: translateY(-3px);
+}
+
+.report-item.active::after {
+    opacity: 1;
+    transform: scale(1);
 }
 
 .report-item-icon {
@@ -609,11 +637,13 @@ if ($current_report && ($current_report['has_status_filter'] ?? false)) {
     font-size: 24px;
     color: var(--primary);
     font-weight: 600;
+    transition: all 0.3s ease;
 }
 
 .report-item.active .report-item-icon {
     background: var(--primary);
     color: #fff;
+    transform: scale(1.1);
 }
 
 .report-item-content {
@@ -687,7 +717,7 @@ if ($current_report && ($current_report['has_status_filter'] ?? false)) {
 }
 
 .btn-primary {
-    padding: 11px 20px;
+    padding: 12px 24px;
     background: var(--primary);
     color: #fff;
     border: none;
@@ -695,39 +725,54 @@ if ($current_report && ($current_report['has_status_filter'] ?? false)) {
     font-weight: 600;
     cursor: pointer;
     font-size: 13px;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    gap: 8px;
     flex: 1;
+    box-shadow: 0 4px 12px rgba(31, 92, 139, 0.2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .btn-primary:hover {
     background: var(--primary-dark);
-    box-shadow: 0 4px 12px rgba(31, 92, 139, 0.25);
+    box-shadow: 0 8px 20px rgba(31, 92, 139, 0.35);
+    transform: translateY(-2px);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(31, 92, 139, 0.25);
 }
 
 .btn-secondary {
-    padding: 11px 20px;
-    background: #f0f0f0;
+    padding: 12px 24px;
+    background: #fff;
     color: var(--text-dark);
-    border: 1px solid var(--border-gray);
+    border: 2px solid var(--border-gray);
     border-radius: 8px;
     font-weight: 600;
     cursor: pointer;
     font-size: 13px;
     text-decoration: none;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    flex: 1;
     justify-content: center;
+    gap: 8px;
+    flex: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .btn-secondary:hover {
-    background: #e8e8e8;
-    border-color: var(--text-muted);
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary);
+    box-shadow: 0 4px 12px rgba(31, 92, 139, 0.15);
+    transform: translateY(-2px);
 }
 
 /* FILTROS ACTIVOS */
@@ -804,6 +849,10 @@ if ($current_report && ($current_report['has_status_filter'] ?? false)) {
     margin-bottom: 20px;
     flex-wrap: wrap;
     gap: 16px;
+    padding: 20px;
+    background: linear-gradient(135deg, #f9fbfd 0%, #f0f4f8 100%);
+    border-radius: 10px;
+    border: 1px solid var(--border-light);
 }
 
 .data-info {
@@ -834,13 +883,21 @@ if ($current_report && ($current_report['has_status_filter'] ?? false)) {
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 13px;
+    box-shadow: 0 4px 12px rgba(0, 170, 68, 0.2);
+    border: none;
 }
 
 .btn-download:hover {
     background: #009938;
-    box-shadow: 0 4px 12px rgba(0, 170, 68, 0.25);
+    box-shadow: 0 8px 20px rgba(0, 170, 68, 0.35);
+    transform: translateY(-2px);
+}
+
+.btn-download:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0, 170, 68, 0.25);
 }
 
 /* TABLA */
@@ -1182,28 +1239,64 @@ if ($current_report && ($current_report['has_status_filter'] ?? false)) {
 document.addEventListener('DOMContentLoaded', function () {
     const reportItems = document.querySelectorAll('.report-item');
     reportItems.forEach(item => {
-        item.addEventListener('click', function () {
+        item.addEventListener('click', function (e) {
+            // Añadir animación de pulso
+            const pulse = document.createElement('span');
+            pulse.style.position = 'absolute';
+            pulse.style.left = e.clientX - item.getBoundingClientRect().left + 'px';
+            pulse.style.top = e.clientY - item.getBoundingClientRect().top + 'px';
+            pulse.style.width = '10px';
+            pulse.style.height = '10px';
+            pulse.style.background = 'rgba(31, 92, 139, 0.6)';
+            pulse.style.borderRadius = '50%';
+            pulse.style.animation = 'ripple 0.6s ease-out';
+            item.appendChild(pulse);
+            setTimeout(() => pulse.remove(), 600);
+            
+            // Remover active de otros items
             reportItems.forEach(i => i.classList.remove('active'));
+            // Añadir active al item seleccionado
             this.classList.add('active');
         });
     });
 
+    // Animación de tabla de búsqueda
     const table = document.querySelector('.data-table');
     if (table) {
         const searchInput = document.createElement('input');
         searchInput.type = 'text';
-        searchInput.placeholder = 'Buscar dentro del reporte...';
+        searchInput.placeholder = '🔍 Buscar dentro del reporte...';
         searchInput.className = 'filter-input';
         searchInput.style.marginBottom = '16px';
+        searchInput.style.fontSize = '14px';
+        searchInput.style.padding = '12px 16px';
 
         table.parentNode.insertBefore(searchInput, table);
 
         searchInput.addEventListener('keyup', function () {
             const value = this.value.toLowerCase();
+            let visibleCount = 0;
             table.querySelectorAll('tbody tr').forEach(row => {
                 const text = row.innerText.toLowerCase();
-                row.style.display = text.includes(value) ? '' : 'none';
+                const isVisible = text.includes(value);
+                row.style.display = isVisible ? '' : 'none';
+                row.style.animation = isVisible ? 'fadeIn 0.3s ease' : '';
+                if (isVisible) visibleCount++;
             });
+            
+            // Mostrar mensaje si no hay resultados
+            if (visibleCount === 0 && this.value) {
+                const emptyMsg = table.querySelector('.search-empty');
+                if (!emptyMsg) {
+                    const msg = document.createElement('tr');
+                    msg.className = 'search-empty';
+                    msg.innerHTML = '<td colspan="100%" style="text-align: center; padding: 40px; color: var(--text-muted);">No se encontraron resultados para "' + this.value + '"</td>';
+                    table.querySelector('tbody').appendChild(msg);
+                }
+            } else {
+                const emptyMsg = table.querySelector('.search-empty');
+                if (emptyMsg) emptyMsg.remove();
+            }
         });
     }
 
@@ -1212,4 +1305,29 @@ document.addEventListener('DOMContentLoaded', function () {
         current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 });
+
+// Animación ripple CSS
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes ripple {
+        0% {
+            transform: scale(1);
+            opacity: 1;
+        }
+        100% {
+            transform: scale(30);
+            opacity: 0;
+        }
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+`;
+document.head.appendChild(style);
 </script>
