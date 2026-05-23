@@ -408,14 +408,14 @@ if ($action === 'generate_pdf' && $current_report) {
                 ['label' => 'Total registros', 'value' => (string)count($report_data), 'color' => 'primary'],
             ];
         }
-        $pdf->addKpiRow($kpiStats);
+        //$pdf->addKpiRow($kpiStats);
 
         // ---- Filtros activos ----
         $statusDisplay = $status_filter;
         if (($current_report['status_mode'] ?? null) === 'id' && isset($status_options_id_to_name[$status_filter])) {
             $statusDisplay = (string)$status_options_id_to_name[$status_filter];
         }
-        $pdf->addFilterBadges($date_from, $date_to, $statusDisplay);
+       // $pdf->addFilterBadges($date_from, $date_to, $statusDisplay);
 
         // ---- Preparar filas para la tabla ----
         $headers   = $current_report['display_cols'];
