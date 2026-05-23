@@ -1048,11 +1048,11 @@ footer {
       <h4>Contacto</h4>
       <div class="footer-contact-item">
         <span>📍</span>
-        <span>Av. Winston Churchill, Santo Domingo, RD</span>
+        <span>Los Guaricanos, Santo Domingo Norte, RD</span>
       </div>
       <div class="footer-contact-item">
         <span>📞</span>
-        <span>809-555-0100</span>
+        <span>+1 (829) 592-1607</span>
       </div>
       <div class="footer-contact-item">
         <span>✉️</span>

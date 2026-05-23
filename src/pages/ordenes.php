@@ -223,17 +223,25 @@ $estado_name = function (int $eid) use ($estados): string {
         <?php endif; ?>
 
         <div style="margin-top:14px;border-top:0.5px solid #EDECEA;padding-top:12px;">
-            <div class="table-head" style="grid-template-columns:52px 1fr 90px 90px 120px;">
-                <div>ID</div><div>Código</div><div>Estado</div><div>Total</div><div style="text-align:right;">Acciones</div>
+            <div class="table-head" style="grid-template-columns:52px 1fr 90px 90px 140px 120px;">
+                <div>ID</div><div>Código</div><div>Estado</div><div>Total</div><div>QR</div><div style="text-align:right;">Acciones</div>
             </div>
             <div style="max-height:400px;overflow-y:auto;">
             <?php foreach ($ordenes_list as $o): ?>
                 <?php $eid = (int)($o['id_estado_actual'] ?? 0); ?>
-                <div class="table-row" style="grid-template-columns:52px 1fr 90px 90px 120px;">
+                <?php $codigo_seg = (string)($o['codigo_seguimiento'] ?? ''); ?>
+                <div class="table-row" style="grid-template-columns:52px 1fr 90px 90px 140px 120px;">
                     <div class="order-id"><?= (int)($o[$idField] ?? 0) ?></div>
-                    <div class="order-cliente"><?= h((string)($o['codigo_seguimiento'] ?? '—')) ?></div>
+                    <div class="order-cliente"><?= h($codigo_seg ?: '—') ?></div>
                     <div class="order-tecnico" style="font-size:11px;"><?= h($estado_name($eid)) ?></div>
                     <div class="order-valor" style="text-align:left;">$<?= number_format((float)($o['costo_total'] ?? 0), 2) ?></div>
+                    <div style="display:flex;align-items:center;justify-content:center;">
+                        <?php if ($codigo_seg): ?>
+                            <img src="qr.php?codigo=<?= h($codigo_seg) ?>" width="60" height="60" alt="QR" style="border-radius:4px;">
+                        <?php else: ?>
+                            <span style="color:#999;font-size:11px;">Sin QR</span>
+                        <?php endif; ?>
+                    </div>
                     <div style="display:flex;gap:6px;justify-content:flex-end;">
                         <a class="ordenes-ver-btn" href="?page=ordenes&action=edit&id=<?= (int)($o[$idField] ?? 0) ?>">Editar</a>
                         <form method="post" style="display:inline;" onsubmit="return confirm('¿Eliminar orden?');">
