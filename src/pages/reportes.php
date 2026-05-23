@@ -449,6 +449,68 @@ if ($action === 'generate_pdf' && $current_report) {
         }
 
         $pdf->addDataTable($headers, $tableRows, $colWidths);
+        public function addDataTable(array $headers, array $rows, array $widths = [])
+{
+    $this->Ln(4);
+
+    $this->SetFont('Arial', 'B', 9);
+
+    if (empty($widths)) {
+        $width = floor(190 / max(count($headers), 1));
+        $widths = array_fill(0, count($headers), $width);
+    }
+
+    // Encabezados
+    foreach ($headers as $i => $header) {
+        $w = $widths[$i] ?? 30;
+
+        $this->SetFillColor(41, 128, 185);
+        $this->SetTextColor(255, 255, 255);
+
+        $this->Cell(
+            $w,
+            8,
+            $this->encodeText($header),
+            1,
+            0,
+            'C',
+            true
+        );
+    }
+
+    $this->Ln();
+
+    // Filas
+    $this->SetFont('Arial', '', 8);
+    $this->SetTextColor(0, 0, 0);
+
+    foreach ($rows as $row) {
+
+        foreach ($row as $i => $value) {
+
+            $w = $widths[$i] ?? 30;
+
+            $text = mb_substr((string)$value, 0, 35);
+
+            $this->Cell(
+                $w,
+                7,
+                $this->encodeText($text),
+                1,
+                0,
+                'L'
+            );
+        }
+
+        $this->Ln();
+
+        if ($this->GetY() > 260) {
+            $this->AddPage();
+        }
+    }
+
+    $this->Ln(4);
+}
 
         // ---- Entregar PDF al navegador ----
         $filename = 'Repairly_' . ucfirst($report_type) . '_' . date('Ymd_His') . '.pdf';
@@ -508,7 +570,68 @@ if ($current_report && ($current_report['has_status_filter'] ?? false)) {
             'Cancelado', 'En espera', 'Diagnóstico', 'Activo', 'Inactivo'
         ];
     }
-    
+    public function addDataTable(array $headers, array $rows, array $widths = [])
+{
+    $this->Ln(4);
+
+    $this->SetFont('Arial', 'B', 9);
+
+    if (empty($widths)) {
+        $width = floor(190 / max(count($headers), 1));
+        $widths = array_fill(0, count($headers), $width);
+    }
+
+    // Encabezados
+    foreach ($headers as $i => $header) {
+        $w = $widths[$i] ?? 30;
+
+        $this->SetFillColor(41, 128, 185);
+        $this->SetTextColor(255, 255, 255);
+
+        $this->Cell(
+            $w,
+            8,
+            $this->encodeText($header),
+            1,
+            0,
+            'C',
+            true
+        );
+    }
+
+    $this->Ln();
+
+    // Filas
+    $this->SetFont('Arial', '', 8);
+    $this->SetTextColor(0, 0, 0);
+
+    foreach ($rows as $row) {
+
+        foreach ($row as $i => $value) {
+
+            $w = $widths[$i] ?? 30;
+
+            $text = mb_substr((string)$value, 0, 35);
+
+            $this->Cell(
+                $w,
+                7,
+                $this->encodeText($text),
+                1,
+                0,
+                'L'
+            );
+        }
+
+        $this->Ln();
+
+        if ($this->GetY() > 260) {
+            $this->AddPage();
+        }
+    }
+
+    $this->Ln(4);
+}ok?
 }
 ?>
 
