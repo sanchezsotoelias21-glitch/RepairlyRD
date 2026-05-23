@@ -29,9 +29,9 @@ if (is_string($proto) && strtolower(trim(explode(',', $proto)[0])) === 'https') 
 $baseUrl = ($isHttps ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'];
 $seguimientoUrl = $baseUrl . '/seguimiento.php?codigo=' . urlencode($codigo);
 
-// Usar API externa de Google Charts para generar el QR
-$qrApiUrl = 'https://chart.googleapis.com/chart?cht=qr&chs=150x150&chl=' . urlencode($seguimientoUrl);
+// Usar API externa de QR Server para generar el QR
+$qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' . urlencode($seguimientoUrl);
 
-// Redirigir a la API de Google
+// Redirigir a la API de QR Server
 header('Location: ' . $qrApiUrl);
 exit;
