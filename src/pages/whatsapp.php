@@ -29,7 +29,9 @@ $success = '';
 $error = '';
 
 // Protección contra envíos duplicados
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 $last_whatsapp_send = $_SESSION['last_whatsapp_send'] ?? 0;
 $time_since_last_send = time() - $last_whatsapp_send;
 
@@ -49,6 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'send_
             'message' => $message
         ]);
 
+        error_log("WhatsApp: Enviando a webhook - URL: $webhook_url, Payload: $payload");
+
         $ch = curl_init($webhook_url);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
@@ -62,6 +66,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'send_
         $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curl_error = curl_error($ch);
         curl_close($ch);
+
+        error_log("WhatsApp: Respuesta - HTTP: $http, Error: $curl_error, Response: $response");
 
         if ($curl_error) {
             $error = 'Error enviando mensaje: ' . $curl_error;
