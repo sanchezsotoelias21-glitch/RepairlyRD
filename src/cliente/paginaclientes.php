@@ -1038,7 +1038,7 @@ function setUrg(btn, tipo) {
   btn.classList.add('sel-' + tipo);
 }
 
-function enviar() {
+async function enviar() {
   const nombre = document.getElementById('nombre').value.trim();
   const email = document.getElementById('email').value.trim();
   const problema = document.getElementById('problema').value.trim();
@@ -1046,8 +1046,29 @@ function enviar() {
     alert('Por favor completa: nombre, correo y descripción del problema.');
     return;
   }
-  document.getElementById('form-area').style.display = 'none';
-  document.getElementById('success-area').style.display = 'block';
+  
+  const formData = new FormData();
+  formData.append('nombre', nombre);
+  formData.append('email', email);
+  formData.append('problema', problema);
+  
+  try {
+    const response = await fetch('/api/contacto.php', {
+      method: 'POST',
+      body: formData
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      document.getElementById('form-area').style.display = 'none';
+      document.getElementById('success-area').style.display = 'block';
+    } else {
+      alert('Error al enviar: ' + (result.error || 'Error desconocido'));
+    }
+  } catch (error) {
+    alert('Error de conexión: ' + error.message);
+  }
 }
 </script>
 </body>
