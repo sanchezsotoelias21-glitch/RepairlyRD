@@ -1,9 +1,7 @@
 <?php
-session_start();
-if (!isset($_SESSION['usuario_id']) && !isset($_SESSION['user_id'])) {
-    header('Location: /login.php');
-    exit;
-}
+// src/pages/reportes.php - Sistema integral de reportes profesionales
+
+
 
 // Reportes disponibles (resuelve tablas/columnas segÃºn el esquema real en MySQL).
 $report_types = [
