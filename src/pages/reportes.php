@@ -177,7 +177,7 @@ $status_filter = mysqli_real_escape_string($conn, $status_filter);
 $current_report = null;
 if ($report_type && isset($report_types[$report_type])) {
     $current_report = repairly_resolve_report($conn, $report_types[$report_type]);
-
+}
 
 // Exportar CSV
 if ($action === 'csv' && $current_report) {
@@ -203,8 +203,6 @@ if ($action === 'csv' && $current_report) {
 
     fclose($output);
     exit;
-}
-
 }
 
 
@@ -1043,22 +1041,30 @@ No se pudo cargar el reporte seleccionado. Verifica que la tabla exista en la ba
 <strong>Debug info:</strong><br>
 Tipo de reporte: <?= h($report_type) ?><br>
 <?php
-if (isset($report_types[$report_type])) {
-    $cfg = $report_types[$report_type];
-    echo 'Configuración encontrada: ' . h($cfg['label']) . '<br>';
-    echo 'Tablas candidatas: ' . h(implode(', ', $cfg['table_candidates'])) . '<br>';
-    
-    // Intentar encontrar la tabla
-    $found_table = pick_table($conn, $cfg['table_candidates']);
-    echo 'Tabla encontrada: ' . ($found_table ? h($found_table) : 'NINGUNA') . '<br>';
-    
-    if ($found_table) {
-        $cols = table_columns($conn, $found_table);
-        echo 'Columnas encontradas: ' . count($cols) . '<br>';
-        echo 'Columnas: ' . h(implode(', ', array_keys($cols))) . '<br>';
+try {
+    if (isset($report_types[$report_type])) {
+        $cfg = $report_types[$report_type];
+        echo 'Configuración encontrada: ' . h($cfg['label']) . '<br>';
+        echo 'Tablas candidatas: ' . h(implode(', ', $cfg['table_candidates'])) . '<br>';
+        
+        // Intentar encontrar la tabla
+        if (function_exists('pick_table')) {
+            $found_table = pick_table($conn, $cfg['table_candidates']);
+            echo 'Tabla encontrada: ' . ($found_table ? h($found_table) : 'NINGUNA') . '<br>';
+            
+            if ($found_table && function_exists('table_columns')) {
+                $cols = table_columns($conn, $found_table);
+                echo 'Columnas encontradas: ' . count($cols) . '<br>';
+                echo 'Columnas: ' . h(implode(', ', array_keys($cols))) . '<br>';
+            }
+        } else {
+            echo 'Función pick_table no disponible<br>';
+        }
+    } else {
+        echo 'Tipo de reporte no válido<br>';
     }
-} else {
-    echo 'Tipo de reporte no válido<br>';
+} catch (Throwable $e) {
+    echo 'Error en depuración: ' . h($e->getMessage()) . '<br>';
 }
 ?>
 </div>
