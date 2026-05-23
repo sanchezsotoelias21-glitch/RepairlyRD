@@ -9,7 +9,7 @@ $report_types = [
         'label' => 'Reporte de Clientes',
         'desc' => 'Listado de clientes con información de contacto',
         'icon' => 'ti-users',
-        'table_candidates' => ['cliente', 'Cliente'],
+        'table_candidates' => ['cliente', 'clientes', 'Cliente', 'Clientes'],
         'fields' => [
             ['label' => 'ID', 'candidates' => ['id_cliente', 'id']],
             ['label' => 'Nombre', 'candidates' => ['nombre', 'name']],
@@ -22,7 +22,7 @@ $report_types = [
         'label' => 'Reporte de Técnicos',
         'desc' => 'Listado de técnicos con especialidades',
         'icon' => 'ti-user-check',
-        'table_candidates' => ['tecnico', 'Tecnico'],
+        'table_candidates' => ['tecnico', 'tecnicos', 'Tecnico', 'Tecnicos', 'empleados'],
         'fields' => [
             ['label' => 'ID', 'candidates' => ['id_tecnico', 'id']],
             ['label' => 'Nombre', 'candidates' => ['nombre', 'name']],
@@ -35,7 +35,7 @@ $report_types = [
         'label' => 'Reporte de Equipos',
         'desc' => 'Inventario de equipos ingresados',
         'icon' => 'ti-device-laptop',
-        'table_candidates' => ['equipo', 'Equipo'],
+        'table_candidates' => ['equipo', 'equipos', 'Equipo', 'Equipos'],
         'fields' => [
             ['label' => 'ID', 'candidates' => ['id_equipo', 'id']],
             ['label' => 'Tipo', 'candidates' => ['tipo', 'type']],
@@ -67,7 +67,7 @@ $report_types = [
         'label' => 'Reporte de Piezas e Inventario',
         'desc' => 'Movimientos y stock de piezas',
         'icon' => 'ti-package',
-        'table_candidates' => ['pieza', 'Pieza'],
+        'table_candidates' => ['pieza', 'piezas', 'Pieza', 'Piezas'],
         'fields' => [
             ['label' => 'ID', 'candidates' => ['id_pieza', 'id']],
             ['label' => 'Nombre', 'candidates' => ['nombre', 'name']],
@@ -1036,7 +1036,13 @@ if ($current_report && ($current_report['has_status_filter'] ?? false)) {
         </div>
     </div>
 
-    <?php if ($current_report): ?>
+    <?php if ($report_type && !$current_report): ?>
+<div style="padding:20px;background:#fff3cd;border:1px solid #ffeeba;border-radius:10px;margin:20px 0;color:#856404;">
+No se pudo cargar el reporte seleccionado. Verifica que la tabla exista en la base de datos.
+</div>
+<?php endif; ?>
+
+<?php if ($current_report): ?>
     
     <!-- PANEL DE FILTROS -->
     <div class="charts-card">
