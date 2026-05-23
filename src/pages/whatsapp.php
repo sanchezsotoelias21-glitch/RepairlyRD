@@ -28,7 +28,16 @@ function whatsapp_columns(mysqli $conn, string $table): array {
 $success = '';
 $error = '';
 
+// Protección contra envíos duplicados
+session_start();
+$last_whatsapp_send = $_SESSION['last_whatsapp_send'] ?? 0;
+$time_since_last_send = time() - $last_whatsapp_send;
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'send_whatsapp') {
+    // Evitar envíos duplicados dentro de 30 segundos
+    if ($time_since_last_send < 30) {
+        $error = 'Por favor espera ' . (30 - $time_since_last_send) . ' segundos antes de enviar otro mensaje.';
+    } else {
     $number = preg_replace('/\D+/', '', $_POST['number'] ?? '');
     $message = trim($_POST['message'] ?? '');
 
@@ -62,9 +71,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'send_
             if ($response_data) {
                 $success .= '<br><small style="color:#6B6560;">Respuesta del webhook: ' . htmlspecialchars(json_encode($response_data)) . '</small>';
             }
+            // Guardar timestamp del último envío exitoso
+            $_SESSION['last_whatsapp_send'] = time();
         } else {
             $error = 'El webhook respondió con código ' . $http . '<br><small>Respuesta: ' . htmlspecialchars($response) . '</small>';
         }
+    }
     }
 }
 
@@ -149,7 +161,7 @@ if ($clients_table !== '') {
             </div>
         <?php endif; ?>
 
-        <form method="POST">
+        <form method="POST" id="whatsapp_form">
             <input type="hidden" name="action" value="send_whatsapp">
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
@@ -195,7 +207,7 @@ if ($clients_table !== '') {
                 ></textarea>
             </div>
 
-            <button type="submit" class="ordenes-ver-btn" style="background:#25D366;color:white;border-color:#25D366;">
+            <button type="submit" class="ordenes-ver-btn" id="send_btn" style="background:#25D366;color:white;border-color:#25D366;">
                 <i class="ti ti-send"></i>
                 Enviar mensaje
             </button>
@@ -257,5 +269,17 @@ document.querySelectorAll('.btn-template').forEach(btn => {
         const textarea = document.querySelector('textarea[name="message"]');
         textarea.value = btn.dataset.message;
     });
+});
+
+// Protección contra envíos múltiples
+document.getElementById('whatsapp_form')?.addEventListener('submit', function(e) {
+    const btn = document.getElementById('send_btn');
+    if (btn.disabled) {
+        e.preventDefault();
+        return false;
+    }
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ti ti-loader"></i> Enviando...';
+    btn.style.opacity = '0.7';
 });
 </script>
