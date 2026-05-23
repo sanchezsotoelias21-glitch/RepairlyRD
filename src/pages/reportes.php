@@ -337,8 +337,6 @@ try {
 
 // Procesar descarga de PDF
 if ($action === 'generate_pdf' && $current_report) {
-    header('Content-Type: application/pdf');
-    header('Content-Disposition: attachment; filename="reporte.pdf"');
     // Evita que se mezclen HTML+PDF (index.php puede haber escrito markup al buffer).
     while (ob_get_level() > 0) {
         ob_end_clean();
@@ -454,31 +452,22 @@ if ($action === 'generate_pdf' && $current_report) {
 
         // ---- Entregar PDF al navegador ----
         $filename = 'Repairly_' . ucfirst($report_type) . '_' . date('Ymd_His') . '.pdf';
-        
-        // Generar PDF en memoria
-        $bytes = $pdf->Output('S');
-        
-        // Validar que Output() retornó datos válidos
-        if (!is_string($bytes) || strlen($bytes) === 0) {
-            throw new Exception('La generación del PDF no produjo datos válidos');
-        }
 
         // Enviar headers de descarga
         header('Content-Type: application/pdf; charset=utf-8');
         header('Content-Disposition: attachment; filename="' . basename($filename) . '"');
-        header('Content-Length: ' . strlen($bytes));
         header('Cache-Control: no-cache, no-store, must-revalidate');
         header('Pragma: no-cache');
         header('Expires: 0');
         header('X-Content-Type-Options: nosniff');
-        
-        // Enviar datos
-        echo $bytes;
+
+        // Generar y enviar PDF directamente
+        $pdf->Output('D', $filename);
         exit;
     } catch (Exception $e) {
         // Log del error
         error_log('Error generando PDF: ' . $e->getMessage());
-        
+
         // Mostrar error amigable
         header('Content-Type: text/html; charset=utf-8');
         http_response_code(500);
