@@ -1039,6 +1039,28 @@ if ($current_report && ($current_report['has_status_filter'] ?? false)) {
     <?php if ($report_type && !$current_report): ?>
 <div style="padding:20px;background:#fff3cd;border:1px solid #ffeeba;border-radius:10px;margin:20px 0;color:#856404;">
 No se pudo cargar el reporte seleccionado. Verifica que la tabla exista en la base de datos.
+<br><br>
+<strong>Debug info:</strong><br>
+Tipo de reporte: <?= h($report_type) ?><br>
+<?php
+if (isset($report_types[$report_type])) {
+    $cfg = $report_types[$report_type];
+    echo 'Configuración encontrada: ' . h($cfg['label']) . '<br>';
+    echo 'Tablas candidatas: ' . h(implode(', ', $cfg['table_candidates'])) . '<br>';
+    
+    // Intentar encontrar la tabla
+    $found_table = pick_table($conn, $cfg['table_candidates']);
+    echo 'Tabla encontrada: ' . ($found_table ? h($found_table) : 'NINGUNA') . '<br>';
+    
+    if ($found_table) {
+        $cols = table_columns($conn, $found_table);
+        echo 'Columnas encontradas: ' . count($cols) . '<br>';
+        echo 'Columnas: ' . h(implode(', ', array_keys($cols))) . '<br>';
+    }
+} else {
+    echo 'Tipo de reporte no válido<br>';
+}
+?>
 </div>
 <?php endif; ?>
 
