@@ -274,10 +274,21 @@ if ($action === 'csv' && $current_report) {
         $status_filter ?? ''
     );
 
-    header('Content-Type: text/csv');
+    // Limpiar buffer de salida para evitar HTML mezclado
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+
+    header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename="reporte.csv"');
+    header('Cache-Control: no-cache, no-store, must-revalidate');
+    header('Pragma: no-cache');
+    header('Expires: 0');
 
     $output = fopen('php://output', 'w');
+
+    // Agregar BOM UTF-8 para que Excel reconozca los caracteres especiales
+    fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
 
     fputcsv($output, $current_report['display_cols']);
 
