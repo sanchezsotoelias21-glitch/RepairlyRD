@@ -474,7 +474,7 @@ if ($action === 'generate_pdf' && $current_report) {
 // Obtener datos del reporte si está seleccionado
 $report_data = [];
 if ($current_report) {
-    $report_data = get_report_data($conn, $current_report, $date_from, $date_to, $status_filter);
+    $report_data = get_report_data($conn, $current_report, $date_from ?? '', $date_to ?? '', $status_filter);
 }
 
 // Estados posibles para filtrado (se resuelve si la tabla usa id_estado_actual).
