@@ -68,7 +68,7 @@ function pick_table(mysqli $conn, array $candidates): string
 
         // 2) Luego permite coincidencia parcial como fallback.
         foreach ($tables as $table) {
-            if (strpos($table, $candidate)) {
+            if (strpos($table, $candidate) !== false) {
                 return $originalByLower[$table] ?? $candidate;
             }
         }
