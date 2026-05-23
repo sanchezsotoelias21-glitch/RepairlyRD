@@ -1,5 +1,5 @@
 <?php
-
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1052,5 +1052,3 @@ function enviar() {
 </script>
 </body>
 </html>
-
-?>
