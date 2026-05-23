@@ -481,13 +481,17 @@ $dashboard_tables = [
     ]),
 
     'orden' => pick_table($conn, [
-    'orden_reparacion',
-    'Orden_Reparacion'
-  ]),
+        'orden_reparacion',
+        'Orden_Reparacion',
+        'reparacion',
+        'Reparacion',
+        'orden'
+    ]),
 
     'estado' => pick_table($conn, [
+        'estado_servicio',
         'estado',
-        'estado_servicio'
+        'Estado_Servicio'
     ]),
 
     'garantia' => pick_table($conn, [
@@ -498,6 +502,13 @@ $dashboard_tables = [
 $has_dashboard_core = table_exists($conn, $dashboard_tables['orden'])
     && table_exists($conn, $dashboard_tables['estado'])
     && table_exists($conn, $dashboard_tables['equipo']);
+
+// Variables para debug (comentar o eliminar después de verificar)
+$_dashboard_debug = [
+    'orden_encontrada' => $dashboard_tables['orden'] !== '' ? $dashboard_tables['orden'] : 'NO ENCONTRADA',
+    'estado_encontrado' => $dashboard_tables['estado'] !== '' ? $dashboard_tables['estado'] : 'NO ENCONTRADO',
+    'equipo_encontrado' => $dashboard_tables['equipo'] !== '' ? $dashboard_tables['equipo'] : 'NO ENCONTRADO',
+];
 
 $chart_tecnico_labels = [];
 $chart_tecnico_reparaciones = [];

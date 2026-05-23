@@ -168,9 +168,35 @@ function repairly_resolve_report(mysqli $conn, array $cfg): ?array
 // Obtener parámetros de la solicitud
 $report_type = isset($_GET['type']) && is_string($_GET['type']) ? trim($_GET['type']) : '';
 $action = isset($_GET['action']) && is_string($_GET['action']) ? trim($_GET['action']) : '';
-$date_from = isset($_GET['date_from']) && is_string($_GET['date_from']) ? trim($_GET['date_from']) : '';
-$date_to = isset($_GET['date_to']) && is_string($_GET['date_to']) ? trim($_GET['date_to']) : '';
+$date_from = !empty($_GET['date_from']) ? $_GET['date_from'] : null;
+$date_to = !empty($_GET['date_to']) ? $_GET['date_to'] : null;
 $status_filter = isset($_GET['status']) && is_string($_GET['status']) ? trim($_GET['status']) : '';
+$status_filter = mysqli_real_escape_string($conn, $status_filter);
+
+if ($action === 'csv' && $current_report) {
+
+    $data = get_report_data(
+        $conn,
+        $current_report,
+        $date_from,
+        $date_to,
+        $status_filter
+    );
+
+    header('Content-Type: text/csv');
+    header('Content-Disposition: attachment; filename="reporte.csv"');
+
+    $output = fopen('php://output', 'w');
+
+    fputcsv($output, $current_report['display_cols']);
+
+    foreach ($data as $row) {
+        fputcsv($output, $row);
+    }
+
+    fclose($output);
+    exit;
+}
 
 // Validar tipo de reporte
 $current_report = null;
@@ -285,6 +311,8 @@ function get_report_data(mysqli $conn, array $report_config, string $date_from, 
 
 // Procesar descarga de PDF
 if ($action === 'generate_pdf' && $current_report) {
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: attachment; filename="reporte.pdf"');
     // Evita que se mezclen HTML+PDF (index.php puede haber escrito markup al buffer).
     while (ob_get_level() > 0) {
         ob_end_clean();
@@ -1083,9 +1111,15 @@ if ($current_report && ($current_report['has_status_filter'] ?? false)) {
                     </p>
                 </div>
                 <?php if (!empty($report_data)): ?>
-                <a href="?page=reportes&type=<?= h($report_type) ?>&action=generate_pdf<?= ($date_from ? '&date_from=' . urlencode($date_from) : '') ?><?= ($date_to ? '&date_to=' . urlencode($date_to) : '') ?><?= ($status_filter ? '&status=' . urlencode($status_filter) : '') ?>" class="btn-download">
+                <a href="src/pages/reportes.php?type=<?= urlencode($report_type) ?>&action=generate_pdf<?= ($date_from ? '&date_from=' . urlencode($date_from) : '') ?><?= ($date_to ? '&date_to=' . urlencode($date_to) : '') ?><?= ($status_filter ? '&status=' . urlencode($status_filter) : '') ?>" 
+                
+                class="btn-download">
                     <i class="ti ti-download"></i>
                     Descargar PDF
+                </a>
+                <a href="?page=reportes&type=<?= h($report_type) ?>&action=csv"
+                class="btn-download">
+                Exportar CSV
                 </a>
                 <?php endif; ?>
             </div>

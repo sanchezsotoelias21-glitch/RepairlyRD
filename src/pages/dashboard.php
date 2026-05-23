@@ -2,7 +2,14 @@
         <div class="alert-falla" role="alert" style="background:#FFF3E0;border-color:#FF9500;">
             <i class="ti ti-database-alert" aria-hidden="true" style="color:#FF9500;"></i>
             <span class="alert-falla-txt" style="color:#5C3E00;">
-                El dashboard está conectado, pero no encontró las tablas base: orden_reparacion, estado_servicio y equipo.
+                El dashboard está conectado, pero no encontró las tablas base necesarias.
+                <?php if (isset($_dashboard_debug)): ?>
+                <br><small style="display:block;margin-top:5px;opacity:0.8;">
+                    Órdenes: <?= htmlspecialchars($_dashboard_debug['orden_encontrada']) ?> |
+                    Estados: <?= htmlspecialchars($_dashboard_debug['estado_encontrado']) ?> |
+                    Equipos: <?= htmlspecialchars($_dashboard_debug['equipo_encontrado']) ?>
+                </small>
+                <?php endif; ?>
             </span>
         </div>
         <?php endif; ?>
