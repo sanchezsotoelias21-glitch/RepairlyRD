@@ -252,6 +252,12 @@ if ($current_page === 'ordenes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     $codigoWebhook = (string)$newOrderId;
                 }
 
+                // Generar link de seguimiento
+                $linkSeguimiento = '';
+                if ($codigoWebhook !== '') {
+                    $linkSeguimiento = "https://repairlyrd-production.up.railway.app/seguimiento.php?codigo=" . urlencode($codigoWebhook);
+                }
+
                 // Intentar resolver el email del cliente desde la orden -> equipo -> cliente.
                 $clienteEmail = '';
                 $clienteNombre = '';
@@ -324,6 +330,7 @@ if ($current_page === 'ordenes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     'id_cliente' => $clienteId,
                     'cliente_nombre' => $clienteNombre,
                     'cliente_email' => $clienteEmail,
+                    'link_seguimiento' => $linkSeguimiento,
                 ];
 
                 $options = [
