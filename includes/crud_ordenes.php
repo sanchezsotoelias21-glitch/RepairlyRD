@@ -213,10 +213,12 @@ if ($current_page === 'ordenes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($orden_cols['codigo_seguimiento'])) {
             $data['codigo_seguimiento'] = $codigo;
         }
-        if (isset($orden_cols['id_equipo'])) {
+        // Solo incluir id_equipo si se envió un valor válido (para edición)
+        if (isset($orden_cols['id_equipo']) && $id_equipo > 0) {
             $data['id_equipo'] = $id_equipo;
         }
-        if (isset($orden_cols['id_tecnico'])) {
+        // Solo incluir id_tecnico si se envió un valor válido (para edición)
+        if (isset($orden_cols['id_tecnico']) && $id_tecnico > 0) {
             $data['id_tecnico'] = $id_tecnico;
         }
         if (isset($orden_cols['id_estado_actual'])) {

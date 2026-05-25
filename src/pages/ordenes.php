@@ -164,7 +164,7 @@ $estado_name = function (int $eid) use ($estados): string {
                     <div style="grid-column:1/-1;">
                         <label style="font-size:10px;color:#6B6560;">Equipo</label>
                         <div class="custom-select-wrapper" style="position:relative;">
-                            <input type="text" name="id_equipo_text" class="custom-select-input" required placeholder="Buscar o escribir equipo..." style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;background:#fff;" value="<?= (int)($edit['id_equipo'] ?? 0) > 0 ? h((string)($edit['equipo_label'] ?? '')) : '' ?>">
+                            <input type="text" name="id_equipo_text" class="custom-select-input" required placeholder="Buscar o escribir equipo..." style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;background:#fff;" value="<?= $action === 'edit' && (int)($edit['id_equipo'] ?? 0) > 0 ? h((string)($edit['equipo_label'] ?? '')) : '' ?>">
                             <input type="hidden" name="id_equipo" id="id_equipo_hidden" value="<?= (int)($edit['id_equipo'] ?? 0) ?>">
                             <div class="custom-select-dropdown" id="equipo_dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:0.5px solid #D0CCC6;border-radius:8px;max-height:200px;overflow-y:auto;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,0.1);margin-top:4px;">
                                 <?php foreach ($equipos_list as $e): ?>
@@ -180,7 +180,7 @@ $estado_name = function (int $eid) use ($estados): string {
                     <div>
                         <label style="font-size:10px;color:#6B6560;">Técnico</label>
                         <div class="custom-select-wrapper" style="position:relative;">
-                            <input type="text" name="id_tecnico_text" class="custom-select-input" placeholder="Buscar o escribir técnico..." style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;background:#fff;" value="<?= (int)($edit['id_tecnico'] ?? 0) > 0 ? h((string)($edit['nombre_tecnico'] ?? '')) : '' ?>">
+                            <input type="text" name="id_tecnico_text" class="custom-select-input" placeholder="Buscar o escribir técnico..." style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;background:#fff;" value="<?= $action === 'edit' && (int)($edit['id_tecnico'] ?? 0) > 0 ? h((string)($edit['nombre_tecnico'] ?? '')) : '' ?>">
                             <input type="hidden" name="id_tecnico" id="id_tecnico_hidden" value="<?= (int)($edit['id_tecnico'] ?? 0) ?>">
                             <div class="custom-select-dropdown" id="tecnico_dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:0.5px solid #D0CCC6;border-radius:8px;max-height:200px;overflow-y:auto;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,0.1);margin-top:4px;">
                                 <?php foreach ($tecs as $te): ?>
