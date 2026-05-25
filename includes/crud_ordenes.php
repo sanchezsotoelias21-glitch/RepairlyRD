@@ -368,7 +368,17 @@ if ($id_equipo > 0) {
     $eqTbl = pick_table($conn, ['equipo', 'Equipo']);
 
     if ($eqTbl !== '') {
-        $sqlEq = "SELECT * FROM `{$eqTbl}` WHERE id_equipo=? LIMIT 1";
+        // Obtener el nombre correcto de la columna ID
+        $eqCols = table_columns($conn, $eqTbl);
+        $eqIdCol = 'id_equipo';
+        foreach (array_keys($eqCols) as $k) {
+            if (strcasecmp((string)$k, 'id_equipo') === 0) {
+                $eqIdCol = $k;
+                break;
+            }
+        }
+        
+        $sqlEq = "SELECT * FROM `{$eqTbl}` WHERE `{$eqIdCol}`=? LIMIT 1";
         $stEq = $conn->prepare($sqlEq);
 
         if ($stEq) {
@@ -383,6 +393,8 @@ if ($id_equipo > 0) {
                     $rowEq['nombre_equipo']
                     ?? $rowEq['nombre']
                     ?? $rowEq['modelo']
+                    ?? $rowEq['tipo']
+                    ?? $rowEq['marca']
                     ?? 'Equipo';
             }
 
