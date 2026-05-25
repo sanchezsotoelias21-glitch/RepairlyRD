@@ -73,6 +73,60 @@ if ($action === 'edit' && $id > 0) {
         $rs = $st->get_result();
         $edit = $rs ? $rs->fetch_assoc() : null;
         $st->close();
+        
+        // Cargar nombre del equipo
+        if ($edit && isset($edit['id_equipo']) && (int)$edit['id_equipo'] > 0) {
+            $eqTbl = pick_table($conn, ['equipo', 'Equipo']);
+            if ($eqTbl !== '') {
+                $eqCols = table_columns($conn, $eqTbl);
+                $eqIdCol = 'id_equipo';
+                foreach (array_keys($eqCols) as $k) {
+                    if (strcasecmp((string)$k, 'id_equipo') === 0) {
+                        $eqIdCol = $k;
+                        break;
+                    }
+                }
+                
+                $stEq = $conn->prepare("SELECT * FROM `{$eqTbl}` WHERE `{$eqIdCol}`=? LIMIT 1");
+                if ($stEq) {
+                    $stEq->bind_param('i', $edit['id_equipo']);
+                    $stEq->execute();
+                    $rsEq = $stEq->get_result();
+                    $rowEq = $rsEq ? $rsEq->fetch_assoc() : null;
+                    if ($rowEq) {
+                        $edit['equipo_label'] = $rowEq['nombre_equipo'] ?? $rowEq['nombre'] ?? $rowEq['modelo'] ?? $rowEq['tipo'] ?? $rowEq['marca'] ?? 'Equipo';
+                    }
+                    $stEq->close();
+                }
+            }
+        }
+        
+        // Cargar nombre del técnico
+        if ($edit && isset($edit['id_tecnico']) && (int)$edit['id_tecnico'] > 0) {
+            $tecTbl = pick_table($conn, ['tecnico', 'Tecnico', 'empleado', 'Empleado']);
+            if ($tecTbl !== '') {
+                $tecCols = table_columns($conn, $tecTbl);
+                $tecIdCol = 'id_tecnico';
+                foreach (array_keys($tecCols) as $k) {
+                    if (strcasecmp((string)$k, 'id_tecnico') === 0) {
+                        $tecIdCol = $k;
+                        break;
+                    }
+                }
+                
+                $stTec = $conn->prepare("SELECT * FROM `{$tecTbl}` WHERE `{$tecIdCol}`=? LIMIT 1");
+                if ($stTec) {
+                    $stTec->bind_param('i', $edit['id_tecnico']);
+                    $stTec->execute();
+                    $rsTec = $stTec->get_result();
+                    $rowTec = $rsTec ? $rsTec->fetch_assoc() : null;
+                    if ($rowTec) {
+                        $edit['nombre_tecnico'] = $rowTec['nombre'] ?? $rowTec['nombre_tecnico'] ?? $rowTec['name'] ?? 'Técnico';
+                    }
+                    $stTec->close();
+                }
+            }
+        }
     }
 }
 
