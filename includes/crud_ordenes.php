@@ -358,21 +358,109 @@ if ($current_page === 'ordenes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                     }
                 }
+                // Obtener nombres reales
+$equipoNombre = '';
+$tecnicoNombre = '';
+$estadoNombre = '';
+
+// ===== EQUIPO =====
+if ($id_equipo > 0) {
+    $eqTbl = pick_table($conn, ['equipo', 'Equipo']);
+
+    if ($eqTbl !== '') {
+        $sqlEq = "SELECT * FROM `{$eqTbl}` WHERE id_equipo=? LIMIT 1";
+        $stEq = $conn->prepare($sqlEq);
+
+        if ($stEq) {
+            $stEq->bind_param('i', $id_equipo);
+            $stEq->execute();
+
+            $resEq = $stEq->get_result();
+            $rowEq = $resEq ? $resEq->fetch_assoc() : null;
+
+            if ($rowEq) {
+                $equipoNombre =
+                    $rowEq['nombre_equipo']
+                    ?? $rowEq['nombre']
+                    ?? $rowEq['modelo']
+                    ?? 'Equipo';
+            }
+
+            $stEq->close();
+        }
+    }
+}
+
+// ===== TECNICO =====
+if ($id_tecnico > 0) {
+    $tecTbl = pick_table($conn, ['tecnico', 'Tecnico', 'empleado', 'Empleado']);
+
+    if ($tecTbl !== '') {
+        $sqlTec = "SELECT * FROM `{$tecTbl}` WHERE id_tecnico=? LIMIT 1";
+        $stTec = $conn->prepare($sqlTec);
+
+        if ($stTec) {
+            $stTec->bind_param('i', $id_tecnico);
+            $stTec->execute();
+
+            $resTec = $stTec->get_result();
+            $rowTec = $resTec ? $resTec->fetch_assoc() : null;
+
+            if ($rowTec) {
+                $tecnicoNombre =
+                    $rowTec['nombre']
+                    ?? $rowTec['nombre_tecnico']
+                    ?? $rowTec['name']
+                    ?? 'Técnico';
+            }
+
+            $stTec->close();
+        }
+    }
+}
+
+// ===== ESTADO =====
+if ($id_estado > 0) {
+    $estTbl = pick_table($conn, ['estado_servicio', 'estado', 'Estado_Servicio']);
+
+    if ($estTbl !== '') {
+        $sqlEst = "SELECT * FROM `{$estTbl}` WHERE id_estado=? LIMIT 1";
+        $stEst = $conn->prepare($sqlEst);
+
+        if ($stEst) {
+            $stEst->bind_param('i', $id_estado);
+            $stEst->execute();
+
+            $resEst = $stEst->get_result();
+            $rowEst = $resEst ? $resEst->fetch_assoc() : null;
+
+            if ($rowEst) {
+                $estadoNombre =
+                    $rowEst['nombre_estado']
+                    ?? $rowEst['nombre']
+                    ?? 'Estado';
+            }
+
+            $stEst->close();
+        }
+    }
+}
 
                 $webhookData = [
-                    'id_orden' => $newOrderId,
-                    'codigo' => $codigoWebhook,
-                    'equipo' => $id_equipo,
-                    'tecnico' => $id_tecnico,
-                    'estado' => $id_estado,
-                    'mano_obra' => $mano_obra,
-                    'costo_total' => $costo_total,
-                    'id_cliente' => $clienteId,
-                    'cliente_nombre' => $clienteNombre,
-                    'cliente_email' => $clienteEmail,
-                    'link_seguimiento' => $linkSeguimiento,
-                ];
+    'id_orden' => $newOrderId,
+    'codigo' => $codigoWebhook,
 
+    'equipo_nombre' => $equipoNombre,
+    'tecnico_nombre' => $tecnicoNombre,
+    'estado_nombre' => $estadoNombre,
+
+    'mano_obra' => $mano_obra,
+    'costo_total' => $costo_total,
+    'id_cliente' => $clienteId,
+    'cliente_nombre' => $clienteNombre,
+    'cliente_email' => $clienteEmail,
+    'link_seguimiento' => $linkSeguimiento,
+];
                 $options = [
                     'http' => [
                         'header'  => "Content-type: application/json",

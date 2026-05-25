@@ -1,0 +1,9 @@
+CREATE TABLE WhatsAppMessages (
+    IdMensaje INT AUTO_INCREMENT PRIMARY KEY,
+    Telefono VARCHAR(50) NOT NULL,
+    Mensaje TEXT NOT NULL,
+    Estado VARCHAR(20) NOT NULL DEFAULT 'Enviado',
+    FechaEnvio DATETIME NOT NULL,
+    TwilioSid VARCHAR(100) NULL,
+    FechaCreacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
