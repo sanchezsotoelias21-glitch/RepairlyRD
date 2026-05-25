@@ -1,35 +1,11 @@
 <?php
 
-$sid = getenv('TWILIO_SID') ?: 'YOUR_TWILIO_SID';
-$token = getenv('TWILIO_TOKEN') ?: 'YOUR_TWILIO_TOKEN';
+// Página de WhatsApp - Integración deshabilitada temporalmente
+// Las notificaciones de Twilio se envían automáticamente al crear órdenes
 
-$mensaje = "Hola desde RepairlyRD";
-
-$telefono = "whatsapp:+18295921607";
-
-$url = "https://api.twilio.com/2010-04-01/Accounts/$sid/Messages.json";
-
-$data = [
-    'From' => 'whatsapp:+14155238886',
-    'To' => $telefono,
-    'Body' => $mensaje
-];
-
-$options = [
-    CURLOPT_URL => $url,
-    CURLOPT_POST => true,
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_USERPWD => "$sid:$token",
-    CURLOPT_POSTFIELDS => http_build_query($data),
-];
-
-$ch = curl_init();
-
-curl_setopt_array($ch, $options);
-
-$response = curl_exec($ch);
-
-curl_close($ch);
-
-echo $response;
+echo "<div style='text-align:center;padding:50px;font-family:Arial,sans-serif;'>";
+echo "<h2 style='color:#25D366;'>WhatsApp Integration</h2>";
+echo "<p style='color:#666;'>Las notificaciones de WhatsApp se envían automáticamente al crear nuevas órdenes de reparación.</p>";
+echo "<p style='color:#666;'>No se requiere acción manual en esta página.</p>";
+echo "</div>";
 ?>
