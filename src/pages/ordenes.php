@@ -25,7 +25,7 @@ foreach (array_keys($orden_cols) as $k) {
 $estados_tbl = pick_table($conn, ['estado_servicio', 'estado', 'Estado_Servicio']);
 $estados = [];
 if ($estados_tbl !== '') {
-    $estados = db_rows($conn, "SELECT * FROM `{$estados_tbl}` ORDER BY id_estado ASC LIMIT 200");
+    $estados = db_rows($conn, "SELECT DISTINCT id_estado, nombre_estado FROM `{$estados_tbl}` WHERE nombre_estado IS NOT NULL AND nombre_estado != '' ORDER BY id_estado ASC LIMIT 200");
 }
 $eq_tbl = pick_table($conn, ['equipo', 'Equipo']);
 $equipos_list = $eq_tbl !== '' ? db_rows($conn, "SELECT `id_equipo`, CONCAT(COALESCE(tipo,''),' ',COALESCE(marca,''),' ',COALESCE(modelo,'')) AS label FROM `{$eq_tbl}` ORDER BY id_equipo DESC LIMIT 300") : [];
