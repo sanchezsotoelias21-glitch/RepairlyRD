@@ -1,5 +1,45 @@
 <?php
 
+// Función para enviar mensaje por Twilio
+function sendTwilioNotification($ordenDetails) {
+    $sid = getenv('TWILIO_SID') ?: 'YOUR_TWILIO_SID';
+    $token = getenv('TWILIO_TOKEN') ?: 'YOUR_TWILIO_TOKEN';
+    
+    // Número de WhatsApp del administrador (debe configurarse)
+    $adminPhone = getenv('ADMIN_WHATSAPP') ?: 'whatsapp:+18295921607';
+    
+    // Formatear el mensaje con detalles de la orden
+    $mensaje = "🔔 Nueva Orden de Reparación\n\n";
+    $mensaje .= "📋 Código: " . ($ordenDetails['codigo'] ?? 'N/A') . "\n";
+    $mensaje .= "👤 Cliente: " . ($ordenDetails['cliente_nombre'] ?? 'N/A') . "\n";
+    $mensaje .= "🔧 Equipo: " . ($ordenDetails['equipo'] ?? 'N/A') . "\n";
+    $mensaje .= "💰 Costo: RD$ " . number_format($ordenDetails['costo_total'] ?? 0) . "\n";
+    $mensaje .= "📍 Estado: " . ($ordenDetails['estado'] ?? 'N/A') . "\n";
+    $mensaje .= "\n✅ Orden creada exitosamente";
+    
+    $url = "https://api.twilio.com/2010-04-01/Accounts/$sid/Messages.json";
+    
+    $data = [
+        'From' => 'whatsapp:+14155238886',
+        'To' => $adminPhone,
+        'Body' => $mensaje
+    ];
+    
+    $options = [
+        CURLOPT_URL => $url,
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_USERPWD => "$sid:$token",
+        CURLOPT_POSTFIELDS => http_build_query($data),
+    ];
+    
+    $ch = curl_init();
+    curl_setopt_array($ch, $options);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    
+    return $response;
+}
 
 
 $orden_table_name = pick_table($conn, ['orden_reparacion', 'Orden_Reparacion', 'reparacion', 'Reparacion', 'orden']);
@@ -349,6 +389,16 @@ if ($current_page === 'ordenes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                  false,
                  $context
                 );
+
+                // Enviar notificación por Twilio al administrador
+                $ordenDetails = [
+                    'codigo' => $codigoWebhook,
+                    'cliente_nombre' => $clienteNombre,
+                    'equipo' => $id_equipo,
+                    'costo_total' => $costo_total,
+                    'estado' => $id_estado,
+                ];
+                sendTwilioNotification($ordenDetails);
             }
 
             $stmt->close();
