@@ -166,6 +166,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'ID de driver inválido';
         }
     }
+    
+    if ($action === 'add_tracking') {
+        $id_delivery = (int)($_POST['id_delivery'] ?? 0);
+        $latitud = (float)($_POST['latitud'] ?? 0);
+        $longitud = (float)($_POST['longitud'] ?? 0);
+        
+        if ($id_delivery > 0 && $latitud !== 0 && $longitud !== 0) {
+            $stmt = $conn->prepare("INSERT INTO DeliveryTracking (IdDelivery, Latitud, Longitud, Fecha) VALUES (?, ?, ?, NOW())");
+            if ($stmt) {
+                $stmt->bind_param('idd', $id_delivery, $latitud, $longitud);
+                if ($stmt->execute()) {
+                    $success = 'Ubicación GPS registrada exitosamente';
+                } else {
+                    $error = 'Error al registrar ubicación: ' . $stmt->error;
+                }
+                $stmt->close();
+            }
+        } else {
+            $error = 'Debes completar los campos requeridos';
+        }
+    }
 }
 
 // Cargar deliveries
@@ -185,6 +206,22 @@ $driver_result = $conn->query($driver_query);
 if ($driver_result) {
     while($row = $driver_result->fetch_assoc()) {
         $drivers[] = $row;
+    }
+}
+
+// Cargar tracking GPS
+$tracking_data = [];
+if (!empty($deliveries)) {
+    $delivery_ids = array_column($deliveries, 'IdDelivery');
+    if (!empty($delivery_ids)) {
+        $ids_string = implode(',', array_map('intval', $delivery_ids));
+        $tracking_query = "SELECT dt.*, d.CodigoTracking FROM DeliveryTracking dt JOIN Deliveries d ON dt.IdDelivery = d.IdDelivery WHERE dt.IdDelivery IN ($ids_string) ORDER BY dt.Fecha DESC LIMIT 50";
+        $tracking_result = $conn->query($tracking_query);
+        if ($tracking_result) {
+            while($row = $tracking_result->fetch_assoc()) {
+                $tracking_data[] = $row;
+            }
+        }
     }
 }
 
@@ -433,6 +470,75 @@ foreach ($deliveries as $d) {
     <?php if (empty($drivers)): ?>
     <div style="padding:20px;text-align:center;color:#6B6560;font-size:12px;">
         No hay drivers registrados
+    </div>
+    <?php endif; ?>
+    </div>
+</div>
+
+<!-- Seguimiento GPS -->
+<div class="card" style="margin-top:18px;">
+    <div class="card-header">
+        <div>
+            <div class="card-title">📍 Seguimiento GPS</div>
+            <div class="card-sub">Ubicaciones registradas de deliveries</div>
+        </div>
+    </div>
+
+    <form method="POST" style="padding:20px;">
+        <input type="hidden" name="action" value="add_tracking">
+        
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;">
+            <div>
+                <label style="font-size:11px;color:#6B6560;display:block;margin-bottom:6px;">Delivery *</label>
+                <select name="id_delivery" required style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;font-size:12px;color:#1C1A17;">
+                    <option value="">Seleccionar delivery</option>
+                    <?php foreach ($deliveries as $delivery): ?>
+                        <option value="<?= htmlspecialchars($delivery['IdDelivery']) ?>">
+                            <?= htmlspecialchars($delivery['CodigoTracking']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            
+            <div>
+                <label style="font-size:11px;color:#6B6560;display:block;margin-bottom:6px;">Latitud *</label>
+                <input type="number" step="any" name="latitud" required style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;font-size:12px;color:#1C1A17;" placeholder="18.4861">
+            </div>
+            
+            <div>
+                <label style="font-size:11px;color:#6B6560;display:block;margin-bottom:6px;">Longitud *</label>
+                <input type="number" step="any" name="longitud" required style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;font-size:12px;color:#1C1A17;" placeholder="-69.9312">
+            </div>
+        </div>
+
+        <button type="submit" class="ordenes-ver-btn" style="background:#00AA44;color:white;border-color:#00AA44;">
+            <i class="ti ti-map-pin"></i>
+            Registrar Ubicación
+        </button>
+    </form>
+
+    <div class="table-head" style="margin-top:14px;grid-template-columns:100px 1fr 100px 100px 150px;gap:12px;">
+        <div>ID Tracking</div>
+        <div>Código Delivery</div>
+        <div>Latitud</div>
+        <div>Longitud</div>
+        <div>Fecha</div>
+    </div>
+
+    <div style="max-height:200px;overflow-y:auto;">
+    <?php foreach ($tracking_data as $track): ?>
+    <div class="table-row" style="grid-template-columns:100px 1fr 100px 100px 150px;gap:12px;">
+        <div style="font-size:11px;color:#8C8479;font-family:'Courier New';"><?= htmlspecialchars($track['IdTracking']) ?></div>
+        <div style="font-size:12px;color:#1C1A17;font-weight:500;"><?= htmlspecialchars($track['CodigoTracking']) ?></div>
+        <div style="font-size:12px;color:#4D4841;"><?= htmlspecialchars($track['Latitud']) ?></div>
+        <div style="font-size:12px;color:#4D4841;"><?= htmlspecialchars($track['Longitud']) ?></div>
+        <div style="font-size:12px;color:#4D4841;"><?= htmlspecialchars($track['Fecha']) ?></div>
+    </div>
+    <?php endforeach; ?>
+
+    <?php if (empty($tracking_data)): ?>
+    <div style="padding:20px;text-align:center;color:#6B6560;font-size:12px;">
+        No hay ubicaciones GPS registradas
     </div>
     <?php endif; ?>
     </div>

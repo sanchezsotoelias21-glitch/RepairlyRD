@@ -399,6 +399,15 @@ if ($current_page === 'ordenes' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     'estado' => $id_estado,
                 ];
                 sendTwilioNotification($ordenDetails);
+
+                // Crear delivery automáticamente para la orden
+                $codigoTracking = 'DEL-' . date('Y-m-d') . '-' . str_pad($newOrderId, 4, '0', STR_PAD_LEFT);
+                $deliveryStmt = $conn->prepare("INSERT INTO Deliveries (IdReparacion, Estado, CodigoTracking, FechaCreacion) VALUES (?, 'Pendiente', ?, NOW())");
+                if ($deliveryStmt) {
+                    $deliveryStmt->bind_param('is', $newOrderId, $codigoTracking);
+                    $deliveryStmt->execute();
+                    $deliveryStmt->close();
+                }
             }
 
             $stmt->close();
