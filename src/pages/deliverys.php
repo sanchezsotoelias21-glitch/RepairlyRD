@@ -225,6 +225,35 @@ if (!empty($deliveries)) {
     }
 }
 
+// Cargar órdenes de reparación para el dropdown
+$ordenes_reparacion = [];
+$orden_table = pick_table($conn, ['orden_reparacion', 'Orden_Reparacion', 'reparacion', 'Reparacion', 'orden']);
+if ($orden_table !== '') {
+    $orden_cols = table_columns($conn, $orden_table);
+    $id_col = 'id_orden';
+    foreach (array_keys($orden_cols) as $k) {
+        if (strcasecmp((string)$k, 'id_orden') === 0) {
+            $id_col = $k;
+            break;
+        }
+    }
+    
+    $codigo_col = repairly_pick_column($orden_cols, ['codigo_seguimiento', 'codigo']);
+    $estado_col = repairly_pick_column($orden_cols, ['id_estado_actual', 'estado']);
+    
+    $query_ordenes = "SELECT `{$id_col}` as id_orden";
+    if ($codigo_col) $query_ordenes .= ", `{$codigo_col}` as codigo";
+    if ($estado_col) $query_ordenes .= ", `{$estado_col}` as id_estado";
+    $query_ordenes .= " FROM `{$orden_table}` ORDER BY `{$id_col}` DESC LIMIT 100";
+    
+    $result_ordenes = $conn->query($query_ordenes);
+    if ($result_ordenes) {
+        while($row = $result_ordenes->fetch_assoc()) {
+            $ordenes_reparacion[] = $row;
+        }
+    }
+}
+
 // Contar estados
 $total_deliveries = count($deliveries);
 $en_transito = 0;
@@ -302,8 +331,17 @@ foreach ($deliveries as $d) {
         
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
             <div>
-                <label style="font-size:11px;color:#6B6560;display:block;margin-bottom:6px;">ID Reparación *</label>
-                <input type="number" name="id_reparacion" required style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;font-size:12px;color:#1C1A17;" placeholder="ID de la reparación">
+                <label style="font-size:11px;color:#6B6560;display:block;margin-bottom:6px;">Orden de Reparación *</label>
+                <select name="id_reparacion" id="id_reparacion" required onchange="cargarDatosOrden()" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;font-size:12px;color:#1C1A17;">
+                    <option value="">Seleccionar orden...</option>
+                    <?php foreach ($ordenes_reparacion as $orden): ?>
+                        <option value="<?= htmlspecialchars($orden['id_orden']) ?>" 
+                                data-codigo="<?= htmlspecialchars($orden['codigo'] ?? '') ?>"
+                                data-estado="<?= htmlspecialchars($orden['id_estado'] ?? '') ?>">
+                            #<?= htmlspecialchars($orden['id_orden']) ?> - <?= htmlspecialchars($orden['codigo'] ?? 'Sin código') ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
             </div>
             
             <div>
@@ -322,7 +360,7 @@ foreach ($deliveries as $d) {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
             <div>
                 <label style="font-size:11px;color:#6B6560;display:block;margin-bottom:6px;">Código Tracking *</label>
-                <input type="text" name="codigo_tracking" required style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;font-size:12px;color:#1C1A17;" placeholder="Ej: DEL-2024-001">
+                <input type="text" name="codigo_tracking" id="codigo_tracking" required style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;font-size:12px;color:#1C1A17;" placeholder="Ej: DEL-2024-001">
             </div>
             
             <div>
@@ -333,12 +371,19 @@ foreach ($deliveries as $d) {
 
         <div style="margin-bottom:16px;">
             <label style="font-size:11px;color:#6B6560;display:block;margin-bottom:6px;">Estado</label>
-            <select name="estado" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;font-size:12px;color:#1C1A17;">
+            <select name="estado" id="estado_delivery" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;font-size:12px;color:#1C1A17;">
                 <option value="Pendiente">Pendiente</option>
                 <option value="En tránsito">En tránsito</option>
                 <option value="Completado">Completado</option>
                 <option value="Entregado">Entregado</option>
             </select>
+        </div>
+
+        <div style="background:#F5F5F5;padding:12px;border-radius:8px;margin-bottom:16px;">
+            <div style="font-size:11px;color:#6B6560;margin-bottom:4px;">📋 Detalles de la orden seleccionada:</div>
+            <div id="detalles_orden" style="font-size:12px;color:#1C1A17;">
+                Selecciona una orden para ver los detalles
+            </div>
         </div>
 
         <button type="submit" class="ordenes-ver-btn" style="background:#2b7abc;color:white;border-color:#2b7abc;">
@@ -543,3 +588,34 @@ foreach ($deliveries as $d) {
     <?php endif; ?>
     </div>
 </div>
+
+<script>
+function cargarDatosOrden() {
+    const select = document.getElementById('id_reparacion');
+    const selectedOption = select.options[select.selectedIndex];
+    const codigoTracking = document.getElementById('codigo_tracking');
+    const detallesDiv = document.getElementById('detalles_orden');
+    
+    if (select.value === '') {
+        codigoTracking.value = '';
+        detallesDiv.innerHTML = 'Selecciona una orden para ver los detalles';
+        return;
+    }
+    
+    // Obtener datos de la opción seleccionada
+    const codigoOrden = selectedOption.getAttribute('data-codigo') || '';
+    const estadoOrden = selectedOption.getAttribute('data-estado') || '';
+    
+    // Generar código de tracking automáticamente basado en el código de la orden
+    const fecha = new Date().toISOString().split('T')[0];
+    const codigoGenerado = 'DEL-' + fecha + '-' + codigoOrden.replace(/FC-/i, '');
+    codigoTracking.value = codigoGenerado;
+    
+    // Mostrar detalles de la orden
+    detallesDiv.innerHTML = `
+        <strong>Código:</strong> ${codigoOrden || 'N/A'}<br>
+        <strong>ID:</strong> #${select.value}<br>
+        <strong>Estado:</strong> ${estadoOrden || 'N/A'}
+    `;
+}
+</script>
