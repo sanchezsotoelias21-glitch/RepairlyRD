@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../../includes/sql_helpers.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nombre = trim($_POST['nombre'] ?? '');
@@ -24,20 +25,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     // Verificar si el email ya existe
-    $check_email = $conn->prepare("SELECT id_usuario FROM usuarios WHERE email = ?");
+    $usuario_table = pick_table($conn, ['usuarios', 'Usuarios', 'usuario', 'Usuario']);
+    if ($usuario_table === '') {
+        echo json_encode(['success' => false, 'error' => 'No se encontró la tabla de usuarios']);
+        exit;
+    }
+    
+    $cols = table_columns($conn, $usuario_table);
+    $email_col = repairly_pick_column($cols, ['email', 'correo']);
+    
+    if (!$email_col) {
+        echo json_encode(['success' => false, 'error' => 'No se encontró la columna de email en usuarios']);
+        exit;
+    }
+    
+    $check_email = $conn->prepare("SELECT * FROM `{$usuario_table}` WHERE `{$email_col}` = ?");
     $check_email->bind_param('s', $email);
     $check_email->execute();
     $result = $check_email->get_result();
     
-    if ($result->num_rows > 0) {
+    if ($result && $result->num_rows > 0) {
         echo json_encode(['success' => false, 'error' => 'El email ya está registrado']);
         exit;
     }
     
     // Crear usuario con rol 'cliente'
     $password_hash = password_hash($password, PASSWORD_DEFAULT);
-    $stmt = $conn->prepare("INSERT INTO usuarios (nombre, email, telefono, password, rol) VALUES (?, ?, ?, ?, 'cliente')");
-    $stmt->bind_param('ssss', $nombre, $email, $telefono, $password_hash);
+    
+    $nombre_col = repairly_pick_column($cols, ['nombre', 'Nombre']);
+    $telefono_col = repairly_pick_column($cols, ['telefono', 'Telefono']);
+    $password_col = repairly_pick_column($cols, ['password', 'password_hash', 'Password']);
+    $rol_col = repairly_pick_column($cols, ['rol', 'Rol']);
+    
+    if (!$nombre_col || !$password_col || !$rol_col) {
+        echo json_encode(['success' => false, 'error' => 'Faltan columnas requeridas en la tabla usuarios']);
+        exit;
+    }
+    
+    $insert_cols = [$nombre_col, $email_col, $password_col, $rol_col];
+    $insert_values = [$nombre, $email, $password_hash, 'cliente'];
+    $insert_types = 'ssss';
+    
+    if ($telefono_col) {
+        $insert_cols[] = $telefono_col;
+        $insert_values[] = $telefono;
+        $insert_types .= 's';
+    }
+    
+    $sql = "INSERT INTO `{$usuario_table}` (`" . implode('`,`', $insert_cols) . "`) VALUES (" . str_repeat(',', count($insert_values) - 1) . ")";
+    $sql = str_replace(',', ',?', $sql);
+    
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param($insert_types, ...$insert_values);
     
     if ($stmt->execute()) {
         echo json_encode(['success' => true, 'message' => 'Registro exitoso. Ahora puedes iniciar sesión.']);
