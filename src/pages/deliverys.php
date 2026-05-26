@@ -3,6 +3,35 @@
 /** @var mysqli $conn */
 require_once __DIR__ . '/../../includes/ui_helper.php';
 
+// Función para obtener coordenadas usando OpenStreetMap/Nominatim (gratis)
+function getCoordinatesFromAddress($address) {
+    $address = urlencode($address);
+    $url = "https://nominatim.openstreetmap.org/search?format=json&q={$address}&limit=1";
+    
+    $options = [
+        'http' => [
+            'header' => "User-Agent: RepairlyRD/1.0\r\n",
+            'method' => 'GET',
+            'timeout' => 10
+        ]
+    ];
+    
+    $context = stream_context_create($options);
+    $response = @file_get_contents($url, false, $context);
+    
+    if ($response) {
+        $data = json_decode($response, true);
+        if (!empty($data) && isset($data[0])) {
+            return [
+                'lat' => floatval($data[0]['lat']),
+                'lon' => floatval($data[0]['lon'])
+            ];
+        }
+    }
+    
+    return null;
+}
+
 // Función para enviar notificación por WhatsApp sobre cambios de delivery
 function sendDeliveryNotification($codigoTracking, $estadoAnterior, $estadoNuevo) {
     $sid = getenv('TWILIO_SID') ?: 'YOUR_TWILIO_SID';
@@ -240,11 +269,33 @@ if ($orden_table !== '') {
     
     $codigo_col = repairly_pick_column($orden_cols, ['codigo_seguimiento', 'codigo']);
     $estado_col = repairly_pick_column($orden_cols, ['id_estado_actual', 'estado']);
+    $equipo_col = repairly_pick_column($orden_cols, ['id_equipo']);
     
-    $query_ordenes = "SELECT `{$id_col}` as id_orden";
-    if ($codigo_col) $query_ordenes .= ", `{$codigo_col}` as codigo";
-    if ($estado_col) $query_ordenes .= ", `{$estado_col}` as id_estado";
-    $query_ordenes .= " FROM `{$orden_table}` ORDER BY `{$id_col}` DESC LIMIT 100";
+    // Obtener dirección del cliente
+    $eq_tbl = pick_table($conn, ['equipo', 'Equipo']);
+    $cli_tbl = pick_table($conn, ['cliente', 'Cliente']);
+    
+    $query_ordenes = "SELECT o.`{$id_col}` as id_orden";
+    if ($codigo_col) $query_ordenes .= ", o.`{$codigo_col}` as codigo";
+    if ($estado_col) $query_ordenes .= ", o.`{$estado_col}` as id_estado";
+    
+    if ($eq_tbl !== '' && $cli_tbl !== '' && $equipo_col) {
+        $cli_cols = table_columns($conn, $cli_tbl);
+        $cli_dir_col = repairly_pick_column($cli_cols, ['direccion', 'address', 'direccion_completa']);
+        
+        if ($cli_dir_col) {
+            $query_ordenes .= ", c.`{$cli_dir_col}` as direccion";
+            $query_ordenes .= " FROM `{$orden_table}` o";
+            $query_ordenes .= " JOIN `{$eq_tbl}` e ON e.id_equipo = o.`{$equipo_col}`";
+            $query_ordenes .= " JOIN `{$cli_tbl}` c ON c.id_cliente = e.id_cliente";
+        } else {
+            $query_ordenes .= " FROM `{$orden_table}` o";
+        }
+    } else {
+        $query_ordenes .= " FROM `{$orden_table}` o";
+    }
+    
+    $query_ordenes .= " ORDER BY o.`{$id_col}` DESC LIMIT 100";
     
     $result_ordenes = $conn->query($query_ordenes);
     if ($result_ordenes) {
@@ -535,10 +586,11 @@ foreach ($deliveries as $d) {
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;">
             <div>
                 <label style="font-size:11px;color:#6B6560;display:block;margin-bottom:6px;">Delivery *</label>
-                <select name="id_delivery" required style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;font-size:12px;color:#1C1A17;">
+                <select name="id_delivery" id="id_delivery_tracking" required onchange="obtenerDireccionDelivery()" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;font-size:12px;color:#1C1A17;">
                     <option value="">Seleccionar delivery</option>
                     <?php foreach ($deliveries as $delivery): ?>
-                        <option value="<?= htmlspecialchars($delivery['IdDelivery']) ?>">
+                        <option value="<?= htmlspecialchars($delivery['IdDelivery']) ?>" 
+                                data-reparacion="<?= htmlspecialchars($delivery['IdReparacion'] ?? '') ?>">
                             <?= htmlspecialchars($delivery['CodigoTracking']) ?>
                         </option>
                     <?php endforeach; ?>
@@ -547,13 +599,22 @@ foreach ($deliveries as $d) {
             
             <div>
                 <label style="font-size:11px;color:#6B6560;display:block;margin-bottom:6px;">Latitud *</label>
-                <input type="number" step="any" name="latitud" required style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;font-size:12px;color:#1C1A17;" placeholder="18.4861">
+                <div style="display:flex;gap:8px;">
+                    <input type="number" step="any" name="latitud" id="latitud_input" required style="flex:1;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;font-size:12px;color:#1C1A17;" placeholder="18.4861">
+                    <button type="button" onclick="obtenerCoordenadas()" style="padding:10px 15px;border-radius:8px;border:0.5px solid #D0CCC6;background:#E3F2FD;color:#2b7abc;font-size:12px;cursor:pointer;" title="Obtener coordenadas automáticamente">
+                        📍
+                    </button>
+                </div>
             </div>
             
             <div>
                 <label style="font-size:11px;color:#6B6560;display:block;margin-bottom:6px;">Longitud *</label>
-                <input type="number" step="any" name="longitud" required style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;font-size:12px;color:#1C1A17;" placeholder="-69.9312">
+                <input type="number" step="any" name="longitud" id="longitud_input" required style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #D0CCC6;font-size:12px;color:#1C1A17;" placeholder="-69.9312">
             </div>
+        </div>
+
+        <div id="direccion_info" style="background:#F5F5F5;padding:10px;border-radius:8px;margin-bottom:16px;font-size:11px;color:#6B6560;display:none;">
+            <strong>Dirección del cliente:</strong> <span id="direccion_texto"></span>
         </div>
 
         <button type="submit" class="ordenes-ver-btn" style="background:#00AA44;color:white;border-color:#00AA44;">
@@ -590,6 +651,8 @@ foreach ($deliveries as $d) {
 </div>
 
 <script>
+let direccionCliente = '';
+
 function cargarDatosOrden() {
     const select = document.getElementById('id_reparacion');
     const selectedOption = select.options[select.selectedIndex];
@@ -617,5 +680,69 @@ function cargarDatosOrden() {
         <strong>ID:</strong> #${select.value}<br>
         <strong>Estado:</strong> ${estadoOrden || 'N/A'}
     `;
+}
+
+function obtenerDireccionDelivery() {
+    const select = document.getElementById('id_delivery_tracking');
+    const selectedOption = select.options[select.selectedIndex];
+    const idReparacion = selectedOption.getAttribute('data-reparacion');
+    const direccionInfo = document.getElementById('direccion_info');
+    const direccionTexto = document.getElementById('direccion_texto');
+    
+    if (!idReparacion) {
+        direccionInfo.style.display = 'none';
+        direccionCliente = '';
+        return;
+    }
+    
+    // Buscar la dirección en las órdenes cargadas
+    const orden = <?= json_encode($ordenes_reparacion) ?>.find(o => o.id_orden == idReparacion);
+    
+    if (orden && orden.direccion) {
+        direccionCliente = orden.direccion;
+        direccionTexto.textContent = orden.direccion;
+        direccionInfo.style.display = 'block';
+    } else {
+        direccionCliente = '';
+        direccionInfo.style.display = 'none';
+    }
+}
+
+async function obtenerCoordenadas() {
+    if (!direccionCliente) {
+        alert('Primero selecciona un delivery para obtener la dirección del cliente');
+        return;
+    }
+    
+    const latitudInput = document.getElementById('latitud_input');
+    const longitudInput = document.getElementById('longitud_input');
+    
+    // Mostrar indicador de carga
+    latitudInput.value = 'Cargando...';
+    longitudInput.value = 'Cargando...';
+    
+    try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(direccionCliente)}&limit=1`, {
+            headers: {
+                'User-Agent': 'RepairlyRD/1.0'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+            latitudInput.value = parseFloat(data[0].lat).toFixed(7);
+            longitudInput.value = parseFloat(data[0].lon).toFixed(7);
+        } else {
+            alert('No se encontraron coordenadas para esta dirección. Por favor, ingrésalas manualmente.');
+            latitudInput.value = '';
+            longitudInput.value = '';
+        }
+    } catch (error) {
+        console.error('Error al obtener coordenadas:', error);
+        alert('Error al obtener coordenadas. Por favor, ingrésalas manualmente.');
+        latitudInput.value = '';
+        longitudInput.value = '';
+    }
 }
 </script>
