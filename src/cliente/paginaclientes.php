@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RepairlyRD — Contáctanos</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="shortcut icon" href="logo.ico" type="image/x-icon">
+<link rel="shortcut icon" href="/logo.ico" type="image/x-icon">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -807,7 +807,9 @@ footer {
 <!-- ── NAV ── -->
 <nav>
   <a href="#" class="nav-logo">
-    <div class="nav-logo-icon">⚙️</div>
+    <div class="nav-logo-icon">
+      <img src="/assets/logo_sidebar.png" alt="RepairlyRD" style="width:100%;height:100%;object-fit:contain;border-radius:8px;">
+    </div>
     <span class="nav-logo-text">Repair<span>lyRD</span></span>
   </a>
   <ul class="nav-links">

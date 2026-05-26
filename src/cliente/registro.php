@@ -54,6 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="shortcut icon" href="/logo.ico" type="image/x-icon">
 <title>Registro - RepairlyRD</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Open+Sans:wght@300;400;500;600&display=swap">
 <style>
@@ -261,7 +262,7 @@ document.getElementById('registro-form').addEventListener('submit', async functi
   formData.append('confirm_password', confirm_password);
   
   try {
-    const response = await fetch('registro.php', {
+    const response = await fetch('src/cliente/registro.php', {
       method: 'POST',
       body: formData
     });

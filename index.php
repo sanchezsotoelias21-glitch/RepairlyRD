@@ -154,20 +154,26 @@ if (isset($crud_by_page[$current_page])) {
 
 function status_palette(string $status): array {
     $name = strtolower($status);
-    if (strpos($name, 'falla')) {
+    if (strpos($name, 'falla') !== false || strpos($name, 'error') !== false || strpos($name, 'problema') !== false) {
         return ['bg' => '#FFEBEE', 'color' => '#FF4444', 'border' => '#FF4444', 'dot' => '#FF4444'];
     }
-    if (strpos($name, 'garant')) {
+    if (strpos($name, 'garant') !== false) {
         return ['bg' => '#F3E5F5', 'color' => '#7B4EC4', 'border' => '#7B4EC4', 'dot' => '#7B4EC4'];
     }
-    if (strpos($name, 'listo') || strpos($name, 'entreg') || strpos($name, 'complet')) {
+    if (strpos($name, 'listo') !== false || strpos($name, 'entreg') !== false || strpos($name, 'complet') !== false || strpos($name, 'finaliz') !== false) {
         return ['bg' => '#E8F5E9', 'color' => '#00AA44', 'border' => '#00AA44', 'dot' => '#00AA44'];
     }
-    if (strpos($name, 'pend') || strpos($name, 'recib')) {
+    if (strpos($name, 'pend') !== false || strpos($name, 'recib') !== false || strpos($name, 'esper') !== false) {
         return ['bg' => '#FFF3E0', 'color' => '#FF9500', 'border' => '#FF9500', 'dot' => '#FF9500'];
     }
-    if (strpos($name, 'diagn')) {
+    if (strpos($name, 'diagn') !== false || strpos($name, 'evalu') !== false) {
         return ['bg' => '#F5F5F5', 'color' => '#424242', 'border' => '#424242', 'dot' => '#424242'];
+    }
+    if (strpos($name, 'proceso') !== false || strpos($name, 'repar') !== false || strpos($name, 'trabaj') !== false) {
+        return ['bg' => '#E3F2FD', 'color' => '#2b7abc', 'border' => '#2b7abc', 'dot' => '#2b7abc'];
+    }
+    if (strpos($name, 'cancel') !== false) {
+        return ['bg' => '#FFEBEE', 'color' => '#DC2626', 'border' => '#DC2626', 'dot' => '#DC2626'];
     }
     return ['bg' => '#E3F2FD', 'color' => '#2b7abc', 'border' => '#2b7abc', 'dot' => '#2b7abc'];
 }
