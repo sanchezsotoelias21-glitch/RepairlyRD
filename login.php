@@ -118,6 +118,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $rowReload = repairly_load_usuario($conn, (int)$_SESSION['repairly_uid']);
                         if ($rowReload && repairly_role_can_panel($rowReload['rol'])) {
                             repairly_redirect($target);
+                        } elseif ($rowReload && $rowReload['rol'] === 'cliente') {
+                            // Redirigir clientes a la página de cliente
+                            repairly_redirect('src/cliente/paginaclientes.php');
                         } else {
                             repairly_redirect('index.php');
                         }

@@ -67,6 +67,11 @@ $mensajes = array_reverse($mensajes);
                             <span style="color:#667781;font-size:10px;"><?= date('H:i', strtotime($msg['FechaEnvio'])) ?></span>
                             <span style="color:#53BDEB;font-size:10px;margin-left:4px;">✓✓</span>
                         </div>
+                        <div style="margin-top:8px;text-align:right;">
+                            <button onclick="convertirACliente(<?= htmlspecialchars($msg['IdMensaje']) ?>, '<?= htmlspecialchars($msg['Telefono']) ?>')" style="background:#075E54;color:white;border:none;padding:6px 12px;border-radius:4px;font-size:11px;cursor:pointer;">
+                                👤 Convertir a Cliente
+                            </button>
+                        </div>
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -107,3 +112,101 @@ $mensajes = array_reverse($mensajes);
     background: #555;
 }
 </style>
+
+<script>
+function convertirACliente(idMensaje, telefono) {
+    // Extraer información del mensaje
+    const mensajeElement = event.target.closest('div[style*="background:#DCF8C6"]');
+    const mensajeTexto = mensajeElement.querySelector('div[style*="white-space:pre-wrap"]').textContent;
+    
+    // Extraer nombre del mensaje
+    const nombreMatch = mensajeTexto.match(/Cliente:\s*(.+)/);
+    const nombre = nombreMatch ? nombreMatch[1].trim() : '';
+    
+    // Extraer código del mensaje
+    const codigoMatch = mensajeTexto.match(/Código:\s*(.+)/);
+    const codigo = codigoMatch ? codigoMatch[1].trim() : '';
+    
+    // Mostrar modal para completar datos del cliente
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;';
+    
+    modal.innerHTML = `
+        <div style="background:white;padding:30px;border-radius:12px;max-width:500px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+            <h3 style="margin-bottom:20px;color:#075E54;">Convertir a Cliente</h3>
+            <div style="margin-bottom:15px;">
+                <label style="display:block;margin-bottom:5px;font-weight:600;">Nombre</label>
+                <input type="text" id="cliente-nombre" value="${nombre}" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="display:block;margin-bottom:5px;font-weight:600;">Teléfono</label>
+                <input type="text" id="cliente-telefono" value="${telefono}" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="display:block;margin-bottom:5px;font-weight:600;">Email</label>
+                <input type="email" id="cliente-email" placeholder="cliente@email.com" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="display:block;margin-bottom:5px;font-weight:600;">Dirección</label>
+                <input type="text" id="cliente-direccion" placeholder="Dirección completa" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="display:block;margin-bottom:5px;font-weight:600;">Contraseña temporal</label>
+                <input type="text" id="cliente-password" value="cliente123" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="display:block;margin-bottom:5px;font-weight:600;">Equipo (opcional)</label>
+                <input type="text" id="cliente-equipo" placeholder="Marca y modelo del equipo" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
+            </div>
+            <div style="display:flex;gap:10px;margin-top:20px;">
+                <button onclick="guardarCliente()" style="flex:1;background:#075E54;color:white;padding:12px;border:none;border-radius:6px;cursor:pointer;font-weight:600;">Guardar Cliente</button>
+                <button onclick="this.closest('div[style*=\"position:fixed\"]').remove()" style="flex:1;background:#ddd;color:#333;padding:12px;border:none;border-radius:6px;cursor:pointer;font-weight:600;">Cancelar</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    window.guardarCliente = async function() {
+        const nombre = document.getElementById('cliente-nombre').value.trim();
+        const telefono = document.getElementById('cliente-telefono').value.trim();
+        const email = document.getElementById('cliente-email').value.trim();
+        const direccion = document.getElementById('cliente-direccion').value.trim();
+        const password = document.getElementById('cliente-password').value.trim();
+        const equipo = document.getElementById('cliente-equipo').value.trim();
+        
+        if (!nombre || !telefono || !password) {
+            alert('Nombre, teléfono y contraseña son requeridos');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('nombre', nombre);
+        formData.append('telefono', telefono);
+        formData.append('email', email);
+        formData.append('direccion', direccion);
+        formData.append('password', password);
+        formData.append('equipo', equipo);
+        formData.append('codigo_orden', codigo);
+        
+        try {
+            const response = await fetch('convertir_cliente.php', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('Cliente creado exitosamente' + (result.equipo_creado ? ' y equipo registrado' : ''));
+                modal.remove();
+                location.reload();
+            } else {
+                alert('Error: ' + result.error);
+            }
+        } catch (error) {
+            alert('Error de conexión: ' + error.message);
+        }
+    };
+}
+</script>
