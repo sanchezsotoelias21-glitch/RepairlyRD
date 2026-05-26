@@ -301,7 +301,7 @@ document.getElementById('registro-form').addEventListener('submit', async functi
   formData.append('confirm_password', confirm_password);
   
   try {
-    const response = await fetch('src/cliente/registro.php', {
+    const response = await fetch('/src/cliente/registro.php', {
       method: 'POST',
       body: formData
     });
