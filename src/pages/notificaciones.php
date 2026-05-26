@@ -260,10 +260,6 @@ function convertirACliente(idNotificacion, mensaje, idOrden) {
                 <input type="text" id="cliente-direccion" placeholder="Dirección completa" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
             </div>
             <div style="margin-bottom:15px;">
-                <label style="display:block;margin-bottom:5px;font-weight:600;">Contraseña temporal</label>
-                <input type="text" id="cliente-password" value="cliente123" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
-            </div>
-            <div style="margin-bottom:15px;">
                 <label style="display:block;margin-bottom:5px;font-weight:600;">Equipo (opcional)</label>
                 <input type="text" id="cliente-equipo" value="${equipoCompleto}" placeholder="Marca y modelo del equipo" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
             </div>
@@ -284,25 +280,28 @@ function convertirACliente(idNotificacion, mensaje, idOrden) {
             </div>
             <div style="display:flex;gap:10px;margin-top:20px;">
                 <button onclick="guardarCliente(${idOrden})" style="flex:1;background:#075E54;color:white;padding:12px;border:none;border-radius:6px;cursor:pointer;font-weight:600;">Guardar Cliente</button>
-                <button onclick="this.closest('div[style*=\"position:fixed\"]').remove()" style="flex:1;background:#ddd;color:#333;padding:12px;border:none;border-radius:6px;cursor:pointer;font-weight:600;">Cancelar</button>
+                <button onclick="cerrarModal()" style="flex:1;background:#ddd;color:#333;padding:12px;border:none;border-radius:6px;cursor:pointer;font-weight:600;">Cancelar</button>
             </div>
         </div>
     `;
     
     document.body.appendChild(modal);
     
+    window.cerrarModal = function() {
+        modal.remove();
+    }
+    
     window.guardarCliente = async function(idOrden) {
         const nombre = document.getElementById('cliente-nombre').value.trim();
         const telefono = document.getElementById('cliente-telefono').value.trim();
         const email = document.getElementById('cliente-email').value.trim();
         const direccion = document.getElementById('cliente-direccion').value.trim();
-        const password = document.getElementById('cliente-password').value.trim();
         const equipo = document.getElementById('cliente-equipo').value.trim();
         const tipoEquipo = document.getElementById('cliente-tipo-equipo').value;
         const problema = document.getElementById('cliente-problema').value.trim();
         
-        if (!nombre || !telefono || !password) {
-            alert('Nombre, teléfono y contraseña son requeridos');
+        if (!nombre || !telefono) {
+            alert('Nombre y teléfono son requeridos');
             return;
         }
         
@@ -311,7 +310,6 @@ function convertirACliente(idNotificacion, mensaje, idOrden) {
         formData.append('telefono', telefono);
         formData.append('email', email);
         formData.append('direccion', direccion);
-        formData.append('password', password);
         formData.append('equipo', equipo);
         formData.append('tipo_equipo', tipoEquipo);
         formData.append('problema', problema);

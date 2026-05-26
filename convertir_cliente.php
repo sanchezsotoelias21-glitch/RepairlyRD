@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/src/config/database.php';
+require_once __DIR__ . '/includes/sql_helpers.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['success' => false, 'error' => 'Método no permitido']);
@@ -10,30 +11,24 @@ $nombre = trim($_POST['nombre'] ?? '');
 $telefono = trim($_POST['telefono'] ?? '');
 $email = trim($_POST['email'] ?? '');
 $direccion = trim($_POST['direccion'] ?? '');
-$password = $_POST['password'] ?? '';
 $equipo = trim($_POST['equipo'] ?? '');
 $tipo_equipo = trim($_POST['tipo_equipo'] ?? '');
 $problema = trim($_POST['problema'] ?? '');
 $id_orden = trim($_POST['id_orden'] ?? '');
 
-if (empty($nombre) || empty($telefono) || empty($password)) {
-    echo json_encode(['success' => false, 'error' => 'Nombre, teléfono y contraseña son requeridos']);
-    exit;
-}
-
-// Verificar si el email ya existe en usuarios
-$check_email = $conn->prepare("SELECT id_usuario FROM usuarios WHERE email = ?");
-$check_email->bind_param('s', $email);
-$check_email->execute();
-$result = $check_email->get_result();
-
-if ($result && $result->num_rows > 0) {
-    echo json_encode(['success' => false, 'error' => 'El email ya está registrado']);
+if (empty($nombre) || empty($telefono)) {
+    echo json_encode(['success' => false, 'error' => 'Nombre y teléfono son requeridos']);
     exit;
 }
 
 // Verificar si el teléfono ya existe en clientes
-$check_telefono = $conn->prepare("SELECT id_cliente FROM cliente WHERE telefono = ?");
+$cliente_table = pick_table($conn, ['cliente', 'Cliente']);
+if ($cliente_table === '') {
+    echo json_encode(['success' => false, 'error' => 'No se encontró la tabla de clientes']);
+    exit;
+}
+
+$check_telefono = $conn->prepare("SELECT id_cliente FROM `{$cliente_table}` WHERE telefono = ?");
 $check_telefono->bind_param('s', $telefono);
 $check_telefono->execute();
 $result_tel = $check_telefono->get_result();
@@ -47,19 +42,39 @@ if ($result_tel && $result_tel->num_rows > 0) {
 $conn->begin_transaction();
 
 try {
-    // 1. Crear usuario con rol 'cliente'
-    $password_hash = password_hash($password, PASSWORD_DEFAULT);
-    $username = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $nombre)) . rand(100, 999);
+    // 1. Crear registro en tabla cliente
+    $cols = table_columns($conn, $cliente_table);
+    $nombre_col = repairly_pick_column($cols, ['nombre', 'Nombre']);
+    $telefono_col = repairly_pick_column($cols, ['telefono', 'Telefono']);
+    $email_col = repairly_pick_column($cols, ['email', 'correo']);
+    $direccion_col = repairly_pick_column($cols, ['direccion', 'address']);
     
-    $stmt_usuario = $conn->prepare("INSERT INTO usuarios (nombre, email, telefono, password, rol, username) VALUES (?, ?, ?, ?, 'cliente', ?)");
-    $stmt_usuario->bind_param('sssss', $nombre, $email, $telefono, $password_hash, $username);
-    $stmt_usuario->execute();
-    $id_usuario = $conn->insert_id;
-    $stmt_usuario->close();
+    if (!$nombre_col || !$telefono_col) {
+        echo json_encode(['success' => false, 'error' => 'Faltan columnas requeridas en la tabla cliente']);
+        exit;
+    }
     
-    // 2. Crear registro en tabla cliente
-    $stmt_cliente = $conn->prepare("INSERT INTO cliente (nombre, telefono, email, direccion) VALUES (?, ?, ?, ?)");
-    $stmt_cliente->bind_param('ssss', $nombre, $telefono, $email, $direccion);
+    $insert_cols = [$nombre_col, $telefono_col];
+    $insert_values = [$nombre, $telefono];
+    $insert_types = 'ss';
+    
+    if ($email_col) {
+        $insert_cols[] = $email_col;
+        $insert_values[] = $email;
+        $insert_types .= 's';
+    }
+    
+    if ($direccion_col) {
+        $insert_cols[] = $direccion_col;
+        $insert_values[] = $direccion;
+        $insert_types .= 's';
+    }
+    
+    $sql = "INSERT INTO `{$cliente_table}` (`" . implode('`,`', $insert_cols) . "`) VALUES (" . str_repeat(',', count($insert_values) - 1) . ")";
+    $sql = str_replace(',', ',?', $sql);
+    
+    $stmt_cliente = $conn->prepare($sql);
+    $stmt_cliente->bind_param($insert_types, ...$insert_values);
     $stmt_cliente->execute();
     $id_cliente = $conn->insert_id;
     $stmt_cliente->close();
