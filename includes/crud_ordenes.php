@@ -1,7 +1,9 @@
 <?php
 
 // Función para enviar mensaje por Twilio
-function sendTwilioNotification($ordenDetails) {
+function sendTwilioNotification($ordenDetails, $conn = null) {
+    global $conn;
+    
     $sid = getenv('TWILIO_SID') ?: 'YOUR_TWILIO_SID';
     $token = getenv('TWILIO_TOKEN') ?: 'YOUR_TWILIO_TOKEN';
     
@@ -37,6 +39,25 @@ function sendTwilioNotification($ordenDetails) {
     curl_setopt_array($ch, $options);
     $response = curl_exec($ch);
     curl_close($ch);
+    
+    // Guardar el mensaje en la base de datos
+    if ($conn) {
+        $stmt = $conn->prepare("INSERT INTO WhatsAppMessages (Telefono, Mensaje, Estado, FechaEnvio, TwilioSid) VALUES (?, ?, 'Enviado', NOW(), ?)");
+        if ($stmt) {
+            // Extraer el SID de la respuesta de Twilio si existe
+            $twilioSid = '';
+            if ($response) {
+                $responseData = json_decode($response, true);
+                if (isset($responseData['sid'])) {
+                    $twilioSid = $responseData['sid'];
+                }
+            }
+            
+            $stmt->bind_param('sss', $adminPhone, $mensaje, $twilioSid);
+            $stmt->execute();
+            $stmt->close();
+        }
+    }
     
     return $response;
 }
@@ -500,7 +521,7 @@ if ($id_estado > 0) {
                     'costo_total' => $costo_total,
                     'estado' => $id_estado,
                 ];
-                sendTwilioNotification($ordenDetails);
+                sendTwilioNotification($ordenDetails, $conn);
 
                 // Crear delivery automáticamente para la orden
                 $codigoTracking = 'DEL-' . date('Y-m-d') . '-' . str_pad($newOrderId, 4, '0', STR_PAD_LEFT);
