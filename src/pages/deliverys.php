@@ -453,18 +453,19 @@ foreach ($deliveries as $d) {
         </div>
     </div>
 
-    <div class="table-head" style="margin-top:14px;grid-template-columns:70px 1.2fr 120px 100px 100px 120px;gap:12px;">
+    <div class="table-head" style="margin-top:14px;grid-template-columns:70px 1.2fr 120px 100px 100px 150px 120px;gap:12px;">
         <div>ID</div>
         <div>Código Tracking</div>
         <div>Estado</div>
         <div>Driver</div>
         <div>Fecha Salida</div>
+        <div>Seguimiento</div>
         <div>Acciones</div>
     </div>
 
     <div style="max-height:400px;overflow-y:auto;">
     <?php foreach ($deliveries as $delivery): ?>
-    <div class="table-row" style="grid-template-columns:70px 1.2fr 120px 100px 100px 120px;gap:12px;">
+    <div class="table-row" style="grid-template-columns:70px 1.2fr 120px 100px 100px 150px 120px;gap:12px;">
         <div style="font-size:11px;color:#8C8479;font-family:'Courier New';"><?= htmlspecialchars($delivery['IdDelivery']) ?></div>
         <div style="font-size:12px;color:#1C1A17;font-weight:500;"><?= htmlspecialchars($delivery['CodigoTracking']) ?></div>
         <div style="font-size:11px;">
@@ -488,6 +489,15 @@ foreach ($deliveries as $d) {
         </div>
         <div style="font-size:12px;color:#4D4841;"><?= htmlspecialchars($delivery['DriverNombre'] ?? 'Sin asignar') ?></div>
         <div style="font-size:12px;color:#4D4841;"><?= htmlspecialchars($delivery['FechaSalida'] ?? '-') ?></div>
+        <div style="font-size:12px;">
+            <?php if (!empty($delivery['LinkSeguimiento'])): ?>
+                <a href="<?= htmlspecialchars($delivery['LinkSeguimiento']) ?>" target="_blank" style="color:#2b7abc;text-decoration:none;font-size:11px;">
+                    🔗 Ver seguimiento
+                </a>
+            <?php else: ?>
+                <span style="color:#999;font-size:11px;">Sin enlace</span>
+            <?php endif; ?>
+        </div>
         <div style="display:flex;gap:8px;">
             <form method="POST" style="display:inline;">
                 <input type="hidden" name="action" value="delete_delivery">

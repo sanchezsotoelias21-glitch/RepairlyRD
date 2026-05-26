@@ -525,9 +525,13 @@ if ($id_estado > 0) {
 
                 // Crear delivery automáticamente para la orden
                 $codigoTracking = 'DEL-' . date('Y-m-d') . '-' . str_pad($newOrderId, 4, '0', STR_PAD_LEFT);
-                $deliveryStmt = $conn->prepare("INSERT INTO Deliveries (IdReparacion, Estado, CodigoTracking, FechaCreacion) VALUES (?, 'Pendiente', ?, NOW())");
+                
+                // Generar enlace de seguimiento
+                $linkSeguimiento = "https://repairlyrd-production.up.railway.app/seguimiento.php?codigo=" . urlencode($codigoWebhook);
+                
+                $deliveryStmt = $conn->prepare("INSERT INTO Deliveries (IdReparacion, Estado, CodigoTracking, LinkSeguimiento, FechaCreacion) VALUES (?, 'Pendiente', ?, ?, NOW())");
                 if ($deliveryStmt) {
-                    $deliveryStmt->bind_param('is', $newOrderId, $codigoTracking);
+                    $deliveryStmt->bind_param('iss', $newOrderId, $codigoTracking, $linkSeguimiento);
                     $deliveryStmt->execute();
                     $deliveryStmt->close();
                 }
