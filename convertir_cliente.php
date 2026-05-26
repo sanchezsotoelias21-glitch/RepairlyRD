@@ -12,7 +12,9 @@ $email = trim($_POST['email'] ?? '');
 $direccion = trim($_POST['direccion'] ?? '');
 $password = $_POST['password'] ?? '';
 $equipo = trim($_POST['equipo'] ?? '');
-$codigo_orden = trim($_POST['codigo_orden'] ?? '');
+$tipo_equipo = trim($_POST['tipo_equipo'] ?? '');
+$problema = trim($_POST['problema'] ?? '');
+$id_orden = trim($_POST['id_orden'] ?? '');
 
 if (empty($nombre) || empty($telefono) || empty($password)) {
     echo json_encode(['success' => false, 'error' => 'Nombre, teléfono y contraseña son requeridos']);
@@ -66,15 +68,15 @@ try {
     
     // 3. Si se proporcionó equipo, crear registro en tabla equipo
     if (!empty($equipo)) {
-        $stmt_equipo = $conn->prepare("INSERT INTO equipo (marca_modelo, id_cliente, estado) VALUES (?, ?, 'en_reparacion')");
-        $stmt_equipo->bind_param('si', $equipo, $id_cliente);
+        $stmt_equipo = $conn->prepare("INSERT INTO equipo (marca_modelo, tipo, id_cliente, estado, problema) VALUES (?, ?, ?, 'en_reparacion', ?)");
+        $stmt_equipo->bind_param('ssis', $equipo, $tipo_equipo, $id_cliente, $problema);
         $stmt_equipo->execute();
         $stmt_equipo->close();
         $equipo_creado = true;
     }
     
-    // 4. Si se proporcionó código de orden, actualizar la orden para asociarla con el cliente
-    if (!empty($codigo_orden)) {
+    // 4. Si se proporcionó id_orden, actualizar la orden para asociarla con el cliente
+    if (!empty($id_orden)) {
         // Buscar la tabla de ordenes
         $orden_table = pick_table($conn, ['orden_reparacion', 'Orden_Reparacion', 'reparacion', 'Reparacion', 'orden']);
         if ($orden_table !== '') {
@@ -87,13 +89,10 @@ try {
                 }
             }
             
-            $codigo_col = repairly_pick_column($orden_cols, ['codigo_seguimiento', 'codigo']);
-            if ($codigo_col) {
-                $stmt_orden = $conn->prepare("UPDATE `{$orden_table}` SET id_cliente = ? WHERE `{$codigo_col}` = ?");
-                $stmt_orden->bind_param('is', $id_cliente, $codigo_orden);
-                $stmt_orden->execute();
-                $stmt_orden->close();
-            }
+            $stmt_orden = $conn->prepare("UPDATE `{$orden_table}` SET id_cliente = ? WHERE `{$id_col}` = ?");
+            $stmt_orden->bind_param('ii', $id_cliente, $id_orden);
+            $stmt_orden->execute();
+            $stmt_orden->close();
         }
     }
     
